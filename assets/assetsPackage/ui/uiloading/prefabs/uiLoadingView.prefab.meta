@@ -1,0 +1,14 @@
+{
+  "ver": "1.1.50",
+  "importer": "prefab",
+  "imported": true,
+  "uuid": "6231ce2f-9b00-4b2b-a3b1-53c71a370807",
+  "files": [
+    ".json"
+  ],
+  "subMetas": {},
+  "userData": {
+    "syncNodeName": "uiLoadingView",
+    "persistent": false
+  }
+}

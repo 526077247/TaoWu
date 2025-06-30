@@ -1,0 +1,25 @@
+{
+  "ver": "1.2.0",
+  "importer": "directory",
+  "imported": true,
+  "uuid": "f521a5e6-0c70-4e86-967f-9ad74ba3c919",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "isBundle": true,
+    "bundleName": "ui_uiloading",
+    "bundleFilterConfig": [
+      {
+        "range": "include",
+        "type": "asset",
+        "patchOption": {
+          "patchType": "glob",
+          "value": "db://assets/assetsPackage/ui/uiloading/**/*"
+        },
+        "assets": [
+          "6231ce2f-9b00-4b2b-a3b1-53c71a370807"
+        ]
+      }
+    ]
+  }
+}

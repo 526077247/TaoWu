@@ -1,0 +1,25 @@
+{
+  "ver": "1.2.0",
+  "importer": "directory",
+  "imported": true,
+  "uuid": "3fe43c22-2886-4939-a672-dc7ea7cf0b1a",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "isBundle": true,
+    "bundleName": "scenes_loadingScene",
+    "bundleFilterConfig": [
+      {
+        "range": "include",
+        "type": "asset",
+        "patchOption": {
+          "patchType": "glob",
+          "value": "db://assets/assetsPackage/scenes/loadingScene/**/*"
+        },
+        "assets": [
+          "15382222-dc2d-431c-8bb1-a16675e69955"
+        ]
+      }
+    ]
+  }
+}
