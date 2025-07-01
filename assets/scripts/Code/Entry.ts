@@ -9,6 +9,9 @@ import { GameObjectPoolManager } from "./Module/Resource/GameObjectPoolManager"
 import { CoroutineLockManager } from "./Module/CoroutineLock/CoroutineLockManager"
 import { SceneManager } from "./Module/Scene/SceneManager"
 import { HomeScene } from "./Game/Scene/LoginScene"
+import { I18NManager } from "./Module/I18N/I18NManager"
+import { CacheManager } from "./Module/Player/CacheManager"
+import { ConfigManager } from "./Module/Config/ConfigManager"
 
 export class Entry 
 {  
@@ -20,18 +23,25 @@ export class Entry
     
     private static async startAsync() {
         try {
-            ManagerProvider.registerManager<Messager>(Messager);
-            ManagerProvider.registerManager<CoroutineLockManager>(CoroutineLockManager);
-            ManagerProvider.registerManager<TimerManager>(TimerManager);
-            ManagerProvider.registerManager<BundleManager>(BundleManager);
-            ManagerProvider.registerManager<ResourceManager>(ResourceManager);
-            ManagerProvider.registerManager<GameObjectPoolManager>(GameObjectPoolManager);
-            ManagerProvider.registerManager<UIManager>(UIManager);
+            ManagerProvider.registerManager(Messager);
+            ManagerProvider.registerManager(CoroutineLockManager);
+            ManagerProvider.registerManager(TimerManager);
+            ManagerProvider.registerManager(BundleManager);
+            ManagerProvider.registerManager(ResourceManager);
+            ManagerProvider.registerManager(GameObjectPoolManager);
+            ManagerProvider.registerManager(UIManager);
             
-            ManagerProvider.registerManager<SceneManager>(SceneManager);
+            const cm = ManagerProvider.registerManager(ConfigManager);
+            await cm.loadAsync();
+            
+            ManagerProvider.registerManager(CacheManager);
+            ManagerProvider.registerManager(I18NManager);
+
+            
+            ManagerProvider.registerManager(SceneManager);
 
 
-            SceneManager.instance.switchScene<HomeScene>(HomeScene)
+            await SceneManager.instance.switchScene(HomeScene)
         } catch (e) {
             Log.error(e);
         }

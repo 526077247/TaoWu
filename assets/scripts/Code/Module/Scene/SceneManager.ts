@@ -70,9 +70,9 @@ export class SceneManager implements IManager{
 
         let [cleanup, loadScene, prepare] = scene.getProgressPercent();
         let total = cleanup + loadScene + prepare;
-        cleanup /= total * 0.9;
-        loadScene /= total * 0.9;
-        prepare /= total * 0.9;
+        cleanup = cleanup / total * 0.9;
+        loadScene = loadScene / total * 0.9;
+        prepare = prepare / total * 0.9;
 
         await scene.onEnter();
         await scene.setProgress(slidValue);

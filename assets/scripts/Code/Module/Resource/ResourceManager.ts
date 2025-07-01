@@ -1,9 +1,6 @@
-import { _decorator, Asset, __private, AssetManager, SceneAsset } from 'cc';
+import { _decorator, Asset, AssetManager, SceneAsset } from 'cc';
 import { BundleManager } from "../../../Mono/Module/Resource/BundleManager"
 import { IManager } from '../../../Mono/Core/Manager/IManager';
-import { ETTask } from '../../../Mono/Core/ETTask/ETTask';
-import * as string from '../../../Mono/Helper/StringHelper'
-import { Log } from '../../../Mono/Module/Log/Log';
 /**
 * 资源管理系统：提供资源加载管理<br/>
 *
@@ -61,7 +58,7 @@ export class ResourceManager implements IManager {
         return await BundleManager.instance.loadBundle(bundleName);
     }
 
-    public async loadAsync<T extends Asset>(type: __private.__types_globals__Constructor<T> | null, path: string): Promise<T> {
+    public async loadAsync<T extends Asset>(type: new (...args: any[]) => T, path: string): Promise<T> {
         this.loadingOpCount++;
         const [bundleNmae,assetName] = this.getBundleAndAssetName(path);
         const bundle = await this.loadBundleByAssetPath(bundleNmae);

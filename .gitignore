@@ -22,3 +22,9 @@ node_modules/
 # WebStorm
 #//////////////////////////
 .idea/
+
+/Tools/ExcelExport/ExcelExport/obj
+/Tools/ExcelExport/.idea
+/Tools/ExcelExport/.vs
+/Bin
+/Excel/Json

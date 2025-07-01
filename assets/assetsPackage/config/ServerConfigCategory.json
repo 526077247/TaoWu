@@ -1,0 +1,4 @@
+{"list":[
+{"_t":"ServerConfig","id":1,"name":"本机开发","realmIp":"127.0.0.1:10002","routerListUrl":"http://127.0.0.1:8081/cdn","envId":1,"isPriority":1},
+{"_t":"ServerConfig","id":2,"name":"内网测试","realmIp":"172.22.213.58:10002","routerListUrl":"http://172.22.213.58:8081/cdn","envId":1,"isPriority":0},
+]}

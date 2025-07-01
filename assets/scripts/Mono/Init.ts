@@ -11,9 +11,7 @@ import { TimerManager } from './Module/Timer/TimerManager';
 @ccclass('Init')
 export class Init extends Component {
 
-    canvas: Canvas
     start() {
-        this.canvas = find("Canvas").getComponent<Canvas>(Canvas)
         this.startAsync();
     }
 
@@ -29,16 +27,30 @@ export class Init extends Component {
         director.addPersistRootNode(this.node)
         Entry.start();
         await TimerManager.instance.waitAsync(1);
-        //神奇的bug，必须等一帧重设才能刷新
-        this.canvas.alignCanvasWithScreen = true
     }
 
-    update(deltaTime: number){
-        ManagerProvider.update();
+    update(deltaTime: number)
+    {
+        try
+        {
+            ManagerProvider.update();
+        }
+        catch(e)
+        {
+            Log.error(e);
+        }
     }
 
-    lateUpdate(deltaTime: number){
-        ManagerProvider.lateUpdate();
+    lateUpdate(deltaTime: number)
+    {
+        try
+        {
+            ManagerProvider.lateUpdate();
+        }
+        catch(e)
+        {
+            Log.error(e);
+        }
     }
 }
 

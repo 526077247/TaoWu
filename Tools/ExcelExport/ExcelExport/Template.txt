@@ -1,0 +1,55 @@
+﻿import { Log } from "../../../../Mono/Module/Log/Log";
+
+export class (ConfigName) {
+(Fields)
+}
+
+export class (ConfigName)Category{
+
+    public constructor(){
+        (ConfigName)Category.instance = this;
+    }
+
+    public static instance:(ConfigName)Category;
+
+    private dict = new Map<number, (ConfigName)>();
+
+    private list:(ConfigName)[] = [];
+
+    public endInit()
+    {
+        for(let i =0 ;i<this.list.length;i++)
+        {
+            const config:(ConfigName) = this.list[i];
+
+            this.dict.set(config.id, config);
+        }            
+    }
+    
+    public get(id: number): (ConfigName)
+    {
+        let item: (ConfigName) = this.dict.get(id);
+        
+        if (item == null)
+        {
+            Log.error("配置找不到，配置表名: (ConfigName)，配置id: "+id);
+        }
+
+        return item;
+    }
+
+    public contain(id: number): boolean
+    {
+        return this.dict.has(id);
+    }
+
+    public getAll(): Map<number, (ConfigName)>
+    {
+        return this.dict;
+    }
+
+    public getAllList(): (ConfigName)[]
+    {
+        return this.list;
+    }
+}

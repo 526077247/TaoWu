@@ -46,7 +46,7 @@ export class Messager implements IManager{
             var funcs = this.evtGroup[id]?.getAll(name);
             for(var i = 0; i < funcs.length; i++)
             {
-                funcs[i](argArray);
+                funcs[i](...argArray);
             }
         }
     }

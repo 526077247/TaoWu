@@ -33,7 +33,7 @@ export class UISlider extends UIBaseContainer implements IOnDestroy {
             this.slider = this.getNode().getComponent<Slider>(Slider);
             if (this.slider == null)
             {
-                Log.error(`添加UI侧组件UISlider时，物体${Slider.name}上没有找到Slider组件`);
+                Log.error(`添加UI侧组件UISlider时，物体${this.getNode().name}上没有找到Slider组件`);
             }
         }
     }

@@ -13,7 +13,7 @@ export class UILoadingView extends UIBaseView implements IOnCreate{
 
     public onCreate()
     {
-        this.slider = this.addComponent<UISlider>(UISlider,"loadingscreen/Slider");
+        this.slider = this.addComponent(UISlider,"loadingscreen/Slider");
     }
 
     public setProgress(value: number)
