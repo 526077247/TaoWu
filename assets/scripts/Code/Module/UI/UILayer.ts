@@ -1,4 +1,4 @@
-﻿import { Canvas, Layers, Node, UITransform, Vec3, Widget } from "cc";
+﻿import { Canvas, Node, UITransform, Vec3} from "cc";
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { Define } from "../../../Mono/Define";
 import { UILayerDefine, UILayerNames, UIManager } from "./UIManager"

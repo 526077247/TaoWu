@@ -1,7 +1,8 @@
-import { _decorator, Component, Node, Renderer, CCFloat } from 'cc';
-const { ccclass, property } = _decorator;
+import { _decorator, Component, Node, Renderer, CCFloat} from 'cc';
+const { ccclass, property, executeInEditMode } = _decorator;
 
 @ccclass('CanvasGroup')
+@executeInEditMode(true)
 export class CanvasGroup extends Component {
 
     private _alpha: number = 1;

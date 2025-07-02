@@ -1,4 +1,4 @@
-import { Camera, director, find, Node, _decorator, screen, sys, Vec2, UITransform, Screen, Widget } from 'cc';
+import { Camera, director, find, Node, _decorator, view, sys, Vec2, UITransform } from 'cc';
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { ManagerProvider } from "../../../Mono/Core/Manager/ManagerProvider"
 import { HashSetComponent } from '../../../Mono/Core/Object/HashSetComponent';
@@ -89,8 +89,8 @@ export class UIManager implements IManager {
     private windows: Map<string, UIWindow>; //所有存活的窗体  {uiName:window}
     public get screenSizeFlag()
     {
-        let width = screen.windowSize.width;
-        let height = screen.windowSize.height;
+        let width = view.getVisibleSize().width;
+        let height = view.getVisibleSize().height;
         var flagx = Define.DesignScreenWidth / width;
         var flagy = Define.DesignScreenHeight / height;
         return flagx > flagy ? flagx : flagy;
@@ -702,8 +702,8 @@ export class UIManager implements IManager {
         const rectTrans:UITransform  = target.getTransform();
         const padding = this._widthPadding;
         const safeArea = sys.getSafeAreaRect();
-        const height = screen.windowSize.height;
-        const width = screen.windowSize.width;
+        const height = view.getVisibleSize().height;
+        const width = view.getVisibleSize().width;
         const top = safeArea.yMin * this.screenSizeFlag;
         const bottom = (height - safeArea.yMax) * this.screenSizeFlag;
         // todo:

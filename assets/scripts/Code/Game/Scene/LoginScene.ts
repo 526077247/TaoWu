@@ -1,6 +1,7 @@
 import { IScene } from "../../Module/Scene/IScene";
 import { UIManager } from "../../Module/UI/UIManager";
 import { UILoadingView } from "../UI/UILoading/UILoadingView";
+import { UIMainView } from "../UI/UIMain/UIMainView";
 
 export class HomeScene implements IScene
 {
@@ -79,6 +80,7 @@ export class HomeScene implements IScene
      * 转场景结束
      */
     public async onSwitchSceneEnd(): Promise<void>{
+        await UIManager.instance.openWindow(UIMainView,UIMainView.PrefabPath);
         await UIManager.instance.destroyWindow<UILoadingView>(UILoadingView);
         this.win = null;
     }

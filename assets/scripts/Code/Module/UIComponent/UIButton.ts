@@ -60,7 +60,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
 
     public removeOnClick()
     {
-        if (this.onClick != null)
+        if (!!this.onClick)
         {
             this.button!.node.off(Button.EventType.CLICK, this.onClickEvent, this);
             this.onClick = null;
@@ -69,7 +69,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
 
     private onClickEvent(button: Button){
         //SoundComponent.Instance.PlaySound("Audio/Common/Click.mp3");
-        if(this.onClick){
+        if(!!this.onClick){
             this.onClick()
         }
     }
