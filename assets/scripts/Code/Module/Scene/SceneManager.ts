@@ -98,7 +98,7 @@ export class SceneManager implements IManager{
         await scene.setProgress(slidValue);
         //清除ImageLoaderManager里的资源缓存 这里考虑到我们是单场景
         Log.info("InnerSwitchScene ImageLoaderManager Cleanup");
-        // ImageLoaderManager.instance.Clear();
+        ImageLoaderManager.instance.clear();
         //清除预设以及其创建出来的gameObject, 这里不能清除loading的资源
         Log.info("InnerSwitchScene GameObjectPool Cleanup");
         if (needClean)

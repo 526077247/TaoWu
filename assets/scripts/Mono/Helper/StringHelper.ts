@@ -19,3 +19,7 @@ export function getHash(str: string): bigint {
 export function isNullOrEmpty(str: string): boolean {
     return !str || str == '';
 }
+
+export function isNullOrWhiteSpace(str: string): boolean {
+    return !str || str.trim() == '';
+}

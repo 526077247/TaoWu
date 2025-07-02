@@ -12,6 +12,9 @@ import { HomeScene } from "./Game/Scene/LoginScene"
 import { I18NManager } from "./Module/I18N/I18NManager"
 import { CacheManager } from "./Module/Player/CacheManager"
 import { ConfigManager } from "./Module/Config/ConfigManager"
+import { ImageLoaderManager } from "./Module/Resource/ImageLoaderManager"
+import { CameraManager } from "./Module/Camera/CameraManager"
+import { UIToastManager } from "./Module/UI/Toast/UIToastManager"
 
 export class Entry 
 {  
@@ -26,20 +29,23 @@ export class Entry
             ManagerProvider.registerManager(Messager);
             ManagerProvider.registerManager(CoroutineLockManager);
             ManagerProvider.registerManager(TimerManager);
+            ManagerProvider.registerManager(CacheManager);
+
             ManagerProvider.registerManager(BundleManager);
-            ManagerProvider.registerManager(ResourceManager);
-            ManagerProvider.registerManager(GameObjectPoolManager);
-            ManagerProvider.registerManager(UIManager);
-            
             const cm = ManagerProvider.registerManager(ConfigManager);
             await cm.loadAsync();
-            
-            ManagerProvider.registerManager(CacheManager);
+           
+            ManagerProvider.registerManager(ResourceManager);
+            ManagerProvider.registerManager(GameObjectPoolManager);
+            ManagerProvider.registerManager(ImageLoaderManager);
+
+
             ManagerProvider.registerManager(I18NManager);
-
+            ManagerProvider.registerManager(UIManager);
+            ManagerProvider.registerManager(UIToastManager);
             
+            ManagerProvider.registerManager(CameraManager);
             ManagerProvider.registerManager(SceneManager);
-
 
             await SceneManager.instance.switchScene(HomeScene)
         } catch (e) {

@@ -4,7 +4,7 @@ const { ccclass, property } = _decorator;
 
 @ccclass('I18NText')
 export class I18NText extends Component {
-    @property({type: CCString})
+    @property({})
     public key: string = '';
     private _text: Label;
     start() {
