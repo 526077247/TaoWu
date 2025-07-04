@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, director, Canvas, find } from 'cc';
-import { ETTask } from './Core/ETTask/ETTask';
+import { ETTask } from '../ThirdParty/ETTask/ETTask';
 import { ManagerProvider } from './Core/Manager/ManagerProvider';
 const { ccclass, property } = _decorator;
 import { Entry } from '../Code/Entry';

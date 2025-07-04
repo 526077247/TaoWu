@@ -1,9 +1,13 @@
 ﻿import { Node, UITransform } from "cc";
+import { EDITOR } from "cc/env";
 import {UnOrderDoubleKeyDictionary} from "../../../Mono/Core/Object/UnOrderDoubleKeyDictionary"
 import { Log } from "../../../Mono/Module/Log/Log";
 import { TimerManager } from "../../../Mono/Module/Timer/TimerManager";
 import { TimerType } from "../../../Mono/Module/Timer/TimerType";
+import { ReferenceCollector } from "../../../Mono/Module/UI/ReferenceCollector";
 import { I18NManager } from "../I18N/I18NManager";
+import * as string from "../../../Mono/Helper/StringHelper"
+import { RectTransform } from "../../../Mono/Module/UI/RectTransfrom";
 export abstract class UIBaseContainer {
 
     protected abstract getConstructor(): new () => UIBaseContainer;
@@ -11,7 +15,8 @@ export abstract class UIBaseContainer {
     private parent: UIBaseContainer;
     private components : UnOrderDoubleKeyDictionary<string, new (...args: any[]) => any, UIBaseContainer>; //[path]:[component_name:UIBaseContainer]
     private length: number = 0;
-    private transfprm: UITransform;
+    private transform: UITransform;
+    private rectTransform: RectTransform;
     private node : Node;
     private parentNode : Node;
     private path: string;
@@ -35,12 +40,25 @@ export abstract class UIBaseContainer {
 
     public getTransform(): UITransform
     {
-        if (this.transfprm == null)
+        if (this.transform == null)
         {
-            this.transfprm = this.getNode().getComponent<UITransform>(UITransform);
+            this.transform = this.getNode().getComponent<UITransform>(UITransform);
         }
 
-        return this.transfprm;
+        return this.transform;
+    }
+
+    public getRectTransform(): RectTransform
+    {
+        if (this.rectTransform == null)
+        {
+            this.rectTransform = this.getNode().getComponent<RectTransform>(RectTransform);
+        }
+        if (this.rectTransform == null)
+        {
+            this.rectTransform = this.getNode().addComponent<RectTransform>(RectTransform);
+        }
+        return this.rectTransform;
     }
 
     private activatingNode(): Node
@@ -50,21 +68,22 @@ export abstract class UIBaseContainer {
             var pTrans: Node = this.getParentNode();
             if (pTrans != null)
             {
-                // var rc = pTrans.GetComponent<ReferenceCollector>();
-                // if (rc != null)
-                // {
-                //     transform = rc.Get<Transform>(path);
-                // }
+                var rc = pTrans.getComponent<ReferenceCollector>(ReferenceCollector);
+                if (rc != null)
+                {
+                    this.node = rc.get(Node, this.path);
+                }
 
                 if (this.node == null)
                 {
                     this.node = pTrans.getChildByPath(this.path);
-// #if UNITY_EDITOR
-//                     if (transform != null && !string.IsNullOrEmpty(path) && rc != null)
-//                     {
-//                         rc.Add(path, transform);
-//                     }
-// #endif
+                    if(EDITOR)
+                    {
+                        if (this.node != null && !string.isNullOrEmpty(this.path) && rc != null)
+                        {
+                            rc.add(this.path, this.node);
+                        }
+                    }
                 }
             }
             if (this.node == null)
@@ -213,12 +232,6 @@ export abstract class UIBaseContainer {
         }
 
         this.components.add(name, componentClass, component);
-// #if UNITY_EDITOR
-//         if (!Application.isPlaying)
-//         {
-//             component.activatingNode();
-//         }
-// #endif
     }
 
 

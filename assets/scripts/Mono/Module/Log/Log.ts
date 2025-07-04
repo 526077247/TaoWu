@@ -100,8 +100,8 @@ export class Log {
         if (input instanceof Error) {
             const error = input as Error;
             // 检查是否有自定义堆栈信息
-            if ((error as any).Data?.StackTrace) {
-                Log._logger.error(`${(error as any).Data.StackTrace}\n${error}`);
+            if (error.stack) {
+                Log._logger.error(`${error.stack}\n${error}`);
             } else {
                 Log._logger.error(error.toString());
             }

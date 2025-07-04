@@ -9,7 +9,7 @@ export class UICopyGameObject extends UIBaseContainer implements IOnDestroy{
     protected getConstructor(){
         return UICopyGameObject;
     }
-    public comp: CopyGameObject;
+    private comp: CopyGameObject;
 
     public onDestroy()
     {
@@ -35,7 +35,7 @@ export class UICopyGameObject extends UIBaseContainer implements IOnDestroy{
     }
 
     /**
-     * item是Unity侧的item对象，在这里创建相应的UI对象
+     * item是Cocos侧的item对象，在这里创建相应的UI对象
      * @param type 
      * @param item 
      * @returns 
@@ -56,7 +56,7 @@ export class UICopyGameObject extends UIBaseContainer implements IOnDestroy{
     }
 
     /**
-     * 根据Unity侧item获取UI侧的item
+     * 根据Cocos侧item获取UI侧的item
      * @param type 
      * @param item 
      * @returns 

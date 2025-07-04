@@ -1,4 +1,4 @@
-import { ETTask } from "../../../Mono/Core/ETTask/ETTask";
+import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { Queue } from "../../../Mono/Core/Object/Queue";
 import { ObjectPool } from "../../../Mono/Core/ObjectPool";
 import { CoroutineLock } from "./CoroutineLock";

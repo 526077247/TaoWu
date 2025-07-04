@@ -18,6 +18,7 @@ import { GameObjectPoolManager } from '../Resource/GameObjectPoolManager';
 import { I18NManager } from '../I18N/I18NManager';
 import { II18N } from '../I18N/II18N';
 import { IOnWidthPaddingChange} from './IOnWidthPaddingChange'
+import { AnchorPreset, RectTransform } from '../../../Mono/Module/UI/RectTransfrom';
 
 export enum UILayerNames
 {
@@ -699,16 +700,17 @@ export class UIManager implements IManager {
 
     private onWidthPaddingChange(target: UIBaseView)
     {
-        const rectTrans:UITransform  = target.getTransform();
+        const rectTrans: RectTransform = target.getRectTransform();
         const padding = this._widthPadding;
         const safeArea = sys.getSafeAreaRect();
         const height = view.getVisibleSize().height;
         const width = view.getVisibleSize().width;
         const top = safeArea.yMin * this.screenSizeFlag;
         const bottom = (height - safeArea.yMax) * this.screenSizeFlag;
-        // todo:
-        // widget.offsetMin = new Vec2(padding * (1 - rectTrans.anchorMin.x), bottom * rectTrans.anchorMax.y);
-        // widget.offsetMax = new Vec2(-padding * rectTrans.anchorMax.x, -top * (1 - rectTrans.anchorMin.y));
+
+        rectTrans.anchorPreset = AnchorPreset.StretchAll;
+        rectTrans.offsetMin = new Vec2(padding * (1 - rectTrans.anchorMin.x), bottom * rectTrans.anchorMax.y);
+        rectTrans.offsetMax = new Vec2(-padding * rectTrans.anchorMax.x, -top * (1 - rectTrans.anchorMin.y));
     }
 
     private getUIName<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView){

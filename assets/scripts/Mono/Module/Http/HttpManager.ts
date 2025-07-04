@@ -1,6 +1,6 @@
 import { assetManager, ImageAsset, native, sys, Texture2D } from "cc";
 import { Md5 } from 'ts-md5';
-import { ETTask } from "../../Core/ETTask/ETTask";
+import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { Log } from "../Log/Log";
 export class HttpManager
 {

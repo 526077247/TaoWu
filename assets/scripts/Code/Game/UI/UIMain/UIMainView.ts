@@ -1,10 +1,19 @@
+import { Log } from "../../../../Mono/Module/Log/Log";
+import { LoopGridView } from "../../../../ThirdParty/SuperScrollView/GridView/LoopGridView";
+import { LoopGridViewItem } from "../../../../ThirdParty/SuperScrollView/GridView/LoopGridViewItem";
+import { LoopListView2 } from "../../../../ThirdParty/SuperScrollView/ListView/LoopListView2";
+import { LoopListViewItem2 } from "../../../../ThirdParty/SuperScrollView/ListView/LoopListViewItem2";
 import { IOnCreate } from "../../../Module/UI/IOnCreate";
 import { IOnEnable } from "../../../Module/UI/IOnEnable";
 import { UIBaseView } from "../../../Module/UI/UIBaseView";
 import { UIEmptyView } from "../../../Module/UIComponent/UIEmptyView";
 import { UIImage } from "../../../Module/UIComponent/UIImage";
+import { UILoopGridView } from "../../../Module/UIComponent/UILoopGridView";
+import { UILoopListView2 } from "../../../Module/UIComponent/UILoopListView2";
 import { UIText } from "../../../Module/UIComponent/UIText";
 import { MenuPara, UIMenu } from "../UICommon/UIMenu";
+import { CellItem } from "./CellItem";
+import { DateItem } from "./DateItem";
 
 
 export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable{
@@ -20,11 +29,14 @@ export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable{
 	public text: UIText;
     public menu: UIMenu
 
-    public LoopGridView: UIEmptyView;
-    public LoopListView2: UIEmptyView;
-    public Welcome: UIEmptyView;
+    public loopGridView: UILoopGridView;
+    public loopListView2: UILoopListView2;
+    public welcome: UIEmptyView;
 
     public curId: number;
+
+    public firstDay: Date;
+	public totalDay: number;
 
     private config: Map<number,string> =new Map<number,string>([
         [1, "欢迎"],
@@ -37,9 +49,11 @@ export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable{
         this.image = this.addComponent<UIImage>(UIImage,"Image");
 		this.text = this.addComponent<UIText>(UIText,"Text");
 		this.menu = this.addComponent<UIMenu>(UIMenu,"UIMenu");
-        this.LoopGridView = this.addComponent<UIEmptyView>(UIEmptyView,"ScrollList/LoopGrid");
-        this.LoopListView2 = this.addComponent<UIEmptyView>(UIEmptyView,"ScrollList/LoopList");
-        this.Welcome = this.addComponent<UIEmptyView>(UIEmptyView,"ScrollList/Welcome");
+        this.loopGridView = this.addComponent<UILoopGridView>(UILoopGridView,"ScrollList/LoopGrid");
+        this.loopGridView.initGridView(0,this.onGetGridItemByIndex.bind(this));
+        this.loopListView2 = this.addComponent<UILoopListView2>(UILoopListView2,"ScrollList/LoopList");
+        this.loopListView2.initListView(0,this.onGetListItemByIndex.bind(this));
+        this.welcome = this.addComponent<UIEmptyView>(UIEmptyView,"ScrollList/Welcome");
 
         //模拟读配置
         const paras: MenuPara[] = [];
@@ -64,6 +78,56 @@ export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable{
 		this.refreshItemSpaceShow();
     }
 
+    public onGetGridItemByIndex(gridView: LoopGridView, index: number, row: number, column: number): LoopGridViewItem
+    {
+        if (index < 0 || index >= this.totalDay) return null;
+        let item:LoopGridViewItem;
+       
+        if (index < this.firstDay.getDay())
+        {
+            item = gridView.newListViewItem("EmptyItem");
+            if (!item.isInitHandlerCalled)
+            {
+                item.isInitHandlerCalled = true;
+            }
+        }
+        else
+        {
+            item = gridView.newListViewItem("CellItem");
+            let cellItem: CellItem;
+            if (!item.isInitHandlerCalled)
+            {
+                item.isInitHandlerCalled = true;
+                cellItem = this.loopGridView.addItemViewComponent<CellItem>(CellItem,item);
+            }
+            else
+            {
+                cellItem = this.loopGridView.getUIItemView<CellItem>(CellItem,item);
+            }
+            var date = new Date(this.firstDay.getFullYear() , this.firstDay.getMonth(), index - this.firstDay.getDay() + 1); 
+            cellItem.setData(date);
+        }
+        
+        return item;
+    }
+
+    public onGetListItemByIndex(listView: LoopListView2, index: number): LoopListViewItem2
+    {
+        const item: LoopListViewItem2 = listView.newListViewItem("DateItem");
+        let dateItem: DateItem;
+        if (!item.isInitHandlerCalled)
+        {
+            item.isInitHandlerCalled = true;
+            dateItem = this.loopListView2.addItemViewComponent<DateItem>(DateItem,item);
+        }
+        else
+        {
+            dateItem = this.loopListView2.getUIItemView<DateItem>(DateItem,item);
+        }
+        dateItem.setData(index);
+        return item;
+    }
+
     public refreshItemSpaceShow()
     {
         var conf = this.config[this.curId];
@@ -71,32 +135,46 @@ export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable{
         switch (this.curId)
         {
             case 1:
-                this.Welcome.setActive(true);
-                this.LoopGridView.setActive(false);
-                this.LoopListView2.setActive(false);
+                this.welcome.setActive(true);
+                this.loopGridView.setActive(false);
+                this.loopListView2.setActive(false);
                 break;
             case 2:
-                this.Welcome.setActive(false);
-                this.LoopGridView.setActive(true);
-                this.LoopListView2.setActive(false);
-                // DateTime dtNow = DateTime.Now;     
-                // FirstDay = DateTime.Now.AddDays(1 - DateTime.Now.Day).Date;
-                // TotalDay = DateTime.DaysInMonth(dtNow.Year ,dtNow.Month)+(int) FirstDay.DayOfWeek;
-                // this.LoopGridView.SetListItemCount(TotalDay);
-                // this.LoopGridView.RefreshAllShownItem();
+                this.welcome.setActive(false);
+                this.loopGridView.setActive(true);
+                this.loopListView2.setActive(false);
+                const dtNow: Date = new Date();     
+                this.firstDay = new Date(dtNow.getFullYear(), dtNow.getMonth(), 1); 
+                const days = this.getDaysInCurrentMonth(dtNow.getFullYear(), dtNow.getMonth());
+                this.totalDay = days + this.firstDay.getDay();
+                this.loopGridView.setListItemCount(this.totalDay);
+                this.loopGridView.refreshAllShownItem();
                 break;
             case 3:
-                this.Welcome.setActive(false);
-                this.LoopGridView.setActive(false);
-                this.LoopListView2.setActive(true);
-                // this.LoopListView2.SetListItemCount(-1);
-                // this.LoopListView2.RefreshAllShownItem();
+                this.welcome.setActive(false);
+                this.loopGridView.setActive(false);
+                this.loopListView2.setActive(true);
+                this.loopListView2.setListItemCount(200);//无限列表需要修改编译ScrollView引擎源码以支持修改滑动速度,否则滑动惯性会有问题
+                this.loopListView2.refreshAllShownItem();
                 break;
             default:
-                this.Welcome.setActive(false);
-                this.LoopGridView.setActive(false);
-                this.LoopListView2.setActive(false);
+                this.welcome.setActive(false);
+                this.loopGridView.setActive(false);
+                this.loopListView2.setActive(false);
                 break;
         }
     }
+
+    private getDaysInCurrentMonth(year:number,month:number) {
+        
+        // 创建下个月的第一天
+        const nextMonth: any = new Date(year, month + 1, 1);
+       
+        // 下个月第一天减去一天，得到当前月份的最后一天
+        const lastDayOfCurrentMonth = new Date(nextMonth - 1);
+       
+        // 获取日期部分，即当前月份的天数
+        return lastDayOfCurrentMonth.getDate();
+      }
+      
 }

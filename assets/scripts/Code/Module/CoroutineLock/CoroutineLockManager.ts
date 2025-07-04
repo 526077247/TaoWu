@@ -1,4 +1,4 @@
-import { ETTask } from "../../../Mono/Core/ETTask/ETTask";
+import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { IManager } from "../../../Mono/Core/Manager/IManager";
 import { IdGenerater } from "../../../Mono/Core/Object/IdGenerater";
 import { MultiMap } from "../../../Mono/Core/Object/MultiMap";

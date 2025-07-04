@@ -4,8 +4,8 @@ import { MultiMap } from "../../Core/Object/MultiMap";
 import { Queue } from "../../Core/Object/Queue";
 import { IUpdate } from "../Update/IUpdate"
 import { Log } from "../Log/Log";
-import { ETTask } from "../../Core/ETTask/ETTask";
-import { ETCancellationToken } from "../../Core/ETTask/ETCancellationToken";
+import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
+import { ETCancellationToken } from "../../../ThirdParty/ETTask/ETCancellationToken";
 import { TimeInfo } from "./TimeInfo"
 import { Define } from "../../Define"
 import { ObjectPool } from '../../Core/ObjectPool';
@@ -25,9 +25,9 @@ class TimerAction
     public type: number;
     public object: any | ETTask<boolean>;
     public time: number;
-    public func: (self: any) => void;
+    public func: () => void;
     public id: bigint;
-    public static create( timerClass:TimerClass, type:number, time:number, func:(self: any) => void, object: any | ETTask<boolean>):TimerAction
+    public static create(timerClass:TimerClass, type:number, time:number, func:() => void, object: any | ETTask<boolean>):TimerAction
     {
         var res = ObjectPool.instance.fetch<TimerAction>(TimerAction);
         res.timerClass = timerClass;
@@ -155,7 +155,7 @@ export class TimerManager implements IManager,IUpdate {
                 }
                 let obj = timerAction.object;
                 this.remove(timerAction.id);
-                timer(obj);
+                timer.call(obj);
                 break;
             }
             case TimerClass.OnceWaitTimer: {
@@ -174,7 +174,7 @@ export class TimerManager implements IManager,IUpdate {
                     Log.error(`not found timer action: ${type}`);
                     return;
                 }
-                timer(timerAction.object);
+                timer.call(timerAction.object);
                 break;
             }
         }
@@ -274,44 +274,46 @@ export class TimerManager implements IManager,IUpdate {
         return ret;
     }
 
-    // 用这个优点是可以热更，缺点是回调式的写法，逻辑不连贯。WaitTillAsync不能热更，优点是逻辑连贯。
-    // wait时间短并且逻辑需要连贯的建议WaitTillAsync
-    // wait时间长不需要逻辑连贯的建议用NewOnceTimer
-    public newOnceTimer(tillTime: number, type: number, func: (self: any) => void, object: any): bigint {
+    public newOnceTimer(tillTime: number, type: number, func: () => void, target: any): bigint {
         if (tillTime < this.getTimeNow()) {
             Log.warning(`"new once time too small: ${tillTime}`);
         }
-        const timer = this.addChild(TimerClass.OnceTimer, tillTime, type, func, object);
+        const timer = this.addChild(TimerClass.OnceTimer, tillTime, type, func, target);
         this.addTimer(tillTime, timer);
         return timer.id;
     }
 
-    public newFrameTimer(type: number, func: (self: any) => void, object: any): bigint {
-        return this.newRepeatedTimerInner(0, type, func, object);
+    public newFrameTimer(type: number, func: () => void, target: any): bigint {
+        return this.newRepeatedTimerInner(0, type, func, target);
     }
 
-    /// <summary>
-    /// 创建一个RepeatedTimer
-    /// </summary>
-    private newRepeatedTimerInner(time: number, type: number, func: (self: any) => void, object: any): bigint {
+    /**
+     * 创建一个RepeatedTimer
+     * @param time 
+     * @param type 
+     * @param func 
+     * @param target 
+     * @returns 
+     */
+    private newRepeatedTimerInner(time: number, type: number, func: () => void, target: any): bigint {
         const tillTime = this.getTimeNow() + time;
-        const timer = this.addChild(TimerClass.RepeatedTimer, time, type, func, object);
+        const timer = this.addChild(TimerClass.RepeatedTimer, time, type, func, target);
 
         // 每帧执行的不用加到timerId中，防止遍历
         this.addTimer(tillTime, timer);
         return timer.id;
     }
 
-    public newRepeatedTimer(time: number, type: number, func: (self: any) => void, object: any): bigint {
+    public newRepeatedTimer(time: number, type: number, func: () => void, target: any): bigint {
         if (time < Define.MinRepeatedTimerInterval) {
             Log.error(`time too small: ${time}`);
             return BigInt(0);
         }
-        return this.newRepeatedTimer(time, type, func, object);
+        return this.newRepeatedTimer(time, type, func, target);
     }
 
-    public addChild(timerClass: TimerClass, time: number, type: number, func: (self: any) => void, object: any): TimerAction {
-        let timer = TimerAction.create(timerClass, time, type, func, object);
+    public addChild(timerClass: TimerClass, time: number, type: number, func: () => void, target: any): TimerAction {
+        let timer = TimerAction.create(timerClass, time, type, func, target);
         this.childs.set(timer.id, timer);
         return timer;
     }

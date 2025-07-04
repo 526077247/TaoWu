@@ -1,5 +1,5 @@
 ﻿import { Queue } from "../Core/Object/Queue"
-import { ETTask } from "../Core/ETTask/ETTask"
+import { ETTask } from "../../ThirdParty/ETTask/ETTask"
 export class CCCLifeTimeHelper
 {
     public static readonly updateFinishTask:Queue<ETTask> = new Queue<ETTask>();
@@ -13,7 +13,7 @@ export class CCCLifeTimeHelper
 
     public static readonly lateUpdateFinishTask:Queue<ETTask> = new Queue<ETTask>();
     //等待这一帧所有lateupdate结束
-    public static WaitLateUpdateFinish(): ETTask
+    public static waitLateUpdateFinish(): ETTask
     {
         var task = ETTask.create(true);
         CCCLifeTimeHelper.lateUpdateFinishTask.enqueue(task);

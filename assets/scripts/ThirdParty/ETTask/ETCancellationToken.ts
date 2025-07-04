@@ -1,5 +1,5 @@
 ﻿import { ETTask } from "./ETTask"
-import { Log } from "../../Module/Log/Log"
+import { Log } from "../../Mono/Module/Log/Log"
 export class ETCancellationToken {
     private actions: Set<() => void> | null = new Set();
     private _isCancellationRequested = false;

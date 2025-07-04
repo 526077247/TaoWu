@@ -6,7 +6,7 @@ import { CoroutineLockType } from "../CoroutineLock/CoroutineLockType";
 import { ResourceManager } from "./ResourceManager";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { Log } from "../../../Mono/Module/Log/Log";
-import { ETTask } from "../../../Mono/Core/ETTask/ETTask";
+import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { HttpManager } from "../../../Mono/Module/Http/HttpManager";
 class SpriteValue
 {
@@ -312,7 +312,7 @@ export class ImageLoaderManager implements IManager{
             }
         }
     }
-    
+
     private convertToUint8Array(data: any): Uint8Array {
         if (data instanceof ArrayBuffer) {
             return new Uint8Array(data);

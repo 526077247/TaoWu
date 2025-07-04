@@ -1,5 +1,5 @@
 import { director, resources, SceneAsset, sys } from "cc";
-import { ETTask } from "../../../Mono/Core/ETTask/ETTask";
+import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { IManager } from "../../../Mono/Core/Manager/IManager";
 import { Queue } from "../../../Mono/Core/Object/Queue";
 import { ObjectPool } from "../../../Mono/Core/ObjectPool";
@@ -79,7 +79,7 @@ export class SceneManager implements IManager{
 
         // CameraManager.instance.setCameraStackAtLoadingStart();
 
-        //等待资源管理器加载任务结束，否则很多Unity版本在切场景时会有异常，甚至在真机上crash
+        //等待资源管理器加载任务结束
         Log.info("InnerSwitchScene ProcessRunning Done ");
         while (ResourceManager.instance.isProcessRunning())
         {
