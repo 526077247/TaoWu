@@ -6,20 +6,42 @@
   "files": [],
   "subMetas": {},
   "userData": {
-    "isBundle": true,
     "bundleName": "ui_uiloading",
     "bundleFilterConfig": [
       {
         "range": "include",
-        "type": "asset",
+        "type": "url",
         "patchOption": {
           "patchType": "glob",
-          "value": "db://assets/assetsPackage/ui/uiloading/**/*"
+          "value": "db://assets/assetsPackage/ui/uiloading/prefabs/**/*.prefab"
         },
         "assets": [
-          "6231ce2f-9b00-4b2b-a3b1-53c71a370807"
+          ""
+        ]
+      },
+      {
+        "range": "include",
+        "type": "url",
+        "patchOption": {
+          "patchType": "glob",
+          "value": "db://assets/assetsPackage/ui/uiloading/discreteImages/**/*"
+        },
+        "assets": [
+          ""
+        ]
+      },
+      {
+        "range": "include",
+        "type": "url",
+        "patchOption": {
+          "patchType": "glob",
+          "value": "db://assets/assetsPackage/ui/uiloading/**/*.pac"
+        },
+        "assets": [
+          ""
         ]
       }
-    ]
+    ],
+    "isBundle": true
   }
 }

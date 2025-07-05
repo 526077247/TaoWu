@@ -131,7 +131,7 @@ export class JsonHelper {
     public static fromJson<T>(type: new (...args:any[]) => T, json: string) {
         if(!!type) this.registerClass(type);
         const parsed = JSON.parse(json);
-        return this.deserialize(parsed);
+        return this.deserialize(type, parsed);
     }
 
     /**
@@ -140,7 +140,7 @@ export class JsonHelper {
      * @param path 当前路径（用于调试）
      * @returns 反序列化后的对象
      */
-    public static deserialize(data: any, path: string = ''): any {
+    public static deserialize<T>(type: new (...args:any[]) => T,data: any, path: string = ''): any {
         // 处理原始类型
         if (data === null || typeof data !== 'object') {
             return data;
@@ -152,18 +152,17 @@ export class JsonHelper {
                 this.deserialize(item, `${path}[${i}]`)
             );
         }
-        
+
         // 处理特殊类型
-        if ('_type' in data) {
-            const type = data._type;
-            
+        if ('_type' in data || !!type) {
+            const typeNmae = data._type;
             // 处理 Date
-            if (type === 'Date') {
+            if (typeNmae === 'Date') {
                 return new Date(data._value);
             }
             
             // 处理 Map
-            if (type === 'Map') {
+            if (typeNmae === 'Map') {
                 return new Map(
                     (data._value as [any, any][]).map(([key, value]) => [
                         this.deserialize(key, `${path}.key`),
@@ -173,37 +172,33 @@ export class JsonHelper {
             }
             
             // 处理 Set
-            if (type === 'Set') {
+            if (typeNmae === 'Set') {
                 return new Set(
                     (data._value as any[]).map((value, i) => 
                         this.deserialize(value, `${path}[${i}]`)
                     )
                 );
             }
-            
+            let hasIgnore = false;
             // 处理注册的自定义类
-            if (JsonHelper.typeRegistry.has(type)) {
-                const hasIgnore = JsonHelper.ignoreProperties.has(type);
-                const Clazz = JsonHelper.typeRegistry.get(type)!;
-                const instance = new Clazz();
-                
-                
-                // 反序列化属性
-                for (const key in data) {
-                    if (key !== '_type' && data.hasOwnProperty(key) && (!hasIgnore||!JsonHelper.isIgnoreProperty(type,key))) {
-                        (instance as any)[key] = this.deserialize(data[key], `${path}.${key}`);
-                    }
+            if (JsonHelper.typeRegistry.has(typeNmae)) {
+                hasIgnore = JsonHelper.ignoreProperties.has(typeNmae);
+                type = JsonHelper.typeRegistry.get(typeNmae)!;
+            }
+            const instance = new type();
+            // 反序列化属性
+            for (const key in data) {
+                if (key !== '_type' && data.hasOwnProperty(key) && (!hasIgnore||!JsonHelper.isIgnoreProperty(typeNmae, key))) {
+                    (instance as any)[key] = this.deserialize(data[key], `${path}.${key}`);
                 }
-                
-                // 处理自定义反序列化方法
-                if (typeof (instance as any).fromJSON === 'function') {
-                    return (instance as any).fromJSON(data);
-                }
-                
-                return instance;
             }
             
-            throw new Error(`Unregistered type ${type} at path ${path}`);
+            // 处理自定义反序列化方法
+            if (typeof (instance as any).fromJSON === 'function') {
+                return (instance as any).fromJSON(data);
+            }
+            
+            return instance;
         }
         
         // 处理普通对象

@@ -1,4 +1,4 @@
-import { Camera, director, find, Node, _decorator, view, sys, Vec2, UITransform } from 'cc';
+import { Camera, director, find, Node, _decorator, view, sys, Vec2, screen, ResolutionPolicy } from 'cc';
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { ManagerProvider } from "../../../Mono/Core/Manager/ManagerProvider"
 import { HashSetComponent } from '../../../Mono/Core/Object/HashSetComponent';
@@ -17,7 +17,6 @@ import * as string from "../../../Mono/Helper/StringHelper"
 import { GameObjectPoolManager } from '../Resource/GameObjectPoolManager';
 import { I18NManager } from '../I18N/I18NManager';
 import { II18N } from '../I18N/II18N';
-import { IOnWidthPaddingChange} from './IOnWidthPaddingChange'
 import { AnchorPreset, RectTransform } from '../../../Mono/Module/UI/RectTransfrom';
 
 export enum UILayerNames
@@ -83,15 +82,15 @@ export class UIManager implements IManager {
     private _gameObject: Node;
     private _widthPadding : number
     private uiCamera: Camera;
-    private resolution: Vec2
+    public resolution: Vec2
    
     private layers: Map<UILayerNames, UILayer>;//所有可用的层级
     private windowStack: Map<UILayerNames, LinkedList<string>>;//窗口记录队列
     private windows: Map<string, UIWindow>; //所有存活的窗体  {uiName:window}
     public get screenSizeFlag()
     {
-        let width = view.getVisibleSize().width;
-        let height = view.getVisibleSize().height;
+        let width = screen.windowSize.width;
+        let height = screen.windowSize.height;
         var flagx = Define.DesignScreenWidth / width;
         var flagy = Define.DesignScreenHeight / height;
         return flagx > flagy ? flagx : flagy;
@@ -130,8 +129,20 @@ export class UIManager implements IManager {
         this._gameObject = find(UIRootPath);
         const cTrans = find(uiCameraPath);
         this.uiCamera = cTrans.getComponent<Camera>(Camera);
-        cTrans.setPosition(Define.DesignScreenWidth/2, Define.DesignScreenHeight/2, 1000);
-        this.resolution = new Vec2(Define.DesignScreenWidth, Define.DesignScreenHeight);//分辨率
+
+        let width = screen.windowSize.width;
+        let height = screen.windowSize.height;
+        var flagx = width / Define.DesignScreenWidth;
+        var flagy = height / Define.DesignScreenHeight;
+
+        if(flagx>flagy){//更宽，适配高度
+            this.resolution = new Vec2(width/flagy, Define.DesignScreenHeight);
+        }else{
+            this.resolution = new Vec2(Define.DesignScreenWidth, height/flagx);
+        }
+
+        cTrans.setPosition(this.resolution.x/2, this.resolution.y/2, 1000);
+       
         this.layers = new Map<UILayerNames, UILayer>();
         for (let i = 0; i < configs.length; i++) {
             var layer = configs[i];

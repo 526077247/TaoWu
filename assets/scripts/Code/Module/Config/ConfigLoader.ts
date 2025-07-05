@@ -14,7 +14,7 @@ export class ConfigLoader implements IConfigLoader{
         return await new Promise<void>((resolve) => {
             bundle.loadDir("", (err,assets)=> {
                 if (err) {
-                    console.error(err);
+                    Log.error(err);
                     resolve();
                     BundleManager.instance.releaseBundle(bundle);
                     return null;
@@ -38,7 +38,7 @@ export class ConfigLoader implements IConfigLoader{
         return await new Promise<string>((resolve) => {
             bundle.load(configName, JsonAsset, (err, jsonAsset)=> {
                 if (err) {
-                    console.error(err);
+                    Log.error(err);
                     resolve(null);
                     BundleManager.instance.releaseBundle(bundle);
                     return null;

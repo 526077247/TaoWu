@@ -4,6 +4,7 @@ import * as string from "../../../Mono/Helper/StringHelper"
 import { ConfigLoader } from "./ConfigLoader";
 import { IConfigLoader } from "./IConfigLoader";
 import { register } from "../Generate/Config/ConfigManager.register"
+import { Log } from "../../../Mono/Module/Log/Log";
 export class ConfigManager implements IManager{
 
     private static _instance: ConfigManager;
@@ -32,7 +33,7 @@ export class ConfigManager implements IManager{
         const jObj = await this.configLoader.getOneConfigBytes(name);
 
         const category = JsonHelper.deserialize(type, jObj);
-
+        category.endInit()
         if(cache)
             this.allConfig.set(type, category);
 
@@ -48,10 +49,10 @@ export class ConfigManager implements IManager{
     }
 
     public loadOneInThread<T>(type: new (...args:any[]) => T, configBytes: Map<string, any>){
-        const jObj =  configBytes.get(type.name);
+        const jObj = configBytes.get(type.name);
 
         const category = JsonHelper.deserialize(type, jObj);
-
+        category.endInit()
         this.allConfig.set(type, category);
     }
 }

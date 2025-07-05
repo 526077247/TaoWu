@@ -1,4 +1,4 @@
-﻿import { Canvas, Node, UITransform, Vec3} from "cc";
+﻿import { Canvas, Node, UITransform, Vec3, view} from "cc";
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { Define } from "../../../Mono/Define";
 import { UILayerDefine, UILayerNames, UIManager } from "./UIManager"
@@ -21,12 +21,14 @@ export class UILayer implements IManager<UILayerDefine, Node>{
             this.canvas = this.node.addComponent<Canvas>(Canvas);
         }
         
-        this.node.position = new Vec3(Define.DesignScreenWidth/2,Define.DesignScreenHeight/2, p1.planeDistance)
+        const resolution = UIManager.instance.resolution;
+        this.node.position = new Vec3(resolution.x/2,resolution.y/2, p1.planeDistance)
         this.node.layer = (1 << 25)
         this.canvas.cameraComponent = UIManager.instance.getUICamera();
         this.rectTransform = this.node.getComponent<UITransform>(UITransform);
-        this.rectTransform.width = Define.DesignScreenWidth;
-        this.rectTransform.height = Define.DesignScreenHeight;
+
+        this.rectTransform.width = resolution.x;
+        this.rectTransform.height = resolution.y;
     }
     
     public destroy(){

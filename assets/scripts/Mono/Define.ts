@@ -1,4 +1,4 @@
-﻿import { view, _decorator } from 'cc';
+﻿import { view, _decorator, screen } from 'cc';
 
 export class Define {
 
@@ -6,9 +6,9 @@ export class Define {
     private static readonly dHeight = 1366;
 
     public static readonly DesignScreenWidth =
-        view.getVisibleSize().width > view.getVisibleSize().height ? Math.max(Define.dWidth, Define.dHeight) : Math.min(Define.dWidth, Define.dHeight);
+        screen.windowSize.width > screen.windowSize.height ? Math.max(Define.dWidth, Define.dHeight) : Math.min(Define.dWidth, Define.dHeight);
     public static readonly DesignScreenHeight =
-        view.getVisibleSize().width > view.getVisibleSize().height ? Math.min(Define.dWidth, Define.dHeight) : Math.max(Define.dWidth, Define.dHeight);
+        screen.windowSize.width > screen.windowSize.height ? Math.min(Define.dWidth, Define.dHeight) : Math.max(Define.dWidth, Define.dHeight);
     public static LogLevel = 1;
 
     public static Process = 1;

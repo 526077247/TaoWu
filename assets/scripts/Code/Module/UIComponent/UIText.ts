@@ -15,7 +15,7 @@ export class UIText extends UIBaseContainer implements II18N {
     private text: Label;
     private i18nCompTouched: I18NText;
     private textKey: I18NKey|null = null;
-    private keyParams : any[];
+    private keyParams : any;
 
     private activatingComponent()
     {
@@ -63,6 +63,9 @@ export class UIText extends UIBaseContainer implements II18N {
 
     public setText(text: string)
     {
+        if(text === undefined){
+            Log.error("SetText undefined")
+        }
         this.disableI18Component();
         this.textKey = null;
         this.text.string = text;

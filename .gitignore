@@ -29,3 +29,5 @@ node_modules/
 /Tools/ExcelExport/.vs
 /Bin
 /Excel/Json
+/extensions/taowu-editor/dist
+/extensions/taowu-editor/node_modules

@@ -2,18 +2,18 @@
   "ver": "1.2.0",
   "importer": "directory",
   "imported": true,
-  "uuid": "cbd95039-b8aa-4067-b37e-0efad18bf494",
+  "uuid": "3886a500-c40c-431a-909b-75e4ac995f77",
   "files": [],
   "subMetas": {},
   "userData": {
-    "bundleName": "ui_uicommon",
+    "bundleName": "uigame_uihome",
     "bundleFilterConfig": [
       {
         "range": "include",
         "type": "url",
         "patchOption": {
           "patchType": "glob",
-          "value": "db://assets/assetsPackage/ui/uicommon/prefabs/**/*.prefab"
+          "value": "db://assets/assetsPackage/uigame/uihome/prefabs/**/*.prefab"
         },
         "assets": [
           ""
@@ -24,7 +24,7 @@
         "type": "url",
         "patchOption": {
           "patchType": "glob",
-          "value": "db://assets/assetsPackage/ui/uicommon/discreteImages/**/*"
+          "value": "db://assets/assetsPackage/uigame/uihome/discreteImages/**/*"
         },
         "assets": [
           ""
@@ -35,7 +35,7 @@
         "type": "url",
         "patchOption": {
           "patchType": "glob",
-          "value": "db://assets/assetsPackage/ui/uicommon/**/*.pac"
+          "value": "db://assets/assetsPackage/uigame/uihome/**/*.pac"
         },
         "assets": [
           ""

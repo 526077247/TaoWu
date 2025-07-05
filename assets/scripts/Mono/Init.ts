@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, director, Canvas, find } from 'cc';
+import { _decorator, Component, Node, director, Canvas, find, view, ResolutionPolicy } from 'cc';
 import { ETTask } from '../ThirdParty/ETTask/ETTask';
 import { ManagerProvider } from './Core/Manager/ManagerProvider';
 const { ccclass, property } = _decorator;
@@ -11,11 +11,8 @@ import { TimerManager } from './Module/Timer/TimerManager';
 @ccclass('Init')
 export class Init extends Component {
 
-    start() {
-        this.startAsync();
-    }
-
-    private async startAsync(){
+    start() 
+    {
         Log.logger = new CCCLog();
         Log.info("-------------------------TaoWu------------------------------");
         // 设置全局异常处理器
@@ -23,10 +20,9 @@ export class Init extends Component {
             Log.error("Unhandled task exception:", error);
         };
         TimeInfo.instance.timeZone = TimeInfo.getUtcOffsetHours();
-
+        view.setResolutionPolicy(ResolutionPolicy.SHOW_ALL)
         director.addPersistRootNode(this.node)
         Entry.start();
-        await TimerManager.instance.waitAsync(1);
     }
 
     update(deltaTime: number)

@@ -77,7 +77,7 @@ export class SceneManager implements IManager{
         await scene.onEnter();
         await scene.setProgress(slidValue);
 
-        // CameraManager.instance.setCameraStackAtLoadingStart();
+        CameraManager.instance.setCameraStackAtLoadingStart();
 
         //等待资源管理器加载任务结束
         Log.info("InnerSwitchScene ProcessRunning Done ");
@@ -155,7 +155,7 @@ export class SceneManager implements IManager{
 
         slidValue += prepare;
         await scene.setProgress(slidValue);
-        // CameraManager.instance.SetCameraStackAtLoadingDone();
+        CameraManager.instance.setCameraStackAtLoadingDone();
 
         slidValue = 1;
         await scene.setProgress(slidValue);

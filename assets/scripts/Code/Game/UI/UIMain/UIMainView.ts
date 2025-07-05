@@ -5,6 +5,7 @@ import { LoopListView2 } from "../../../../ThirdParty/SuperScrollView/ListView/L
 import { LoopListViewItem2 } from "../../../../ThirdParty/SuperScrollView/ListView/LoopListViewItem2";
 import { IOnCreate } from "../../../Module/UI/IOnCreate";
 import { IOnEnable } from "../../../Module/UI/IOnEnable";
+import { IOnWidthPaddingChange } from "../../../Module/UI/IOnWidthPaddingChange";
 import { UIBaseView } from "../../../Module/UI/UIBaseView";
 import { UIEmptyView } from "../../../Module/UIComponent/UIEmptyView";
 import { UIImage } from "../../../Module/UIComponent/UIImage";
@@ -16,13 +17,17 @@ import { CellItem } from "./CellItem";
 import { DateItem } from "./DateItem";
 
 
-export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable{
+export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable, IOnWidthPaddingChange{
 
     public static readonly PrefabPath:string = "ui/uimain/prefabs/uiMainView";
 
     protected getConstructor()
     {
         return UIMainView;
+    }
+
+    get isOnWidthPaddingChange(){
+        return true;
     }
 
     public image: UIImage;
@@ -130,7 +135,7 @@ export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable{
 
     public refreshItemSpaceShow()
     {
-        var conf = this.config[this.curId];
+        var conf = this.config.get(this.curId);
         this.text.setText(conf);
         switch (this.curId)
         {
