@@ -1,4 +1,4 @@
-import { CoroutineLock } from "./CoroutineLock";
+import { CoroutineLock } from "./CoroutineLockManager";
 
 export class CoroutineLockTimer{
     public coroutineLock: CoroutineLock;

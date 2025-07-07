@@ -1,7 +1,7 @@
 import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { Queue } from "../../../Mono/Core/Object/Queue";
 import { ObjectPool } from "../../../Mono/Core/ObjectPool";
-import { CoroutineLock } from "./CoroutineLock";
+import { CoroutineLock } from "./CoroutineLockManager";
 
 export class CoroutineLockInfo{
     constructor(tcs: ETTask<CoroutineLock>,time: number)
