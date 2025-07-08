@@ -7,8 +7,10 @@ export class JsonHelper {
      * 注册可序列化的类
      * @param type 要注册的类
      */
-    static registerClass<T>(type: new (...args:any[]) => T, ignoreProps?: string[]): void {
-        const className = type.name;
+    static registerClass<T>(type: new (...args:any[]) => T, className: string, ignoreProps?: string[]): void {
+        if(!className){
+            className = type.name;
+        }
         if (this.typeRegistry.has(className)) {
             return;
         }
@@ -32,7 +34,6 @@ export class JsonHelper {
      * @returns JSON 字符串
      */
     public static toJson<T>(type: new (...args:any[]) => T, obj: any, pretty: boolean = false): string {
-        if(!!type) this.registerClass(type);
         const serialized = this.serialize(obj);
         
         return !!pretty 
@@ -129,7 +130,6 @@ export class JsonHelper {
      * @returns 反序列化后的对象
      */
     public static fromJson<T>(type: new (...args:any[]) => T, json: string) {
-        if(!!type) this.registerClass(type);
         const parsed = JSON.parse(json);
         return this.deserialize(type, parsed);
     }
@@ -152,7 +152,6 @@ export class JsonHelper {
                 this.deserialize(item, `${path}[${i}]`)
             );
         }
-
         // 处理特殊类型
         if ('_type' in data || !!type) {
             const typeNmae = data._type;

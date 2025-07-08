@@ -254,9 +254,9 @@ namespace TaoWu
                 stringBuilder.AppendLine("export function register(configBytes: Map<string, string>){");
                 for (int i = 0; i < configList.Count; i++)
                 {
-                    stringBuilder.AppendLine($"\tJsonHelper.registerClass({configList[i]});");
-                    stringBuilder.AppendLine($"\tJsonHelper.registerClass({configList[i]}Category);");
-                    stringBuilder.AppendLine($"\tConfigManager.instance.loadOneInThread({configList[i]}Category, configBytes);");
+                    stringBuilder.AppendLine($"\tJsonHelper.registerClass({configList[i]},'{configList[i]}');");
+                    stringBuilder.AppendLine($"\tJsonHelper.registerClass({configList[i]}Category,'{configList[i]}Category');");
+                    stringBuilder.AppendLine($"\tConfigManager.instance.loadOneInThread({configList[i]}Category,'{configList[i]}Category', configBytes);");
                 }
                 stringBuilder.AppendLine("}");
 
@@ -477,7 +477,7 @@ namespace TaoWu
         static void ExportExcelJson(ExcelPackage p, string name, Table table, ConfigType configType, string relativeDir)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("{\"list\":[");
+            sb.AppendLine($"{{\"_t\":\"{name}Category\",\"list\":[");
             foreach (ExcelWorksheet worksheet in p.Workbook.Worksheets)
             {
                 if (worksheet.Name.StartsWith("#"))

@@ -7,13 +7,14 @@ import { CCCLog } from './Module/Log/CCCLog';
 import { Log } from './Module/Log/Log';
 import { TimeInfo } from './Module/Timer/TimeInfo';
 import { TimerManager } from './Module/Timer/TimerManager';
+import { ConsoleLog } from './Module/Log/ConsoleLog';
  
 @ccclass('Init')
 export class Init extends Component {
 
     start() 
     {
-        Log.logger = new CCCLog();
+        Log.logger = new ConsoleLog();
         Log.info("-------------------------TaoWu------------------------------");
         // 设置全局异常处理器
         ETTask.ExceptionHandler = (error) => {

@@ -48,9 +48,10 @@ export class ConfigManager implements IManager{
         register(configBytes);
     }
 
-    public loadOneInThread<T>(type: new (...args:any[]) => T, configBytes: Map<string, any>){
-        const jObj = configBytes.get(type.name);
-
+    public loadOneInThread<T>(type: new (...args:any[]) => T, name: string = "", configBytes: Map<string, any>){
+        if (string.isNullOrEmpty(name))
+            name = type.name;
+        const jObj = configBytes.get(name);
         const category = JsonHelper.deserialize(type, jObj);
         category.endInit()
         this.allConfig.set(type, category);
