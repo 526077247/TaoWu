@@ -62,10 +62,10 @@ export class CacheManager implements IManager {
         sys.localStorage.setItem(key, String(value));
     }
     
-    public setValue<T extends object>(type: new (...args:any[]) => T, key: string, value: T)
+    public setValue<T extends object>(key: string, value: T)
     {
         this.cacheObj[key] = value;
-        var jStr = JsonHelper.toJson(type, value);
+        var jStr = JsonHelper.toJson(value);
         sys.localStorage.setItem(key, jStr);
     }
 

@@ -33,7 +33,7 @@ export class JsonHelper {
      * @param pretty 是否格式化输出
      * @returns JSON 字符串
      */
-    public static toJson<T>(type: new (...args:any[]) => T, obj: any, pretty: boolean = false): string {
+    public static toJson(obj: any, pretty: boolean = false): string {
         const serialized = this.serialize(obj);
         
         return !!pretty 
