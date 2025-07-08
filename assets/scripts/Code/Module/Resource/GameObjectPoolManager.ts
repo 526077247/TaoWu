@@ -6,7 +6,6 @@ import { ResourceManager } from './ResourceManager';
 import * as string from "../../../Mono/Helper/StringHelper"
 import { LruCache } from '../../../Mono/Core/Object/LruCache';
 import { Log } from '../../../Mono/Module/Log/Log';
-import { HashSetComponent } from '../../../Mono/Core/Object/HashSetComponent';
 import { TimerManager } from '../../../Mono/Module/Timer/TimerManager';
 import { Define } from '../../../Mono/Define';
 /**
@@ -217,10 +216,10 @@ export class GameObjectPoolManager implements IManager {
      */
     public cleanup(includePooledGo: boolean = true, ...ignorePathArray:string[]){
         Log.info("GameObjectPool Cleanup");
-        let ignorePath:HashSetComponent<string> = null;
+        let ignorePath:Set<string> = null;
         if (ignorePathArray != null)
         {
-            ignorePath = HashSetComponent.create<string>();
+            ignorePath = new Set<string>();
             for (let i = 0; i < ignorePathArray.length; i++)
             {
                 ignorePath.add(ignorePathArray[i]);
@@ -264,7 +263,6 @@ export class GameObjectPoolManager implements IManager {
 
             }
         }
-        ignorePath?.dispose();
         Log.info("GameObjectPool Cleanup Over");
     }
 
@@ -279,16 +277,15 @@ export class GameObjectPoolManager implements IManager {
     public cleanupWithPathArray(releasePathArray: string[], includePooledGo: boolean = true) {
         if (releasePathArray == null || releasePathArray.length == 0) return;
         Log.info("GameObjectPool Cleanup");
-        const dictPath:HashSetComponent<string> = HashSetComponent.create<string>()
+        const dictPath:Set<string> = new Set<string>();
         
         for (let i = 0; i < releasePathArray.length; i++)
         {
             dictPath.add(releasePathArray[i]);
         }
 
-        for (const [key,value] of this.instCache) {
-            
-
+        for (const [key,value] of this.instCache) 
+        {
             if (dictPath.has(key))
             {
                 for (let i = 0; i < value.length; i++)
@@ -330,8 +327,6 @@ export class GameObjectPoolManager implements IManager {
                 }
             }
         }
-        
-        dictPath.dispose();
     }
 
     

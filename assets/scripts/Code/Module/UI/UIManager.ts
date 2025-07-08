@@ -1,7 +1,6 @@
 import { Camera, director, find, Node, _decorator, view, sys, Vec2, screen, ResolutionPolicy } from 'cc';
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { ManagerProvider } from "../../../Mono/Core/Manager/ManagerProvider"
-import { HashSetComponent } from '../../../Mono/Core/Object/HashSetComponent';
 import { LinkedList } from "../../../Mono/Core/Object/LinkedList"
 import { Define } from '../../../Mono/Define';
 import { Log } from "../../../Mono/Module/Log/Log"
@@ -262,7 +261,7 @@ export class UIManager implements IManager {
      */
     public getTopWindow(...ignore: UILayerNames[]): UIWindow
     {
-        const ignores:HashSetComponent<UILayerNames> = HashSetComponent.create<UILayerNames>()
+        const ignores: Set<UILayerNames> = new Set<UILayerNames>()
         for (let i = 0; i < ignore.length; i++)
         {
             ignores.add(ignore[i]);
@@ -280,7 +279,6 @@ export class UIManager implements IManager {
                 }
             }
         }
-        ignores.dispose();
         return res;
     }
 
@@ -350,7 +348,7 @@ export class UIManager implements IManager {
      * @param exceptUINames 
      */
     public async closeWindowByLayer(layer: UILayerNames, ...exceptUINames: string[]) {
-        const dictUINames: HashSetComponent<string>  = HashSetComponent.create<string>()
+        const dictUINames: Set<string> = new Set<string>()
     
         if (exceptUINames != null && exceptUINames.length > 0)
         {
@@ -370,7 +368,6 @@ export class UIManager implements IManager {
         }
 
         await Promise.all(taskScheduler);
-        dictUINames.dispose();
     }
 
     /**
@@ -413,7 +410,7 @@ export class UIManager implements IManager {
      * @param typeNames 
      */
     public async destroyWindowExceptNames(...typeNames: string[]){
-        const dictUINames: HashSetComponent<string> = HashSetComponent.create<string>()
+        const dictUINames: Set<string> = new Set<string>()
         if (typeNames != null)
         {
             for (let i = 0; i < typeNames.length; i++)
@@ -434,8 +431,6 @@ export class UIManager implements IManager {
 
         await Promise.all(taskScheduler);
         
-
-        dictUINames.dispose();
     }
 
     /**
