@@ -57,8 +57,8 @@ export class I18NManager implements IManager {
 
     private async initAsync()
     {
-        JsonHelper.registerClass(I18NConfigCategory)
-        JsonHelper.registerClass(I18NConfig)
+        JsonHelper.registerClass(I18NConfigCategory,'I18NConfigCategory');
+        JsonHelper.registerClass(I18NConfig,'I18NConfig');
         var res = await ConfigManager.instance.loadOneConfig(I18NConfigCategory,LangType[this.curLangType]);
 
         for (let i = 0; i <res.getAllList().length; i++)

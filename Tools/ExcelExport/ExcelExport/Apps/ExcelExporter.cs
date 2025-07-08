@@ -251,7 +251,7 @@ namespace TaoWu
                     stringBuilder.AppendLine($"import {{ {configList[i]}, {configList[i]}Category }} from './{configList[i]}';");
                 }
 
-                stringBuilder.AppendLine("export function register(configBytes: Map<string, string>){");
+                stringBuilder.AppendLine("export function register(configBytes: Map<string, any>){");
                 for (int i = 0; i < configList.Count; i++)
                 {
                     stringBuilder.AppendLine($"\tJsonHelper.registerClass({configList[i]},'{configList[i]}');");
