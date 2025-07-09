@@ -15,7 +15,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
     private spritePath: string;
     private image: Sprite;
     private isSetSprite: boolean;
-    private version: number;
+    private version: number = 0;
     private cacheUrl: string;
 
     public onCreate(path: string)

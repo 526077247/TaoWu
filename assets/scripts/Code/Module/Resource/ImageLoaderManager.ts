@@ -154,7 +154,7 @@ export class ImageLoaderManager implements IManager{
                 return valueC;
             }
         }
-        const asset: SpriteFrame = await ResourceManager.instance.loadAsync<SpriteFrame>(SpriteFrame,assetAddress);
+        const asset: SpriteFrame = await ResourceManager.instance.loadAsync<SpriteFrame>(SpriteFrame,assetAddress+"/spriteFrame");
         if (asset != null)
         {
             let value = cacheCls.get(assetAddress);
