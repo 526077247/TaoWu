@@ -1,7 +1,7 @@
 import { assetManager, ImageAsset, native, sys, Texture2D } from "cc";
-import { Md5 } from 'ts-md5';
 import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { Log } from "../Log/Log";
+import * as string from "../../Helper/StringHelper"
 export class HttpManager
 {
     private static _instance: HttpManager = new HttpManager();
@@ -37,7 +37,7 @@ export class HttpManager
 
     public localFile(url: string, dir: string = "downloadimage", extend: string = ".png") : string
     {
-        const md5URLString: string = Md5.hashStr(url.trim());
+        const md5URLString: string = string.getHashString(url.trim());
         let path = dir;
         if (sys.isNative) {
             `${native.fileUtils.getWritablePath()}/${dir}`;

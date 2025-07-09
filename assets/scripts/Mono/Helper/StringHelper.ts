@@ -16,6 +16,17 @@ export function getHash(str: string): bigint {
     return BigInt(hash);
 }
 
+export function getHashString(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash; // 转换为32位整数
+    }
+    return String(hash);
+}
+
+
 export function isNullOrEmpty(str: string): boolean {
     return !str || str == '';
 }
