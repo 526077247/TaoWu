@@ -57,8 +57,8 @@ class FileHelper {
             }
         }
         if (names == UIFolderNames) {
-            const abPath = Editor.Utils.Path.resolve(selectPath, "atlas.pac");
-            const dbPath = url + "/atlas.pac";
+            const abPath = Editor.Utils.Path.resolve(selectPath, "atlas/atlas.pac");
+            const dbPath = url + "/atlas/atlas.pac";
             const task = ettask_1.ETTask.create(true);
             fs.exists(abPath, (res) => { task.setResult(res); });
             if (!await task) {
@@ -133,7 +133,7 @@ class FileHelper {
                                 "type": "url",
                                 "patchOption": {
                                     "patchType": "glob",
-                                    "value": url + "/**/*.pac"
+                                    "value": url + "/atlas/**/*"
                                 },
                                 "assets": [
                                     ""

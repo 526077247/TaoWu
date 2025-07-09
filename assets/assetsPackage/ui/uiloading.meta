@@ -35,7 +35,7 @@
         "type": "url",
         "patchOption": {
           "patchType": "glob",
-          "value": "db://assets/assetsPackage/ui/uiloading/**/*.pac"
+          "value": "db://assets/assetsPackage/ui/uiloading/atlas/**/*"
         },
         "assets": [
           ""
