@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, UITransform, Vec2, Vec3, Size, view, Enum } from 'cc';
+import { _decorator, Component, Node, UITransform, Vec2, Vec3, Size, view, Enum, Widget } from 'cc';
 const { ccclass, property ,requireComponent, executeInEditMode} = _decorator;
 
 // 锚点预设枚举
@@ -55,6 +55,8 @@ export class RectTransform extends Component {
         if (!this._uiTransform) {
             this._uiTransform = this.node.addComponent(UITransform);
         }
+        const widget = this.getComponent(Widget);
+        widget?.destroy();
         
         // 监听父节点变化
         this.node.on(Node.EventType.PARENT_CHANGED, this.onParentChanged, this);
@@ -150,6 +152,7 @@ export class RectTransform extends Component {
 
         // 更新锚点预设
         this.updateAnchorPreset();
+        this.updateContent();
     }
 
     // 更新锚点预设
@@ -397,5 +400,13 @@ export class RectTransform extends Component {
     // 强制立即更新
     public forceUpdate() {
         this.updateRect();
+    }
+
+    public updateContent(){
+        const widgets = this.getComponentsInChildren(Widget);
+        for (let index = 0; index < widgets.length; index++) {
+            const element = widgets[index];
+            element.updateAlignment();
+        }
     }
 }

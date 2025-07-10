@@ -19,7 +19,7 @@ export class UISlider extends UIBaseContainer implements IOnDestroy {
     private isSetting: boolean = false;
 
     private get sliderValue():number{
-        return this.min + this.slider.progress*(this.max - this.min)
+        return this.min + this.slider.progress * (this.max - this.min)
     }
 
     public onDestroy(){
