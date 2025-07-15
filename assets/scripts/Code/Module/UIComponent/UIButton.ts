@@ -4,6 +4,7 @@ import { IOnDestroy } from "../UI/IOnDestroy";
 import { UIBaseContainer } from "../UI/UIBaseContainer";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ImageLoaderManager } from "../Resource/ImageLoaderManager";
+import { SoundManager } from "../Resource/SoundManager";
 
 export class UIButton extends UIBaseContainer implements IOnDestroy {
 
@@ -68,7 +69,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
     }
 
     private onClickEvent(button: Button){
-        //SoundComponent.Instance.PlaySound("Audio/Common/Click.mp3");
+        SoundManager.instance.playSound("audio/sound/commonclick");
         if(!!this.onClick){
             this.onClick()
         }

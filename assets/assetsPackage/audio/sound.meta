@@ -1,0 +1,25 @@
+{
+  "ver": "1.2.0",
+  "importer": "directory",
+  "imported": true,
+  "uuid": "6040cbf6-15ba-418e-b714-540b8a8020c5",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "isBundle": true,
+    "bundleName": "audio_sound",
+    "bundleFilterConfig": [
+      {
+        "range": "include",
+        "type": "url",
+        "patchOption": {
+          "patchType": "glob",
+          "value": "db://assets/assetsPackage/audio/sound/**/*"
+        },
+        "assets": [
+          ""
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "ver": "1.2.0",
+  "importer": "directory",
+  "imported": true,
+  "uuid": "7996efcd-1950-4eff-9f28-4f627a27dc3d",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "bundleFilterConfig": [
+      {
+        "range": "include",
+        "type": "url",
+        "patchOption": {
+          "patchType": "glob",
+          "value": "db://assets/assetsPackage/audio/**/*"
+        },
+        "assets": [
+          ""
+        ]
+      }
+    ],
+    "bundleName": "audio"
+  }
+}

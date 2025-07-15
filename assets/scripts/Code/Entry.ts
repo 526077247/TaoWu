@@ -15,6 +15,7 @@ import { ConfigManager } from "./Module/Config/ConfigManager"
 import { ImageLoaderManager } from "./Module/Resource/ImageLoaderManager"
 import { CameraManager } from "./Module/Camera/CameraManager"
 import { UIToastManager } from "./Module/UI/Toast/UIToastManager"
+import { SoundManager } from "./Module/Resource/SoundManager"
 
 export class Entry 
 {  
@@ -46,7 +47,7 @@ export class Entry
             
             ManagerProvider.registerManager(CameraManager);
             ManagerProvider.registerManager(SceneManager);
-
+            ManagerProvider.registerManager(SoundManager);
             await SceneManager.instance.switchScene(HomeScene)
         } catch (e) {
             Log.error(e);
