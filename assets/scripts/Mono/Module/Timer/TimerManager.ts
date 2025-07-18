@@ -313,7 +313,7 @@ export class TimerManager implements IManager,IUpdate {
     }
 
     public addChild(timerClass: TimerClass, time: number, type: number, func: () => void, target: any): TimerAction {
-        let timer = TimerAction.create(timerClass, time, type, func, target);
+        let timer = TimerAction.create(timerClass, type, time, func, target);
         this.childs.set(timer.id, timer);
         return timer;
     }

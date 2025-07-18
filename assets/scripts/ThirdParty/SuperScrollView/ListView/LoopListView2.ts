@@ -592,22 +592,22 @@ export class LoopListView2 extends Component {
         switch (this.arrangeType) {
             case ListItemArrangeType.TopToBottom:
                 const topPosY = Math.max(containerPos.y, 0);
-                pos = new Vec3(0, -topPosY - offset, 0);
+                pos.set(0, -topPosY - offset, 0);
                 break;
                 
             case ListItemArrangeType.BottomToTop:
                 const bottomPosY = Math.min(containerPos.y, 0);
-                pos = new Vec3(0, -bottomPosY + offset, 0);
+                pos.set(0, -bottomPosY + offset, 0);
                 break;
                 
             case ListItemArrangeType.LeftToRight:
                 const leftPosX = Math.min(containerPos.x, 0);
-                pos = new Vec3(-leftPosX + offset, 0, 0);
+                pos.set(-leftPosX + offset, 0, 0);
                 break;
                 
             case ListItemArrangeType.RightToLeft:
                 const rightPosX = Math.max(containerPos.x, 0);
-                pos = new Vec3(-rightPosX - offset, 0, 0);
+                pos.set(-rightPosX - offset, 0, 0);
                 break;
         }
         

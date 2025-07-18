@@ -317,37 +317,33 @@ export class SoundManager implements IManager {
                 item.dispose();
             }
         });
-        
-        // 保留背景音乐
-        const newMap = new Map<bigint, SoundItem>();
+        this.soundItems.clear();
         if (this.curMusic) {
-            newMap.set(this.curMusic.id, this.curMusic);
+            this.soundItems.set(this.curMusic.id, this.curMusic);
         }
-        this.soundItems = newMap;
     }
-    // endregion
 
-    // region Private Methods
     private async loadAndPlay(item: SoundItem): Promise<void> {
-        try {
-            await item.loadClip();
-            
-            if (item.token?.isCancellationRequested || !item.audioSource || !item.clip) {
-                item.dispose();
-                return;
-            }
-            
-            item.audioSource.play();
-            
-            if (!item.audioSource.loop) {
-                const duration = item.clip.getDuration() * 1000;
-                await TimerManager.instance.waitAsync(duration + 100, item.token);
-                if (!item.token?.isCancellationRequested) {
-                    this.stopSound(item.id);
-                }
-            }
-        } catch (e) {
-            console.error(`Sound play failed: ${e}`);
+        var id = item.id;
+        await item.loadClip();
+        if (item.clip == null)
+        {
+            return;
+        }
+        if (item.token?.isCancellationRequested) 
+        {
+            item.dispose();
+            return;
+        }
+        
+        item.audioSource.play();
+        if (!item.audioSource.loop) return;
+        
+        const duration = item.clip.getDuration() * 1000;
+        await TimerManager.instance.waitAsync(duration + 100, item.token);
+        if (item.id == id)
+        {
+            //回来可能被其他提前终止了
             item.dispose();
         }
     }
