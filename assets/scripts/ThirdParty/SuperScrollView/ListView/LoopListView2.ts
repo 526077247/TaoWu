@@ -586,7 +586,7 @@ export class LoopListView2 extends Component {
             offset = viewPortSize;
         }
         
-        let pos: Vec3 = Vec3.ZERO;
+        let pos: Vec3 = new Vec3();
         const containerPos = this.mContainerTrans.node.getPosition();
         
         switch (this.arrangeType) {

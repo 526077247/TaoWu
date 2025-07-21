@@ -4,7 +4,7 @@ import * as string from "../../Helper/StringHelper"
 export class ConsoleLog implements ILog {
     trace(message: string): void;
     trace(message: string, ...args: any[]): void {
-        console.trace(string.format(message, args));
+        console.log(string.format(message, args));
     }
 
     warning(message: string): void;
