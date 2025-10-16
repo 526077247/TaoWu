@@ -438,7 +438,7 @@
     "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
-    "_cacheMode": 0,
+    "_cacheMode": 1,
     "_enableOutline": false,
     "_outlineColor": {
       "__type__": "cc.Color",
@@ -868,6 +868,7 @@
       "__id__": 0
     },
     "fileId": "c46/YsCPVOJYA4mWEpNYRx",
-    "instance": null
+    "instance": null,
+    "targetOverrides": null
   }
 ]
