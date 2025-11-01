@@ -1,4 +1,4 @@
-﻿import { view, _decorator, screen } from 'cc';
+﻿import { _decorator, screen } from 'cc';
 
 export class Define {
 

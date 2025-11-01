@@ -1,4 +1,4 @@
-import { Camera, director, find, Node, _decorator, view, sys, Vec2, screen, ResolutionPolicy } from 'cc';
+import { Camera, director, find, Node, _decorator, view, sys, Vec2, screen, ResolutionPolicy, Vec3 } from 'cc';
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { ManagerProvider } from "../../../Mono/Core/Manager/ManagerProvider"
 import { LinkedList } from "../../../Mono/Core/Object/LinkedList"
@@ -97,7 +97,7 @@ export class UIManager implements IManager {
 
     public init() {
         var safeArea = sys.getSafeAreaRect();
-        this._widthPadding = safeArea.x;
+        this._widthPadding = safeArea.xMin;
         UIManager._instance = this;
         this.windows = new Map<string, UIWindow>();
         this.windowStack = new Map<UILayerNames, LinkedList<string>>();
@@ -712,7 +712,7 @@ export class UIManager implements IManager {
         const top = safeArea.yMin;
         const bottom = (safeArea.height - safeArea.yMax);
         rectTrans.anchorPreset = AnchorPreset.StretchAll;
-        rectTrans.offsetMin = new Vec2(padding * (1 - rectTrans.anchorMin.x), bottom * rectTrans.anchorMax.y);
+        rectTrans.offsetMin = new Vec2(-padding * (1 - rectTrans.anchorMin.x), bottom * rectTrans.anchorMax.y);
         rectTrans.offsetMax = new Vec2(-padding * rectTrans.anchorMax.x, -top * (1 - rectTrans.anchorMin.y));
     }
 

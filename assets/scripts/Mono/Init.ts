@@ -1,12 +1,10 @@
-import { DynamicAtlasManager, _decorator, Component, Node, director, Canvas, find, view, ResolutionPolicy,macro } from 'cc';
+import { DynamicAtlasManager, _decorator, Component, director, view, ResolutionPolicy,macro } from 'cc';
 import { ETTask } from '../ThirdParty/ETTask/ETTask';
 import { ManagerProvider } from './Core/Manager/ManagerProvider';
 const { ccclass, property } = _decorator;
 import { Entry } from '../Code/Entry';
-import { CCCLog } from './Module/Log/CCCLog';
 import { Log } from './Module/Log/Log';
 import { TimeInfo } from './Module/Timer/TimeInfo';
-import { TimerManager } from './Module/Timer/TimerManager';
 import { ConsoleLog } from './Module/Log/ConsoleLog';
 
 macro.CLEANUP_IMAGE_CACHE = false;
