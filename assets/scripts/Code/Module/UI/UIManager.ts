@@ -791,13 +791,8 @@ export class UIManager implements IManager {
         const padding = this._widthPadding;
         const safeArea = SystemInfoHelper.safeArea;
         const height = SystemInfoHelper.screenHeight;
-        const width = SystemInfoHelper.screenWidth;
         const top = safeArea.yMin * this.screenSizeFlag;
         const bottom = (height - safeArea.yMax) * this.screenSizeFlag;
-        Log.info(top)
-        Log.info(bottom)
-        Log.info(safeArea);
-        Log.info(safeArea.height);
         rectTrans.anchorPreset = AnchorPreset.StretchAll;
         rectTrans.offsetMin = new Vec2(padding * (1 - rectTrans.anchorMin.x), bottom * rectTrans.anchorMax.y);
         rectTrans.offsetMax = new Vec2(padding * rectTrans.anchorMax.x, top * (1 - rectTrans.anchorMin.y));
