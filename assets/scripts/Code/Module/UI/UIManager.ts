@@ -17,6 +17,7 @@ import { GameObjectPoolManager } from '../Resource/GameObjectPoolManager';
 import { I18NManager } from '../I18N/I18NManager';
 import { II18N } from '../I18N/II18N';
 import { AnchorPreset, RectTransform } from '../../../Mono/Module/UI/RectTransfrom';
+import { SystemInfoHelper } from '../../../Mono/Helper/SystemInfoHelper';
 
 export enum UILayerNames
 {
@@ -90,15 +91,15 @@ export class UIManager implements IManager {
     private boxes: Map<UIBaseView, UIWindow> ; //所有存活的消息盒子  {instance:window}
     public get screenSizeFlag()
     {
-        let width = screen.windowSize.width;
-        let height = screen.windowSize.height;
+        let width = SystemInfoHelper.screenWidth;
+        let height = SystemInfoHelper.screenHeight;
         var flagx = Define.DesignScreenWidth / width;
         var flagy = Define.DesignScreenHeight / height;
         return flagx > flagy ? flagx : flagy;
     }
 
     public init() {
-        var safeArea = sys.getSafeAreaRect();
+        var safeArea = SystemInfoHelper.safeArea;
         this._widthPadding = safeArea.xMin;
         UIManager._instance = this;
         this.windows = new Map<string, UIWindow>();
@@ -132,8 +133,8 @@ export class UIManager implements IManager {
         const cTrans = find(uiCameraPath);
         this.uiCamera = cTrans.getComponent<Camera>(Camera);
 
-        let width = screen.windowSize.width;
-        let height = screen.windowSize.height;
+        let width = SystemInfoHelper.screenWidth;
+        let height = SystemInfoHelper.screenHeight;
         var flagx = width / Define.DesignScreenWidth;
         var flagy = height / Define.DesignScreenHeight;
 
@@ -788,12 +789,18 @@ export class UIManager implements IManager {
     {
         const rectTrans: RectTransform = target.getRectTransform();
         const padding = this._widthPadding;
-        const safeArea = sys.getSafeAreaRect();
-        const top = safeArea.yMin;
-        const bottom = (safeArea.height - safeArea.yMax);
+        const safeArea = SystemInfoHelper.safeArea;
+        const height = SystemInfoHelper.screenHeight;
+        const width = SystemInfoHelper.screenWidth;
+        const top = safeArea.yMin * this.screenSizeFlag;
+        const bottom = (height - safeArea.yMax) * this.screenSizeFlag;
+        Log.info(top)
+        Log.info(bottom)
+        Log.info(safeArea);
+        Log.info(safeArea.height);
         rectTrans.anchorPreset = AnchorPreset.StretchAll;
-        rectTrans.offsetMin = new Vec2(-padding * (1 - rectTrans.anchorMin.x), bottom * rectTrans.anchorMax.y);
-        rectTrans.offsetMax = new Vec2(-padding * rectTrans.anchorMax.x, -top * (1 - rectTrans.anchorMin.y));
+        rectTrans.offsetMin = new Vec2(padding * (1 - rectTrans.anchorMin.x), bottom * rectTrans.anchorMax.y);
+        rectTrans.offsetMax = new Vec2(padding * rectTrans.anchorMax.x, top * (1 - rectTrans.anchorMin.y));
     }
 
     private getUIName<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView){
