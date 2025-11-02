@@ -11,7 +11,8 @@ export abstract class UIBaseView extends UIBaseContainer {
      */
     public async closeSelf(): Promise<void>
     {
-        await UIManager.instance.closeWindow(this);
+        var close = await UIManager.instance.closeBox(this);
+        if(!close) await UIManager.instance.closeWindow(this);
     }
 
     public onInputKeyBack(): Promise<void>

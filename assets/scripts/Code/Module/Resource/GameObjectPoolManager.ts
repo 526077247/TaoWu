@@ -157,10 +157,10 @@ export class GameObjectPoolManager implements IManager {
     /**
      * 回收
      * @param inst 
-     * @param isClear 是否立即销毁
+     * @param clearLimit 现有缓存达到多少开始销毁，-1表示不销毁
      * @returns 
      */
-    public recycleGameObject(inst: Node, isClear: boolean = false){
+    public recycleGameObject(inst: Node, clearLimit: number = -1){
         if (!this.instPathCache.has(inst))
         {
             Log.error("RecycleGameObject inst not found from instPathCache");
@@ -168,7 +168,13 @@ export class GameObjectPoolManager implements IManager {
             return;
         }
         var path = this.instPathCache.get(inst);
-        if (!isClear)
+        var count = 0;
+        var list = this.instCache.get(path);
+        if (list != null)
+        {
+            count = list.length;
+        }
+        if (clearLimit < 0 || clearLimit > count)
         {
             this.checkRecycleInstIsDirty(path, inst, null);
             inst.setParent(this.cacheTransRoot, false);
@@ -179,7 +185,7 @@ export class GameObjectPoolManager implements IManager {
                 list = []
                 this.instCache.set(path,list);
             }
-            list[list.length-1] = inst
+            list.push(inst)
         }
         else
         {

@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Renderer, CCFloat} from 'cc';
+import { _decorator, Component, Node, Renderer, UIRenderer, CCFloat, math} from 'cc';
 const { ccclass, property, executeInEditMode } = _decorator;
 
 @ccclass('CanvasGroup')
@@ -24,16 +24,18 @@ export class CanvasGroup extends Component {
     }
 
     private applyAlpha() {
+        const uirenderer = this.getComponent(UIRenderer);
+        if (uirenderer) {
+            uirenderer.color = new math.Color(uirenderer.color.r,uirenderer.color.g,uirenderer.color.b,this._alpha*255);
+        }
         this.applyAlphaToChildren(this.node);
     }
 
     private applyAlphaToChildren(node: Node) {
         node.children.forEach(child => {
-            const renderer = child.getComponent(Renderer);
-            if (renderer && renderer.material) {
-                const material = renderer.material;
-                material.setProperty('alpha', this.alpha);
-                renderer.material = material;
+            const uirenderer = child.getComponent(UIRenderer);
+            if (uirenderer) {
+                uirenderer.color = new math.Color(uirenderer.color.r,uirenderer.color.g,uirenderer.color.b,this._alpha*255);
             }
             this.applyAlphaToChildren(child);
         });

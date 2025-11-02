@@ -86,6 +86,8 @@ export class UIManager implements IManager {
     private layers: Map<UILayerNames, UILayer>;//所有可用的层级
     private windowStack: Map<UILayerNames, LinkedList<string>>;//窗口记录队列
     private windows: Map<string, UIWindow>; //所有存活的窗体  {uiName:window}
+
+    private boxes: Map<UIBaseView, UIWindow> ; //所有存活的消息盒子  {instance:window}
     public get screenSizeFlag()
     {
         let width = screen.windowSize.width;
@@ -101,6 +103,7 @@ export class UIManager implements IManager {
         UIManager._instance = this;
         this.windows = new Map<string, UIWindow>();
         this.windowStack = new Map<UILayerNames, LinkedList<string>>();
+        this.boxes = new Map<UIBaseView, UIWindow>();
         this.initLayer();
         // Messager.Instance.AddListener<int, int>(0, MessageId.OnKeyInput, OnKeyInput);
     }
@@ -325,6 +328,37 @@ export class UIManager implements IManager {
         return await this.innerOpenWindow<T, P1, P2, P3, P4>(target, p1, p2, p3, p4);
     }
 
+    
+    /**
+     * 打开消息盒子
+     * 和OpenWindow区别:
+     * 1.Window是单例，MsgBox支持多例
+     * 2.MsgBox关闭后会立即销毁
+     * @param type 要打开的窗口
+     * @param path 
+     * @param p1 
+     * @param p2 
+     * @param p3 
+     * @param p4 
+     * @param layerName UI层级
+     * @param during 持续时间 小于0表示无限
+     * @returns 
+     */
+    public async openBox<T extends UIBaseView & IOnCreate, P1 = void, P2 = void, P3 = void, P4 = void>
+        (type: (new () => T), path:string, p1?:P1, p2?:P2, p3?:P3, p4?:P4, layerName:UILayerNames = UILayerNames.TipLayer, during:number = -1) {
+        var target = this.initWindow(type, path, layerName);
+        target.isBox = true;
+        target.layer = layerName;
+        var timeNow = TimerManager.instance.getTimeNow(); 
+        var res = await this.innerOpenWindow<T,P1,P2,P3,P4>(target, p1, p2, p3, p4);
+        this.boxes.set(res,target);
+        if (during > 0)
+        {
+            await this.closeBoxTillTime(res, timeNow + during);
+        }
+        return res;
+    }
+
     /**
      * 关闭窗体
      * @param uiName 
@@ -340,6 +374,52 @@ export class UIManager implements IManager {
 
         this.removeFromStack(target);
         this.innerCloseWindow(target);
+    }
+
+
+    /**
+     * 关闭消息盒子
+     * @param view 
+     * @param clear 
+     * @returns 
+     */
+    public async closeBox(view: UIBaseView, clear:number = 1){
+        var target = this.boxes.get(view);
+        if(target == null){
+            return false;
+        }
+        while (target.loadingState != UIWindowLoadingState.LoadOver)
+        {
+            await TimerManager.instance.waitAsync(1);
+        }
+
+        this.innerCloseWindow(target);
+        this.innerDestroyWindow(target, clear);
+        this.boxes.delete(view);
+        target.dispose();
+        return true;
+    }
+
+    /**
+     * 关闭消息盒子
+     * @param view 
+     * @param time 
+     * @returns 
+     */
+    public async closeBoxTillTime(view: UIBaseView, time:number){
+        var target = this.boxes.get(view);
+        if(target == null){
+            return;
+        }
+        while (target.loadingState != UIWindowLoadingState.LoadOver)
+        {
+            await TimerManager.instance.waitAsync(1);
+        }
+        await TimerManager.instance.waitTillAsync(time);
+        this.innerCloseWindow(target);
+        this.innerDestroyWindow(target);
+        this.boxes.delete(view);
+        target.dispose();
     }
 
     /**
@@ -373,9 +453,9 @@ export class UIManager implements IManager {
     /**
      * 销毁窗体
      * @param ui 
-     * @param clear 
+     * @param clear 现有缓存达到多少开始销毁，-1表示无限
      */
-    public async destroyWindow<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView , clear:boolean = false){
+    public async destroyWindow<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView , clear:number = -1){
         const uiName = this.getUIName(ui);
         let target = this.getWindow(uiName);
         if (target != null)
@@ -609,7 +689,7 @@ export class UIManager implements IManager {
             view.setActive(false);
     }
 
-    private innerDestroyWindow(target: UIWindow,  clear: boolean = false)
+    private innerDestroyWindow(target: UIWindow,  clear: number = -1)
     {
         var view = target.view;
         if (view != null)

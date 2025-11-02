@@ -11,10 +11,10 @@ import { CameraManager } from "../Camera/CameraManager";
 import { GameObjectPoolManager } from "../Resource/GameObjectPoolManager";
 import { ImageLoaderManager } from "../Resource/ImageLoaderManager";
 import { ResourceManager } from "../Resource/ResourceManager";
-import { UIToastManager } from "../UI/Toast/UIToastManager";
 import { UIManager } from "../UI/UIManager";
 import { IScene } from "./IScene";
 import { LoadingScene } from "./LoadingScene";
+import { UIToast } from "../../Game/UI/UICommon/UIToast";
 
 export class SceneManager implements IManager{
     private static _instance: SceneManager;
@@ -106,7 +106,7 @@ export class SceneManager implements IManager{
             const ignorePathArray = []
             
             if (ignoreClean != null) ignorePathArray.concat(ignoreClean);
-            ignorePathArray[ignorePathArray.length] = UIToastManager.PrefabPath;
+            ignorePathArray[ignorePathArray.length] = UIToast.PrefabPath;
             GameObjectPoolManager.instance.cleanup(true, ...ignorePathArray);
             slidValue += 0.01;
             await scene.setProgress(slidValue);

@@ -296,7 +296,7 @@ export class ImageLoaderManager implements IManager{
             {
                 if (val.refCount == 0)
                 {
-                    temp[temp.length-1] = key;
+                    temp.push(key);
                 }
             }
             for (let index = 0; index < temp.length; index++) {
