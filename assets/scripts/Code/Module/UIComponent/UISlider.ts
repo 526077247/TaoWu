@@ -63,9 +63,7 @@ export class UISlider extends UIBaseContainer implements IOnDestroy {
             this.setValue(val)
             this.isSetting= false;
         }
-        if(this.onValueChanged){
-            this.onValueChanged(this.sliderValue)
-        }
+        this.onValueChanged?.(this.sliderValue)
     }
 
     public setWholeNumbers(wholeNumbers: boolean)

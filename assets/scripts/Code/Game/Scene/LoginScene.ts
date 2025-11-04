@@ -1,9 +1,10 @@
+import { PlayerManager } from "../../Module/Player/PlayerManager";
 import { IScene } from "../../Module/Scene/IScene";
-import { UIManager } from "../../Module/UI/UIManager";
+import { UILayerNames, UIManager } from "../../Module/UI/UIManager";
 import { UILoadingView } from "../UI/UILoading/UILoadingView";
 import { UIMainView } from "../UI/UIMain/UIMainView";
 
-export class HomeScene implements IScene
+export class LoginScene implements IScene
 {
     private win: UILoadingView;
     private dontDestroyWindow: string[] = [UILoadingView.name];
@@ -46,7 +47,11 @@ export class HomeScene implements IScene
      * 加载前的初始化
      */
     public async onEnter(): Promise<void>{
-        this.win = await UIManager.instance.openWindow<UILoadingView>(UILoadingView,UILoadingView.PrefabPath);
+        this.win = UIManager.instance.getView<UILoadingView>(UILoadingView, 1);
+        if (this.win == null)
+        {
+            this.win = await UIManager.instance.openWindow<UILoadingView>(UILoadingView,UILoadingView.PrefabPath,null,null,null,null,UILayerNames.TipLayer);
+        }
         this.win.setProgress(0);
     }
 
@@ -55,7 +60,7 @@ export class HomeScene implements IScene
      * @param value 
      */
     public async setProgress(value: number): Promise<void>{
-        this.win.setProgress(value);
+        this.win?.setProgress(value);
     }
     /**
      * 场景加载结束：后续资源准备（预加载等）
@@ -80,6 +85,7 @@ export class HomeScene implements IScene
      * 转场景结束
      */
     public async onSwitchSceneEnd(): Promise<void>{
+        await PlayerManager.instance.login(false);
         await UIManager.instance.openWindow(UIMainView,UIMainView.PrefabPath);
         await UIManager.instance.destroyWindow<UILoadingView>(UILoadingView);
         this.win = null;

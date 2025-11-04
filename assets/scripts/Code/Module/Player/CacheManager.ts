@@ -23,12 +23,14 @@ export class CacheManager implements IManager {
 
     public getString(key: string, defaultValue: string = null): string
     {
-        return sys.localStorage.getItem(key, defaultValue);
+        var res = localStorage.getItem(key);
+        if(!res) res = defaultValue
+        return res
     }
     
     public getInt(key: string, defaultValue: number = 0): number
     {
-        const str = sys.localStorage.getItem(key);
+        const str = localStorage.getItem(key);
         if(!!str){
             const val = Number.parseInt(str);
             if(!!val && !Number.isNaN(val)){
@@ -45,7 +47,7 @@ export class CacheManager implements IManager {
         {
             return data as T;
         }
-        var jStr = sys.localStorage.getItem(key, null);
+        var jStr = localStorage.getItem(key);
         if (jStr == null) return null;
         var res = JsonHelper.fromJson<T>(type,jStr);
         this.cacheObj[key] = res;
@@ -54,19 +56,19 @@ export class CacheManager implements IManager {
     
     public setString(key: string, value: string)
     {
-        sys.localStorage.setItem(key, value);
+        localStorage.setItem(key, value);
     }
     
     public setInt(key: string, value: number)
     {
-        sys.localStorage.setItem(key, String(value));
+        localStorage.setItem(key, String(value));
     }
     
     public setValue<T extends object>(key: string, value: T)
     {
         this.cacheObj[key] = value;
         var jStr = JsonHelper.toJson(value);
-        sys.localStorage.setItem(key, jStr);
+        localStorage.setItem(key, jStr);
     }
 
     public deleteKey(key: string)
@@ -75,6 +77,6 @@ export class CacheManager implements IManager {
         {
             this.cacheObj.delete(key);
         }
-        sys.localStorage.removeItem(key);
+        localStorage.removeItem(key);
     }
 }
