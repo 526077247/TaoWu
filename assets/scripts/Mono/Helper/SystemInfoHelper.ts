@@ -22,7 +22,7 @@ export class SystemInfoHelper {
 
     public static get safeArea(){
         var screenSafeArea = sys.getSafeAreaRect();
-        return new Rect(Define.DesignScreenWidth >  Define.DesignScreenHeight?-screenSafeArea.xMin:0,
+        return new Rect(Define.DesignScreenWidth >  Define.DesignScreenHeight?(SystemInfoHelper.screenWidth - Define.DesignScreenWidth)/2 + screenSafeArea.xMin:0,
             (SystemInfoHelper.screenHeight - Define.DesignScreenHeight)/2 + screenSafeArea.yMin, screenSafeArea.width, screenSafeArea.height);
     }
 }

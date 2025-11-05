@@ -14,23 +14,25 @@ export class HttpManager
         return HttpManager._instance;
     }
 
-    private convertParamToStr(param: Map<string, string> ): string
+    private convertParamToStr(param: Record<string, string> ): string
     {
         if (param == null) return "";
         let builder: StringBuilder = new StringBuilder();
         let flag = 0;
-        for (const item of param) {
-            if (flag == 0)
-            {
-                builder.append(item[0] + "=" + item[1]);
-                flag = 1;
-            }
-            else
-            {
-                builder.append("&" + item[0] + "=" + item[1]);
+        for (const key in param) {
+            if (Object.prototype.hasOwnProperty.call(param, key)) {
+                const element = param[key];
+                if (flag == 0)
+                {
+                    builder.append(key + "=" + element);
+                    flag = 1;
+                }
+                else
+                {
+                    builder.append("&" + key + "=" + element);
+                }
             }
         }
-
         return builder.toString();
     }
 
@@ -73,7 +75,7 @@ export class HttpManager
         return savePath;
     }
 
-    public async httpGetResult<T>(type: new (...args:any[]) => T, url: string, headers: HeadersInit, param: Map<string,string>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
+    public async httpGetResult<T>(type: new (...args:any[]) => T, url: string, headers: HeadersInit, param: Record<string,string>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
         let strParam = this.convertParamToStr(param);
         if (!string.isNullOrEmpty(strParam))
             url += "?" + strParam;
@@ -113,7 +115,7 @@ export class HttpManager
         }
     }
 
-    public async httpPostResult<T>(type: new (...args:any[]) => T, url: string, headers: HeadersInit, param: Map<string,any>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
+    public async httpPostResult<T>(type: new (...args:any[]) => T, url: string, headers: HeadersInit, param: Record<string,any>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
         let response: Response;

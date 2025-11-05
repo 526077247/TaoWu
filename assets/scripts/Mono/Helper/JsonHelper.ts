@@ -1,3 +1,5 @@
+
+import * as string from "./StringHelper"
 export class JsonHelper {
     // 类型注册表，存储类名与构造函数的映射
     private static typeRegistry = new Map<string, new () => any>();
@@ -130,6 +132,7 @@ export class JsonHelper {
      * @returns 反序列化后的对象
      */
     public static fromJson<T>(type: new (...args:any[]) => T, json: string) {
+        if(string.isNullOrEmpty(json)) return null
         const parsed = JSON.parse(json);
         return this.deserialize(type, parsed);
     }
