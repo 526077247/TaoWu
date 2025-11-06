@@ -20,8 +20,14 @@
     "contributions": {
         "assets": {
             "menu": {
-                "methods": "./dist/common-editor.js",
+                "methods": "./dist/assets-editor.js",
                 "assetMenu": "onAssetMenu"
+            }
+        },
+        "hierarchy":{
+            "menu": {
+                "methods": "./dist/hierarchy-editor.js",
+                "nodeMenu": "onNodeMenu"
             }
         },
         "menu": [
