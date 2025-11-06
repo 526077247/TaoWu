@@ -11,7 +11,10 @@ export const methods: { [key: string]: (...any: any) => any } = {
     },
 
     changeInitScene() {
-        Editor.Message.request("scene", "open-scene", "9ea28805-dc27-4325-b00b-521f029a25db");//init scene
+        const selected = Editor.Selection.getSelected("node")
+        if(selected == null || selected.length <= 0){
+            Editor.Message.request("scene", "open-scene", "9ea28805-dc27-4325-b00b-521f029a25db");//init scene
+        }
     }
 };
 
