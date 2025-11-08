@@ -1,4 +1,3 @@
-import { PlayerManager } from "../../Module/Player/PlayerManager";
 import { IScene } from "../../Module/Scene/IScene";
 import { UILayerNames, UIManager } from "../../Module/UI/UIManager";
 import { UILoadingView } from "../UI/UILoading/UILoadingView";
@@ -85,7 +84,6 @@ export class LoginScene implements IScene
      * 转场景结束
      */
     public async onSwitchSceneEnd(): Promise<void>{
-        await PlayerManager.instance.login(false);
         await UIManager.instance.openWindow(UIMainView,UIMainView.PrefabPath);
         await UIManager.instance.destroyWindow<UILoadingView>(UILoadingView);
         this.win = null;

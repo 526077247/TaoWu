@@ -8,7 +8,7 @@ import { BundleManager } from "../Mono/Module/Resource/BundleManager"
 import { GameObjectPoolManager } from "./Module/Resource/GameObjectPoolManager"
 import { CoroutineLockManager } from "./Module/CoroutineLock/CoroutineLockManager"
 import { SceneManager } from "./Module/Scene/SceneManager"
-import { HomeScene } from "./Game/Scene/LoginScene"
+import { LoginScene } from "./Game/Scene/LoginScene"
 import { I18NManager } from "./Module/I18N/I18NManager"
 import { CacheManager } from "./Module/Player/CacheManager"
 import { ConfigManager } from "./Module/Config/ConfigManager"
@@ -46,7 +46,7 @@ export class Entry
             ManagerProvider.registerManager(CameraManager);
             ManagerProvider.registerManager(SceneManager);
             ManagerProvider.registerManager(SoundManager);
-            await SceneManager.instance.switchScene(HomeScene)
+            await SceneManager.instance.switchScene(LoginScene)
         } catch (e) {
             Log.error(e);
         }
