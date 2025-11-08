@@ -4,7 +4,7 @@ import { ETTask } from "./ettask";
 
 
 export class FileHelper{
-    private static readonly uiPath = ["ui", "uihall", "uigame"]
+    public static readonly uiPath = ["ui", "uihall", "uigame"]
     /**
      * 创建子文件夹
      * @param selectPath
@@ -52,6 +52,29 @@ export class FileHelper{
         }
     }
 
+    /**
+     * 创建文件夹
+     * @param dir 
+     */
+    public static async createDir(dir: string) {
+        dir = Editor.Utils.Path.slash(dir);
+        const editorPath =  Editor.Utils.Path.slash(Editor.Project.path)
+        if(dir == editorPath) return
+        let url = "db://";
+        if(Editor.Utils.Path.isAbsolute(dir)){
+            url = url + dir.replace(editorPath + '/','');
+        }else{
+            url = url + dir;
+        }
+        const info = await Editor.Message.request('asset-db', 'query-asset-info', url);
+        if(info != null) return;
+        const index = dir.lastIndexOf('/');
+        if(index > 0){
+            const pDir = dir.substring(0, index);
+            await FileHelper.createDir(pDir);
+        }
+        return await Editor.Message.request("asset-db", "create-asset", url, null);
+    }
 
     /**
      * 一键设置UI文件夹AB包

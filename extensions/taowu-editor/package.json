@@ -27,7 +27,8 @@
         "hierarchy":{
             "menu": {
                 "methods": "./dist/hierarchy-editor.js",
-                "nodeMenu": "onNodeMenu"
+                "nodeMenu": "onNodeMenu",
+                "panelMenu": "onPanelMenu"
             }
         },
         "menu": [

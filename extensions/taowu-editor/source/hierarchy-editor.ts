@@ -1,4 +1,4 @@
-import { AssetInfo } from "@cocos/creator-types/editor/packages/asset-db/@types/public";
+import { CodeGenerate } from "./code-generate";
 
 export function onNodeMenu(nodeInfo:any) {
    const menu = [];
@@ -8,18 +8,33 @@ export function onNodeMenu(nodeInfo:any) {
             label: "复制相对路径",
             async click() {
                 var node = await Editor.Message.request('scene', 'query-node', nodeInfo.uuid);
-                var parentNode = await Editor.Message.request('scene', 'query-node', nodeInfo.parent);
-                let path = node.name.value;
-                while(parentNode.parent?.value != null){
-                    node = parentNode;
-                    parentNode = await Editor.Message.request('scene', 'query-node', parentNode.parent.value.uuid);
-                    if(parentNode == null || parentNode.name.value == "should_hide_in_hierarchy") break;
-                    path = node.name.value + "/" + path;
-                }
+                const path = await CodeGenerate.getPath(node);
                 console.log(path)
                 Editor.Clipboard.write('text', path);
             }
-        })
+        });
+        menu.push(
+        {
+            label: "根据选择节点生成UI代码",
+            async click() {
+                var list = Editor.Selection.getSelected("node");
+                CodeGenerate.generateUICode(list);
+            }
+        });
+        return menu;
     };
-    return menu;
+    
 };
+
+export function onPanelMenu(){
+    const menu = [];
+    menu.push(
+    {
+        label: "根据选择节点生成UI代码",
+        async click() {
+            var list = Editor.Selection.getSelected("node");
+            CodeGenerate.generateUICode(list);
+        }
+    });
+    return menu;
+}
