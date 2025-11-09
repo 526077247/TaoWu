@@ -75,33 +75,36 @@ export class HttpManager
         return savePath;
     }
 
-    public async httpGetResult<T>(type: new (...args:any[]) => T, url: string, headers: HeadersInit, param: Record<string,string>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
+    public async httpGetResult<T>(type: new (...args:any[]) => T, url: string, headers: Record<string,string>, param: Record<string,string>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
         let strParam = this.convertParamToStr(param);
         if (!string.isNullOrEmpty(strParam))
             url += "?" + strParam;
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-        let response: Response;
-        try
-        {
-            if(!!headers){
-                headers["Content-Type"]= "application/json"
-            }else{
-                headers = {"Content-Type": "application/json"}
+        let response = ETTask.create<string>();
+        let xhr = new XMLHttpRequest();
+        xhr.timeout = timeout;
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 ){
+                if((xhr.status >= 200 && xhr.status < 400)) {
+                    response.setResult(xhr.responseText);
+                } else {
+                    response.setResult("");
+                }
             }
-            response = await fetch(url, {
-                headers: headers,
-                signal: controller.signal  
-            });
-        }
-        catch(ex)
+        };
+        xhr.open("GET", url, true);
+        xhr.setRequestHeader("Content-Type","application/json")
+        if(headers!=null)
         {
-            Log.info(string.format("url {0} get fail. msg: {1}",url,ex));
-            return null;
+            for (const key in headers) {
+                if (Object.prototype.hasOwnProperty.call(param, key)) {
+                    const val = param[key];
+                    xhr.setRequestHeader(key, val)
+                }
+            }
         }
-        clearTimeout(id);
-        if(response.ok){
-            var text = await response.text();
+        xhr.send();
+        var text = await response;;
+        if(text!=null){
             try{
                 return JsonHelper.fromJson<T>(type, text)
             }
@@ -115,32 +118,34 @@ export class HttpManager
         }
     }
 
-    public async httpPostResult<T>(type: new (...args:any[]) => T, url: string, headers: HeadersInit, param: Record<string,any>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-        let response: Response;
-        try
-        {
-            if(!!headers){
-                headers["Content-Type"]= "application/json"
-            }else{
-                headers = {"Content-Type": "application/json"}
+    public async httpPostResult<T>(type: new (...args:any[]) => T, url: string, headers: Record<string,string>, param: Record<string,any>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
+        let response = ETTask.create<string>();
+        let xhr = new XMLHttpRequest();
+        xhr.timeout = timeout;
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 ){
+                if((xhr.status >= 200 && xhr.status < 400)) {
+                    response.setResult(xhr.responseText);
+                } else {
+                    response.setResult("");
+                }
             }
-            response = await fetch(url, {
-                method: "POST",
-                headers: headers,
-                signal: controller.signal,
-                body: JSON.stringify(param),
-            });
-        }
-        catch(ex)
+        };
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type","application/json")
+        if(headers!=null)
         {
-            Log.info(string.format("url {0} get fail. msg: {1}",url,ex));
-            return null;
+            for (const key in headers) {
+                if (Object.prototype.hasOwnProperty.call(param, key)) {
+                    const val = param[key];
+                    xhr.setRequestHeader(key, val)
+                }
+            }
         }
-        clearTimeout(id);
-        if(response.ok){
-            var text = await response.text();
+        
+        xhr.send(JSON.stringify(param));
+        var text = await response;
+        if(text!=null){
             try{
                 return JsonHelper.fromJson<T>(type, text)
             }
