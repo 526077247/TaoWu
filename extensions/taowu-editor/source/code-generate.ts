@@ -139,29 +139,44 @@ import { UIBaseView } from "${points}Module/UI/UIBaseView";
                     let uiType = null;
                     for (let j = 0; j < node.__comps__.length; j++) {
                         const comp = node.__comps__[j];
-                        if(comp?.type != null) uiType = CodeGenerate.typeMap.get(comp.type);
-                        if(uiType!=null)
-                        {
-                            uiTypes.add(uiType)
-                            fields += `    public ${nodeName}: ${uiType};${line}`;
-                            onCreate += `        this.${nodeName} = this.addComponent(${uiType}, "${path}");${line}`;
-                            if(uiType == "UIButton"){
-                                onEnable += `        this.${nodeName}.setOnClick(this.onClick${upperName}.bind(this));${line}`;
-                                func += `    private onClick${upperName}(){${line}${line}    }${line}${line}`
-                            } else if(uiType == "UILoopGridView"){
-                                onCreate += `        this.${nodeName}.initGridView(0, this.onGet${upperName}ItemByIndex.bind(this));${line}`;
-                                func += `    private onGet${upperName}ItemByIndex(gridView: LoopGridView, index: number, row: number, column: number): LoopGridViewItem {${line}        return null;${line}    }${line}${line}`
-                            } else if(uiType == "UILoopListView2"){
-                                onCreate += `        this.${nodeName}.initListView(0, this.onGet${upperName}ItemByIndex.bind(this));${line}`;
-                                func += `    private onGet${upperName}ItemByIndex(listView: LoopListView2, index: number): LoopListViewItem2 {${line}        return null;${line}    }${line}${line}`
-                            } else if(uiType == "UICopyGameObject"){
-                                onCreate += `        this.${nodeName}.initListView(0, this.onGet${upperName}ItemByIndex.bind(this));${line}`;
-                                func += `    private onGet${upperName}ItemByIndex(index: number, go: Node){${line}${line}    }${line}${line}`
+                        if(comp?.type != null) {
+                            var thisType = CodeGenerate.typeMap.get(comp.type);
+                            if(thisType == null) continue;
+                            if(uiType != null){
+                                for (const element of CodeGenerate.typeMap) {
+                                    if(element[1] == uiType) {
+                                        break;
+                                    }
+                                    if(element[1] == thisType) {
+                                        uiType = thisType;
+                                        break;
+                                    }
+                                }
+                            }else{
+                                uiType = thisType;
                             }
-                            break;
                         }
+                       
                     }
-                    if(uiType == null){
+                    if(uiType != null) {
+                        uiTypes.add(uiType)
+                        fields += `    public ${nodeName}: ${uiType};${line}`;
+                        onCreate += `        this.${nodeName} = this.addComponent(${uiType}, "${path}");${line}`;
+                        if(uiType == "UIButton"){
+                            onEnable += `        this.${nodeName}.setOnClick(this.onClick${upperName}.bind(this));${line}`;
+                            func += `    private onClick${upperName}(){${line}${line}    }${line}${line}`
+                        } else if(uiType == "UILoopGridView"){
+                            onCreate += `        this.${nodeName}.initGridView(0, this.onGet${upperName}ItemByIndex.bind(this));${line}`;
+                            func += `    private onGet${upperName}ItemByIndex(gridView: LoopGridView, index: number, row: number, column: number): LoopGridViewItem {${line}        return null;${line}    }${line}${line}`
+                        } else if(uiType == "UILoopListView2"){
+                            onCreate += `        this.${nodeName}.initListView(0, this.onGet${upperName}ItemByIndex.bind(this));${line}`;
+                            func += `    private onGet${upperName}ItemByIndex(listView: LoopListView2, index: number): LoopListViewItem2 {${line}        return null;${line}    }${line}${line}`
+                        } else if(uiType == "UICopyGameObject"){
+                            onCreate += `        this.${nodeName}.initListView(0, this.onGet${upperName}ItemByIndex.bind(this));${line}`;
+                            func += `    private onGet${upperName}ItemByIndex(index: number, go: Node){${line}${line}    }${line}${line}`
+                        }
+                        break;
+                    } else {
                         uiTypes.add("UIEmptyView")
                         fields += `    public ${nodeName}: UIEmptyView;${line}`;
                         onCreate += `        this.${nodeName} = this.addComponent(UIEmptyView, "${path}");${line}`;
@@ -184,7 +199,7 @@ import { LoopGridViewItem } from "${points}../ThirdParty/SuperScrollView/GridVie
 ${header}
 export class ${fileName} extends UIBaseView implements IOnCreate, IOnEnable {
 
-    public static readonly PrefabPath:string = "${prefabPath[1]}";
+    public static readonly PrefabPath:string = "${Editor.Utils.Path.stripExt(prefabPath[1])}";
 
     protected getConstructor()
     {

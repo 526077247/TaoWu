@@ -1,4 +1,4 @@
-import { Camera, director, find, Node, _decorator, view, sys, Vec2, screen, ResolutionPolicy, Vec3 } from 'cc';
+import { Camera, director, find, Node, _decorator, view, sys, Vec2, screen, ResolutionPolicy, Vec3, Layers } from 'cc';
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { ManagerProvider } from "../../../Mono/Core/Manager/ManagerProvider"
 import { LinkedList } from "../../../Mono/Core/Object/LinkedList"
@@ -665,6 +665,10 @@ export class UIManager implements IManager {
         {
             var layer = this.getLayer(target.layer);
             node.setParent(layer.node, false);
+            if(node.layer != Layers.Enum.UI_2D){
+                Log.error(window.name + "默认层级不为UI_2D");
+                node.layer = Layers.Enum.UI_2D;
+            }
         }
         if (!!((view as any).isOnWidthPaddingChange))
             this.onWidthPaddingChange(view);
