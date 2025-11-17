@@ -32,11 +32,11 @@ export class UIMenu extends UIBaseContainer implements IOnCreate
     public onGetItemByIndex(index:number, go: Node)
     {
         var para = this.paras[index];
-        if (this.space.getUIItemView<UIMenuItem>(UIMenuItem,go) == null)
+        var item = this.space.getUIItemView<UIMenuItem>(UIMenuItem, go);
+        if (item == null)
         {
-            this.space.addItemViewComponent<UIMenuItem>(UIMenuItem,go);
+            item = this.space.addItemViewComponent<UIMenuItem>(UIMenuItem, go);
         }
-        var item = this.space.getUIItemView<UIMenuItem>(UIMenuItem,go);
         this.uiMenuItems[index] = item;
         item.setData(para, index, (type, inx) =>
         {

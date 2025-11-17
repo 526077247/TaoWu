@@ -41,13 +41,16 @@ export class RectTransform extends Component {
     @property
     private _offsetMax: Vec2 = new Vec2(0, 0);
     
+    // 锚点位置（相对于父物体坐标系）
+    @property
+    private _anchorPosition: Vec3 = new Vec3(0, 0, 0);
+    
     // 锚点预设
     @property({ type: Enum(AnchorPreset)})
     private _anchorPreset: AnchorPreset = AnchorPreset.MiddleCenter;
     
     private _uiTransform: UITransform | null = null;
     private _parentRect: RectTransform | null = null;
-    private _lastParentSize: Size = new Size(0, 0);
     private _dirty: boolean = true;
 
     onLoad() {
@@ -119,7 +122,7 @@ export class RectTransform extends Component {
             this._anchorMax.y * parentSize.height
         );
         
-        // === 修正1: 正确区分拉伸模式和非拉伸模式 ===
+        // 区分拉伸模式和非拉伸模式
         const isStretch = !this._anchorMin.equals(this._anchorMax);
         let positionX, positionY;
         let width = this.uiTransform.contentSize.width;
@@ -136,16 +139,27 @@ export class RectTransform extends Component {
             positionX = (left + right) / 2 - parentSize.width / 2;
             positionY = (bottom + top) / 2 - parentSize.height / 2;
             width = right - left;
-            height = top - bottom; // 修正高度计算（使用y坐标）
+            height = top - bottom;
             setSize = true;
         } else {
             // 非拉伸模式：保持原始尺寸，仅调整位置
-            positionX = this._offsetMin.x - parentSize.width / 2 + minPos.x;
-            positionY = this._offsetMin.y - parentSize.height / 2 + minPos.y;
+            // 使用anchorPosition作为相对于父物体坐标系的位置
+            const anchorPoint = new Vec2(
+                (this._anchorMin.x + this._anchorMax.x) / 2,
+                (this._anchorMin.y + this._anchorMax.y) / 2
+            );
+            
+            // 计算锚点在世界坐标系中的位置
+            const anchorWorldX = anchorPoint.x * parentSize.width - parentSize.width / 2;
+            const anchorWorldY = anchorPoint.y * parentSize.height - parentSize.height / 2;
+            
+            // 节点位置 = 锚点世界坐标 + anchorPosition
+            positionX = anchorWorldX + this._anchorPosition.x;
+            positionY = anchorWorldY + this._anchorPosition.y;
         }
         
         // 应用变换
-        this.node.setPosition(new Vec3(positionX, positionY, 0));
+        this.node.setPosition(new Vec3(positionX, positionY, this._anchorPosition.z));
         if (setSize) {
             this._uiTransform.setContentSize(new Size(width, height));
         }
@@ -239,6 +253,17 @@ export class RectTransform extends Component {
         this.markDirty();
     }
     
+    // 锚点位置（相对于父物体坐标系）
+    @property({ type: Vec3, tooltip: "相对于父物体坐标系的锚点位置" })
+    get anchorPosition(): Vec3 {
+        return this._anchorPosition;
+    }
+    
+    set anchorPosition(value: Vec3) {
+        this._anchorPosition = value;
+        this.markDirty();
+    }
+    
     @property({ type: Enum(AnchorPreset), tooltip: "锚点预设" })
     get anchorPreset(): AnchorPreset {
         return this._anchorPreset;
@@ -318,6 +343,9 @@ export class RectTransform extends Component {
                 this._anchorMax = new Vec2(1, 1);
                 break;
         }
+        
+        // 应用预设后重置anchorPosition
+        this._anchorPosition = new Vec3(0, 0, 0);
     }
     
     // 设置锚点而不改变位置
@@ -358,29 +386,14 @@ export class RectTransform extends Component {
         }
     }
     
-    // 获取锚点位置
+    // 获取锚点位置（相对于父物体坐标系）
     public getAnchoredPosition(): Vec3 {
-        const parentSize = this.getParentSize();
-        const x = (this._anchorMin.x + this._anchorMax.x) / 2 * parentSize.width + this._offsetMin.x;
-        const y = (this._anchorMin.y + this._anchorMax.y) / 2 * parentSize.height + this._offsetMin.y;
-        return new Vec3(x, y, 0);
+        return this._anchorPosition.clone();
     }
     
-    // 设置锚点位置
+    // 设置锚点位置（相对于父物体坐标系）
     public setAnchoredPosition(position: Vec3) {
-        const parentSize = this.getParentSize();
-        const centerX = (this._anchorMin.x + this._anchorMax.x) / 2;
-        const centerY = (this._anchorMin.y + this._anchorMax.y) / 2;
-        
-        this._offsetMin.x = position.x - centerX * parentSize.width;
-        this._offsetMin.y = position.y - centerY * parentSize.height;
-        
-        // 同时更新offsetMax以保持尺寸
-        const width = this._uiTransform?.contentSize.width || 0;
-        const height = this._uiTransform?.contentSize.height || 0;
-        this._offsetMax.x = this._offsetMin.x + width;
-        this._offsetMax.y = this._offsetMin.y + height;
-        
+        this._anchorPosition = position.clone();
         this.markDirty();
     }
     
