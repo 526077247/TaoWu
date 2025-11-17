@@ -77,7 +77,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
 
     public setEnabled(flag: boolean)
     {
-        this.activatingComponent();
+        this.activatingImageComponent();
         this.image.enabled = flag;
     }
 
@@ -102,7 +102,8 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
             if (this.image != null) this.image.enabled = true;
             return;
         }
-        this.activatingComponent();
+
+        this.activatingImageComponent();
         // if (this.bgAutoFit != null) this.bgAutoFit.enabled = false;
         this.image.enabled = false;
         var baseSpritePath = this.spritePath;
@@ -152,24 +153,24 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
     public setColor(color: string|math.Color)
     {
         if(color instanceof math.Color){
-            this.activatingComponent();
+            this.activatingImageComponent();
             this.image.color = color;
             return;
         }
         if(string.isNullOrEmpty(color)) return;
-        this.activatingComponent();
+        this.activatingImageComponent();
         this.image.color.fromHEX(color)
     }
 
     public getColor(): math.Color
     {
-        this.activatingComponent();
+        this.activatingImageComponent();
         return this.image.color;
     }
 
     public setImageAlpha(a: number, changeChild: boolean = false)
     {
-        this.activatingComponent();
+        this.activatingImageComponent();
         this.image.color = new math.Color(this.image.color.r,this.image.color.g, this.image.color.b,a);
         if (changeChild)
         {

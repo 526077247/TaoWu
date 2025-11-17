@@ -337,7 +337,7 @@ export class SoundManager implements IManager {
         }
         
         item.audioSource.play();
-        if (!item.audioSource.loop) return;
+        if (item.audioSource.loop) return;
         
         const duration = item.clip.getDuration() * 1000;
         await TimerManager.instance.waitAsync(duration + 100, item.token);
