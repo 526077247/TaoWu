@@ -15,9 +15,10 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
     private onClick: () => void;
     private spritePath: string;
     private image: Sprite;
-    private version: number;
+    private version: number = 0;
 
     public onDestroy(){
+        this.version = 0;
         this.removeOnClick();
         if (!string.isNullOrEmpty(this.spritePath))
         {

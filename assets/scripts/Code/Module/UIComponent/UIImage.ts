@@ -25,6 +25,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
 
     public onDestroy()
     {
+        this.version = 0;
         if (!string.isNullOrEmpty(this.spritePath))
         {
             this.image.spriteFrame = null;

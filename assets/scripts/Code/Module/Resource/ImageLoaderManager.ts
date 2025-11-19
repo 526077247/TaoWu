@@ -54,10 +54,20 @@ export class ImageLoaderManager implements IManager{
     }
 
     /**
+     * 同步加载已缓存的图片（image 和button已经封装 外部使用时候 谨慎使用）
+     * @param imagePath 
+     */
+    public loadSpriteSync(imagePath: string): SpriteFrame{
+        return this.loadSingleImageSyncInternal(imagePath)?.asset;
+    }
+
+    /**
      * 异步加载图片（image 和button已经封装 外部使用时候 谨慎使用）
      * @param imagePath 
      */
     public async loadSpriteAsync(imagePath: string): Promise<SpriteFrame>{
+        const res = this.loadSpriteSync(imagePath);
+        if(res != null) return res;
         let coroutineLock: CoroutineLock = null;
         try
         {
@@ -138,7 +148,7 @@ export class ImageLoaderManager implements IManager{
         Log.info("ImageLoaderManager Clear");
     }
 
-    private async loadSingleImageAsyncInternal(assetAddress: string, type: SpriteType): Promise<SpriteValue>
+    private loadSingleImageSyncInternal(assetAddress: string): SpriteValue
     {
         const cacheCls = this.cacheSingleSprite;
         const valueC = cacheCls.get(assetAddress);
@@ -154,6 +164,13 @@ export class ImageLoaderManager implements IManager{
                 return valueC;
             }
         }
+        return null;
+    }
+    private async loadSingleImageAsyncInternal(assetAddress: string, type: SpriteType): Promise<SpriteValue>
+    {
+        const res = this.loadSingleImageSyncInternal(assetAddress);
+        if(res != null) return res;
+        const cacheCls = this.cacheSingleSprite;
         const asset: SpriteFrame = await ResourceManager.instance.loadAsync<SpriteFrame>(SpriteFrame,assetAddress+"/spriteFrame");
         if (asset != null)
         {
