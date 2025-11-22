@@ -75,8 +75,8 @@ export class I18NManager implements IManager {
      */
     public i18NGetText(key: string| I18NKey| number): string
     {
-        let i18nKey:I18NKey;
-        if(typeof key == "string") {
+        let i18nKey: number;
+        if(typeof key != "number") {
             i18nKey = I18NKey[key];
         } else {
             i18nKey = key
@@ -104,12 +104,13 @@ export class I18NManager implements IManager {
      * @returns 
      */
     public i18NGetParamText(key: string| I18NKey| number, ...paras: any[]){
-        let i18nKey:I18NKey;
-        if(typeof key == "string") {
+        let i18nKey: number;
+        if(typeof key != "number") {
             i18nKey = I18NKey[key];
         } else {
             i18nKey = key
         }
+        
         if (!!i18nKey)
         {
             const result = this._i18nTextKeyDic.get(i18nKey);

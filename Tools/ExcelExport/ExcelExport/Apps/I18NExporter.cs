@@ -49,7 +49,7 @@ namespace TaoWu
                 {
                     foreach (var item2 in item.Value.GetAllList()) 
                     {
-                        str.AppendLine($"    {item2.Key} = {item2.Id},");
+                        str.AppendLine($"    {item2.key} = {item2.id},");
                     }
                    
                     break;
@@ -93,9 +93,9 @@ namespace TaoWu
                 for (int col = keyIndex + 1; col <= worksheet.Dimension.End.Column; ++col)
                 {
                     I18NConfig config = new I18NConfig();
-                    config.Id = id;
-                    config.Key = key;
-                    config.Value = worksheet.Cells[row, col].Text.Trim().Replace("\n","\\n");
+                    config.id = id;
+                    config.key = key;
+                    config.value = worksheet.Cells[row, col].Text.Trim().Replace("\n","\\n");
                     string fieldName = worksheet.Cells[4, col].Text.Trim();
                     if (!list.ContainsKey(fieldName))
                     {

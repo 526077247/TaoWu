@@ -9,6 +9,7 @@ import { TimerManager } from "db://assets/scripts/Mono/Module/Timer/TimerManager
 import { math } from "cc";
 import { UIBaseView } from "../../../Module/UI/UIBaseView";
 import { UIManager } from "../../../Module/UI/UIManager";
+import { I18NManager } from "../../../Module/I18N/I18NManager";
 
 export class UIToast extends UIBaseView implements IOnCreate, IOnEnable<string|I18NKey, number|null>
 {
@@ -55,7 +56,12 @@ export class UIToast extends UIBaseView implements IOnCreate, IOnEnable<string|I
         await this.closeSelf();
     }
 
-    public static showToast(content: string, time: number = 1500) {
-        UIManager.instance.openBox<UIToast,string,number>(UIToast,UIToast.PrefabPath,content,time);
+    public static showToast(content: string|I18NKey, time: number = 1500) {
+        if(typeof(content) == "string"){
+            UIManager.instance.openBox<UIToast,string,number>(UIToast,UIToast.PrefabPath,content,time);
+        }else{
+            UIManager.instance.openBox<UIToast,string,number>(UIToast,UIToast.PrefabPath,I18NManager.instance.i18NGetText(content),time);
+        }
+       
     }
 }
