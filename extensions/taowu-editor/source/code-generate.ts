@@ -175,7 +175,6 @@ import { UIBaseView } from "${points}Module/UI/UIBaseView";
                             onCreate += `        this.${nodeName}.initListView(0, this.onGet${upperName}ItemByIndex.bind(this));${line}`;
                             func += `    private onGet${upperName}ItemByIndex(index: number, go: Node){${line}${line}    }${line}${line}`
                         }
-                        break;
                     } else {
                         uiTypes.add("UIEmptyView")
                         fields += `    public ${nodeName}: UIEmptyView;${line}`;

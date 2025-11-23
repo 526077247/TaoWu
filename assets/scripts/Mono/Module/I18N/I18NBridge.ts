@@ -9,7 +9,7 @@ export class I18NBridge
 
 
     public onLanguageChangeEvt: Event = new Event();
-    public getValueByKey :(string)=>string;
+    public getValueByKey : Function;
 
     /**
      * 通过I18NKey获取多语言文本

@@ -7,11 +7,12 @@ export class I18NText extends Component {
     @property({})
     public key: string = '';
     private _text: Label;
-    start() {
+    onLoad() {
         this._text = this.getComponent<Label>(Label);
     }
 
     onEnable() {
+        this.onSwitchLanguage();
         I18NBridge.instance.onLanguageChangeEvt.subscribe(this.onSwitchLanguage);
     }
 

@@ -36,7 +36,7 @@ export class UIText extends UIBaseContainer implements II18N {
         {
             let text = I18NManager.instance.i18NGetText(this.textKey);
             if (!string.isNullOrEmpty(text) && this.keyParams != null)
-                text = string.format(text, this.keyParams);
+                text = string.format(text, ...this.keyParams);
             this.text.string = text;
         }
     }
@@ -80,7 +80,7 @@ export class UIText extends UIBaseContainer implements II18N {
         }
         this.disableI18Component();
         this.textKey = key;
-        this.setI18NText(paras);
+        this.setI18NText(...paras);
     }
 
     public setI18NText(...paras: any[])
@@ -94,8 +94,8 @@ export class UIText extends UIBaseContainer implements II18N {
             this.disableI18Component();
             this.keyParams = paras;
             let text = I18NManager.instance.i18NGetText(this.textKey);
-            if (!string.isNullOrEmpty(text) && paras != null)
-                text = string.format(text, paras);
+            if (!string.isNullOrEmpty(text) && this.keyParams != null)
+                text = string.format(text, ...this.keyParams);
             this.text.string = text;
         }
     }

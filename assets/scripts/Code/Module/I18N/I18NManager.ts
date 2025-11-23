@@ -44,7 +44,7 @@ export class I18NManager implements IManager {
         {
             this._curLangType = lang;
         }
-        I18NBridge.instance.getValueByKey = this.i18NGetText;
+        I18NBridge.instance.getValueByKey = this.i18NGetText.bind(this);
         this._i18nTextKeyDic = new Map<number, string>();
         this.initAsync();
     }
