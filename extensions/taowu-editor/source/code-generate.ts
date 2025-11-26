@@ -161,7 +161,11 @@ import { UIBaseView } from "${points}Module/UI/UIBaseView";
                     if(uiType != null) {
                         uiTypes.add(uiType)
                         fields += `    public ${nodeName}: ${uiType};${line}`;
-                        onCreate += `        this.${nodeName} = this.addComponent(${uiType}, "${path}");${line}`;
+                        if(root.uuid.value == node.uuid.value){
+                            onCreate += `        this.${nodeName} = this.addComponent(${uiType});${line}`;
+                        }else{
+                            onCreate += `        this.${nodeName} = this.addComponent(${uiType}, "${path}");${line}`;
+                        }
                         if(uiType == "UIButton"){
                             onEnable += `        this.${nodeName}.setOnClick(this.onClick${upperName}.bind(this));${line}`;
                             func += `    private onClick${upperName}(){${line}${line}    }${line}${line}`
@@ -178,7 +182,11 @@ import { UIBaseView } from "${points}Module/UI/UIBaseView";
                     } else {
                         uiTypes.add("UIEmptyView")
                         fields += `    public ${nodeName}: UIEmptyView;${line}`;
-                        onCreate += `        this.${nodeName} = this.addComponent(UIEmptyView, "${path}");${line}`;
+                        if(root.uuid.value == node.uuid.value){
+                            onCreate += `        this.${nodeName} = this.addComponent(UIEmptyView);${line}`;
+                        }else{
+                            onCreate += `        this.${nodeName} = this.addComponent(UIEmptyView, "${path}");${line}`;
+                        }
                     }
                 }
 
@@ -227,7 +235,6 @@ ${func}
                     await FileHelper.createDir(dir);
                     fs.writeFile(csPath,content, {},(err)=>{
                         if (!!err) console.error(err); 
-                        task.setResult(!err)
                     })
                 }
                 
