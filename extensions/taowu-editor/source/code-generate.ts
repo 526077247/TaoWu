@@ -14,7 +14,7 @@ export class CodeGenerate{
         ["LoopGridView" , "UILoopGridView"],
         ["cc.Button" , "UIButton"],
         ["cc.EditBox" , "UIInput"],
-        ["cc.Slider" , "UISilder"],
+        ["cc.Slider" , "UISlider"],
         ["cc.Sprite" , "UIImage"],
         ["cc.Label" , "UIText"],
     ])

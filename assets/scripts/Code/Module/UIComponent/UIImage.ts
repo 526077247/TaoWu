@@ -60,10 +60,10 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
     /**
      * 设置图片地址（注意尽量不要和SetOnlineSpritePath混用
      * @param spritePath 
-     * @param setNativeSize 
+     * @param sizeMode 
      * @returns 
      */
-    public async setSpritePath(spritePath: string, setNativeSize: boolean = false): Promise<void>
+    public async setSpritePath(spritePath: string, sizeMode = Sprite.SizeMode.CUSTOM): Promise<void>
     {
         this.version++;
         const thisVersion = this.version;
@@ -96,8 +96,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             this.image.enabled = true;
             this.image.spriteFrame = sprite;
             this.isSetSprite = false;
-            if(setNativeSize)
-                this.setNativeSize();
+            this,this.image.sizeMode = sizeMode;
             // if (this.bgAutoFit != null)
             // {
             //     this.bgAutoFit.SetSprite(sprite);
@@ -112,15 +111,15 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
     /**
      * 设置网络图片地址（注意尽量不要和SetSpritePath混用
      * @param spritePath 
-     * @param setNativeSize 
+     * @param sizeMode 
      * @param defaultSpritePath 
      */
-    public async setOnlineSpritePath(url: string, setNativeSize: boolean = false, defaultSpritePath: string = null)
+    public async setOnlineSpritePath(url: string, sizeMode = Sprite.SizeMode.CUSTOM, defaultSpritePath: string = null)
     {
         this.activatingComponent();
         if (!string.isNullOrEmpty(defaultSpritePath))
         {
-            await this.setSpritePath(defaultSpritePath,setNativeSize);
+            await this.setSpritePath(defaultSpritePath, sizeMode);
         }
         this.version++;
         const thisVersion = this.version;
@@ -140,14 +139,6 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             }
             this.cacheUrl = url;
         }
-    }
-
-    public setNativeSize()
-    {
-        if(this.image == null || this.image.spriteFrame == null) return;
-        let uiTrans = this.getTransform();
-        uiTrans.width = this.image.spriteFrame.width;
-        uiTrans.height = this.image.spriteFrame.height;
     }
 
     public getSpritePath()
@@ -193,7 +184,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
         this.image.enabled = flag;
     }
 
-    public setSprite( sprite: SpriteFrame)
+    public setSprite(sprite: SpriteFrame)
     {
         this.activatingComponent();
         this.image.spriteFrame = sprite;
