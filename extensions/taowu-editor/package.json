@@ -38,6 +38,11 @@
                 "message": "settingUIAB"
             },
             {
+                "path": "Tools/工具/UI",
+                "label": "批量设置图片格式",
+                "message": "setImagesFormat"
+            },
+            {
                 "path": "Tools/帮助",
                 "label": "启动场景(Shift+B)",
                 "message": "changeInitScene"
@@ -49,9 +54,19 @@
                     "settingUIAB"
                 ]
             },
+            "setImagesFormat": {
+                "methods": [
+                    "setImagesFormat"
+                ]
+            },
             "changeInitScene": {
                 "methods": [
                     "changeInitScene"
+                ]
+            },
+            "asset-db:asset-add":{
+                "methods": [
+                    "onAssetAdd"
                 ]
             }
         }, 

@@ -13,7 +13,7 @@
     "padding": 2,
     "allowRotation": true,
     "forceSquared": false,
-    "powerOfTwo": true,
+    "powerOfTwo": false,
     "algorithm": "MaxRects",
     "format": "png",
     "quality": 80,
@@ -23,7 +23,10 @@
     "removeTextureInBundle": true,
     "removeImageInBundle": true,
     "removeSpriteAtlasInBundle": true,
-    "compressSettings": {},
+    "compressSettings": {
+      "useCompressTexture": true,
+      "presetId": "91I12GucVJMaomwAqK5UYN"
+    },
     "textureSetting": {
       "wrapModeS": "repeat",
       "wrapModeT": "repeat",

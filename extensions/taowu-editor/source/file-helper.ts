@@ -34,7 +34,6 @@ export class FileHelper{
             fs.exists(abPath, (res)=>{ task.setResult(res) });
             if(!await task)
             {  
-                console.log(dbPath);
                 Editor.Message.request("asset-db", "create-asset", dbPath, null);
             }
         }
@@ -45,9 +44,20 @@ export class FileHelper{
             const task = ETTask.create<boolean>(true);
             fs.exists(abPath, (res)=>{ task.setResult(res)});
             if(!await task)
-            {  
-                console.log(dbPath);
-                Editor.Message.request("asset-db", "create-asset", dbPath, Editor.Utils.Path.basename(dbPath));
+            {
+                var info = await Editor.Message.request("asset-db", "create-asset", dbPath, Editor.Utils.Path.basename(dbPath));
+                if(!!info){
+                    var meta = await Editor.Message.request('asset-db', 'query-asset-meta', info.uuid);
+                    if(meta != null)
+                    {
+                        meta.userData.powerOfTwo = false;
+                        meta.userData.compressSettings = {
+                            "useCompressTexture": true,
+                            "presetId": "91I12GucVJMaomwAqK5UYN"
+                        };
+                    }
+                    await Editor.Message.request('asset-db', 'save-asset-meta', info.uuid, JSON.stringify(meta));
+                }
             };
         }
     }
@@ -101,76 +111,165 @@ export class FileHelper{
                 const stat = fs.statSync(itemPath);
 
                 if (stat.isDirectory()) {
-                    console.log(itemPath)
-                    const task = ETTask.create<string>(true);
-                    fs.readFile(itemPath+".meta", 'utf8', async (err, data) => {
-                        if (err) {
-                            console.error(err);
-                            return;
-                        }
-                        task.setResult(data)
-                    });
-                    const jsonData = JSON.parse(await task);
-                    if(!jsonData.userData){
-                        jsonData.userData = {isBundle:false};
-                    }
-                    const url = await Editor.Message.request('asset-db', 'query-url', jsonData.uuid);
-                    if(!jsonData.userData.isBundle){
-                        let vs = itemPath.split('\\');
-                        jsonData.userData.isBundle = true;
-                        jsonData.userData.bundleName = vs[vs.length-2]+"_"+vs[vs.length-1]
-                        jsonData.userData.bundleFilterConfig =  [{
-                            "range": "include",
-                            "type": "url",
-                            "patchOption": {
-                                "patchType": "glob",
-                                "value": url + "/prefabs/**/*.prefab"
-                            },
-                            "assets": [
-                                ""
-                            ]
-                        },{
-                            "range": "include",
-                            "type": "url",
-                            "patchOption": {
-                                "patchType": "glob",
-                                "value": url + "/discreteImages/**/*"
-                            },
-                            "assets": [
-                                ""
-                            ]
-                        },{
-                            "range": "include",
-                            "type": "url",
-                            "patchOption": {
-                                "patchType": "glob",
-                                "value": url + "/atlas/**/*"
-                            },
-                            "assets": [
-                                ""
-                            ]
-                        }]
-                        const task = ETTask.create<boolean>(true);
-                        fs.writeFile(itemPath+".meta",JSON.stringify(jsonData, null, 2), {},(err)=>{
-                            if (!!err) console.error(err); 
-                            task.setResult(!err)
-                        })
-                        if(await task){
-                            Editor.Message.request('asset-db', 'refresh-asset', jsonData.uuid);
+                    var meta = await Editor.Message.request('asset-db', 'query-asset-meta', itemPath);
+                    if(!!meta){
+                        const url = await Editor.Message.request('asset-db', 'query-url', meta.uuid);
+                        if(!meta.userData.isBundle){
+                            let vs = itemPath.split('\\');
+                            meta.userData.isBundle = true;
+                            meta.userData.bundleName = vs[vs.length-2]+"_"+vs[vs.length-1]
+                            meta.userData.bundleFilterConfig =  [{
+                                "range": "include",
+                                "type": "url",
+                                "patchOption": {
+                                    "patchType": "glob",
+                                    "value": url + "/prefabs/**/*.prefab"
+                                },
+                                "assets": [
+                                    ""
+                                ]
+                            },{
+                                "range": "include",
+                                "type": "url",
+                                "patchOption": {
+                                    "patchType": "glob",
+                                    "value": url + "/discreteImages/**/*"
+                                },
+                                "assets": [
+                                    ""
+                                ]
+                            },{
+                                "range": "include",
+                                "type": "url",
+                                "patchOption": {
+                                    "patchType": "glob",
+                                    "value": url + "/atlas/**/*"
+                                },
+                                "assets": [
+                                    ""
+                                ]
+                            }]
+                            await Editor.Message.request('asset-db', 'save-asset-meta', meta.uuid, JSON.stringify(meta));
                         }
                     }
-                
                 }
             }
         }
-        //todo:
-        const dresult = await Editor.Dialog.info('设置完成，部分文件夹需重启编辑器后可见', {
-            buttons: ['立即重启', '稍后手动重启'],
-            title: '设置完成',
-        });
-        if (0 == dresult.response) {
-            Editor.App.quit();
-        }
         return result;
+    }
+
+    /**
+     * 批量设置图片格式
+     */
+    public static async setImagesFormat(){
+        const projectPath = Editor.Project.path;
+        const dirPath = path.join(projectPath, "assets", "assetsPackage");
+        const result:any[] = [];
+        for (let index = 0; index < this.uiPath.length; index++) {
+            const itemPath = path.join(dirPath, this.uiPath[index]);
+            const task = ETTask.create<boolean>(true);
+            fs.exists(itemPath, (res)=>{ task.setResult(res)});
+            if(await task){
+                result.push(itemPath); 
+            }
+        }
+
+        for (let index = 0; index < result.length; index++) {
+            const element = result[index];
+            const items = fs.readdirSync(element);
+
+            for (const item of items) {
+                const itemPath = path.join(element, item);
+                const stat = fs.statSync(itemPath);
+
+                if (stat.isDirectory()) {
+                    var meta = await Editor.Message.request('asset-db', 'query-asset-meta', itemPath);
+                    if(!!meta){
+                        const url = await Editor.Message.request('asset-db', 'query-url', meta.uuid);
+                        
+                        const atlasPath = url +"/atlas/atlas.pac";
+                        var atlasmeta = await Editor.Message.request('asset-db', 'query-asset-meta', atlasPath);
+                        if(atlasmeta != null)
+                        {
+                            atlasmeta.userData.powerOfTwo = false;
+                            atlasmeta.userData.compressSettings = {
+                                "useCompressTexture": true,
+                                "presetId": "91I12GucVJMaomwAqK5UYN"
+                            };
+                            await Editor.Message.request('asset-db', 'save-asset-meta', atlasmeta.uuid, JSON.stringify(atlasmeta));
+                        }
+
+                        const discreteImagesPath = url +"/discreteImages/**";
+                        var discreteImages = await Editor.Message.request('asset-db', 'query-assets',  {pattern: discreteImagesPath, ccType: 'cc.ImageAsset'}, );
+                        for (const discreteImage of discreteImages) {
+                            await this.setDiscreteImageMeta(discreteImage.uuid);
+                        }
+
+                        const atlasImagesPath = url +"/atlas/**";
+                        var atlasImages = await Editor.Message.request('asset-db', 'query-assets',  {pattern: atlasImagesPath, ccType: 'cc.ImageAsset'}, );
+                        for (const atlasImage of atlasImages) {
+                            await this.setAtlasImageMeta(atlasImage.uuid);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 当资源入库时
+     * @param uuid 
+     * @returns 
+     */
+    public static async onAssetAdd(uuid:string){
+        if(uuid.indexOf('@')>=0) return
+        const url = await Editor.Message.request('asset-db', 'query-url', uuid);
+        if(url != null && url.indexOf('assetsPackage') >= 0){
+            if(url.indexOf('discreteImages')>=0){
+                await this.setDiscreteImageMeta(uuid);
+            }
+            else if(url.indexOf('atlas')>=0){
+                await this.setAtlasImageMeta(uuid);
+            }
+        }
+        
+    }
+
+
+    private static async setDiscreteImageMeta(uuid: string){
+        var meta = await Editor.Message.request('asset-db', 'query-asset-meta', uuid);
+        if(meta!=null){
+            meta.userData.compressSettings = {
+                "useCompressTexture": true,
+                "presetId": "91I12GucVJMaomwAqK5UYN"
+            };
+            meta.userData.type = "sprite-frame";
+            if(meta.subMetas!=null){
+                var vs = meta.userData.redirect.split('@')
+                if(vs.length==2){
+                    var ud = meta.subMetas[vs[1]].userData
+                    ud.wrapModeS = "clamp-to-edge";
+                    ud.wrapModeT = "clamp-to-edge";
+                }
+                
+            }
+            await Editor.Message.request('asset-db', 'save-asset-meta', meta.uuid, JSON.stringify(meta));
+        }
+    }
+
+    private static async setAtlasImageMeta(uuid: string){
+        var meta = await Editor.Message.request('asset-db', 'query-asset-meta', uuid);
+        if(meta!=null){
+            meta.userData.type = "sprite-frame";
+            if(meta.subMetas!=null){
+                var vs = meta.userData.redirect.split('@')
+                if(vs.length==2){
+                    var ud = meta.subMetas[vs[1]].userData
+                    ud.wrapModeS = "clamp-to-edge";
+                    ud.wrapModeT = "clamp-to-edge";
+                }
+            }
+            await Editor.Message.request('asset-db', 'save-asset-meta', meta.uuid, JSON.stringify(meta));
+        }
     }
 }
