@@ -4,7 +4,6 @@ import { EDITOR } from 'cc/env';
 const { ccclass, property, executeInEditMode, requireComponent } = _decorator;
 
 @ccclass('BgAutoMax')
-@requireComponent(Sprite)
 @requireComponent(UITransform)
 @executeInEditMode(true)
 export class BgAutoMax extends Component {
@@ -20,7 +19,7 @@ export class BgAutoMax extends Component {
         //屏幕缩放比
         var screenH = screen.windowSize.height;
         var screenW = screen.windowSize.width;
-        if(EDITOR){
+        if(EDITOR && !cc.GAME_VIEW){
             screenH = Define.DesignScreenHeight;
             screenW = Define.DesignScreenWidth;
         }

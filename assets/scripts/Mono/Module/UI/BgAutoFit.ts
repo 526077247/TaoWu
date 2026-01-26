@@ -31,7 +31,7 @@ export class BgAutoFit extends Component {
         //屏幕缩放比
         var screenH = screen.windowSize.height;
         var screenW = screen.windowSize.width;
-        if(EDITOR){
+        if(EDITOR && !cc.GAME_VIEW){
             screenH = Define.DesignScreenHeight;
             screenW = Define.DesignScreenWidth;
         }
