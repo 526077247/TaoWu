@@ -9,7 +9,7 @@ import { CacheManager } from '../Player/CacheManager';
 import { CacheKeys } from '../Const/CacheKeys';
 import { TimerManager } from '../../../Mono/Module/Timer/TimerManager';
 import { Log } from '../../../Mono/Module/Log/Log';
-
+import * as string from '../../../Mono/Helper/StringHelper'
 
 class SoundItem {
     public isHttp: boolean = false;
@@ -112,6 +112,7 @@ class SoundItem {
         if (!this.isLoading) {
             ObjectPool.instance.recycle(this);
         }
+        this.path = null;
     }
 }
 
@@ -242,6 +243,7 @@ export class SoundManager implements IManager {
 
     // region Sound Effects
     playSound(path: string, token?: ETCancellationToken, loop: boolean = false): bigint {
+        if (this.soundVolume <= 0) return 0n;
         if (!path) return 0n;
         
         const audioSource = this.getAudioSource();
@@ -258,6 +260,7 @@ export class SoundManager implements IManager {
     }
 
     async playSoundAsync(path: string, token?: ETCancellationToken): Promise<void> {
+        if (this.soundVolume <= 0) return ;
         if (!path) return;
         
         const audioSource = this.getAudioSource();
@@ -273,7 +276,8 @@ export class SoundManager implements IManager {
     }
 
     playHttpAudio(url: string, loop: boolean = false, token?: ETCancellationToken): bigint {
-        if (!url) return 0n;
+        if (this.soundVolume <= 0) return 0n;
+        if (string.isNullOrEmpty(url)) return;
         
         const audioSource = this.getAudioSource();
         if (!audioSource) return 0n;
@@ -289,7 +293,8 @@ export class SoundManager implements IManager {
     }
 
     async playHttpAudioAsync(url: string, loop: boolean = false, token?: ETCancellationToken): Promise<void> {
-        if (!url) return;
+        if (this.soundVolume <= 0) return ;
+        if (string.isNullOrEmpty(url)) return;
         
         const audioSource = this.getAudioSource();
         if (!audioSource) return;
