@@ -36,7 +36,7 @@ export class UnOrderDoubleKeyDictionary<T, M, N> implements Iterable<[T, Map<M, 
         const innerMap = this._data.get(t);
         if (!innerMap) return false;
         
-        if(!!m)
+        if(m !== undefined)
         {
             const removed = innerMap.delete(m);
             if (removed && innerMap.size === 0) {
@@ -79,27 +79,14 @@ export class UnOrderDoubleKeyDictionary<T, M, N> implements Iterable<[T, Map<M, 
         };
     }
 
-    // 获取所有条目（一级键 + 内部字典）
-    *entries(): IterableIterator<[T, Map<M, N>]> {
-        for (const entry of this._data) {
-            yield entry;
-        }
-    }
-
     // 获取所有内部字典
-    *values(): IterableIterator<Map<M, N>> {
-        for (const innerMap of this._data.values()) {
-            yield innerMap;
-        }
+    values(): MapIterator<Map<M, N>> {
+        return this._data.values();
     }
 
     // 获取所有一级键 
-    *keys(): IterableIterator<T> {
-        for (const [primaryKey, innerMap] of this._data) {
-            for (const secondaryKey of innerMap.keys()) {
-                yield primaryKey;
-            }
-        }
+    keys(): MapIterator<T>{
+       return this._data.keys();
     }
 
     // 获取一级键的数量

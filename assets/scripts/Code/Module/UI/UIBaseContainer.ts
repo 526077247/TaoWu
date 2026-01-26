@@ -88,7 +88,7 @@ export abstract class UIBaseContainer {
             }
             if (this.node == null)
             {
-                Log.error(this.parent.constructor.name + "路径错误:" + this.path);
+                Log.error(this.parent.getConstructor().name + "路径错误:" + this.path);
             }
         }
 
@@ -163,13 +163,13 @@ export abstract class UIBaseContainer {
         }
         if (this.components != null)
         {
-            var keys1 = [...this.components.keys()];
+            const keys1 = Array.from(this.components.keys());
             for (let i = keys1.length - 1; i >= 0; i--)
             {
                 const [res, map] = this.components.tryGetDic(keys1[i])
                 if (res)
                 {
-                    var keys2 = [...map.keys()];
+                    const keys2 = Array.from(map.keys());
                     for (let j = keys2.length - 1; j >= 0; j--)
                     {
                         var component = map.get(keys2[j]);
@@ -189,7 +189,7 @@ export abstract class UIBaseContainer {
             if (this.parent != null && !!this.path)
                 this.parent.innerRemoveComponent(this, this.path);
             else
-                Log.info("Close window here, type name: " + this.constructor.name);
+                Log.info("Close window here, type name: " + this.getConstructor().name);
         }
         else
             Log.error(this.getConstructor().name + "OnDestroy fail, length = "+ this.length);

@@ -473,7 +473,7 @@ export class UIManager implements IManager {
      */
     public async destroyUnShowWindow() {
         const taskScheduler:Promise<void>[] = []
-        let keys = [...this.windows.keys()]
+        const keys = Array.from(this.windows.keys());
         for (const key of keys)
         {
             if (!this.windows.get(key).active)
@@ -501,7 +501,7 @@ export class UIManager implements IManager {
         }
         
         const taskScheduler:Promise<void>[] = []
-        let keys = [...this.windows.keys()]
+        const keys = Array.from(this.windows.keys());
         for (const key of keys)
         {
             if (!dictUINames.has(key))
@@ -521,7 +521,7 @@ export class UIManager implements IManager {
     public async destroyWindowExceptLayer(layer: UILayerNames) {
     
         const taskScheduler:Promise<void>[] = []
-        let keys = [...this.windows.keys()]
+        const keys = Array.from(this.windows.keys());
         for (const key of keys)
         {
             if (this.windows.get(key)?.layer != layer)
@@ -539,7 +539,7 @@ export class UIManager implements IManager {
     public async destroyWindowByLayer(layer: UILayerNames) {
     
         const taskScheduler:Promise<void>[] = []
-        let keys = [...this.windows.keys()]
+        const keys = Array.from(this.windows.keys());
         for (const key of keys)
         {
             if (this.windows.get(key)?.layer == layer)
@@ -555,7 +555,7 @@ export class UIManager implements IManager {
      */
     public async destroyAllWindow(){
         const taskScheduler:Promise<void>[] = []
-        let keys = [...this.windows.keys()]
+        const keys = Array.from(this.windows.keys());
         for (const key of keys)
         {
             taskScheduler[taskScheduler.length] = this.destroyWindow(key);
