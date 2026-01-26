@@ -5,7 +5,7 @@ import * as string from "../../Helper/StringHelper"
 import { JsonHelper } from "../../Helper/JsonHelper";
 import { StringBuilder } from "../../Core/Object/StringBuilder";
 
-const DEFAULT_TIMEOUT: number = 10000; // 默认超时时间
+const DEFAULT_TIMEOUT: number = 10; // 默认超时时间
 
 export class HttpManager
 {
@@ -81,7 +81,7 @@ export class HttpManager
             url += "?" + strParam;
         let response = ETTask.create<string>();
         let xhr = new XMLHttpRequest();
-        xhr.timeout = timeout;
+        xhr.timeout = timeout * 1000;
         xhr.onreadystatechange = function () {
             if (xhr.readyState == 4 ){
                 if((xhr.status >= 200 && xhr.status < 400)) {
@@ -121,7 +121,7 @@ export class HttpManager
     public async httpPostResult<T>(type: new (...args:any[]) => T, url: string, headers: Record<string,string>, param: Record<string,any>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{
         let response = ETTask.create<string>();
         let xhr = new XMLHttpRequest();
-        xhr.timeout = timeout;
+        xhr.timeout = timeout * 1000;
         xhr.onreadystatechange = function () {
             if (xhr.readyState == 4 ){
                 if((xhr.status >= 200 && xhr.status < 400)) {

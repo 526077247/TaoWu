@@ -199,7 +199,7 @@
     "fileId": "bbKBAVLwlB/LwZ7A6WDSzF"
   },
   {
-    "__type__": "cc.Widget",
+    "__type__": "243e4p78oVGRp5LDQXdwbrL",
     "_name": "",
     "_objFlags": 0,
     "__editorExtras__": {},
@@ -210,29 +210,11 @@
     "__prefab": {
       "__id__": 8
     },
-    "_alignFlags": 45,
-    "_target": null,
-    "_left": 0,
-    "_right": 0,
-    "_top": 0,
-    "_bottom": 0,
-    "_horizontalCenter": 0,
-    "_verticalCenter": 0,
-    "_isAbsLeft": true,
-    "_isAbsRight": true,
-    "_isAbsTop": true,
-    "_isAbsBottom": true,
-    "_isAbsHorizontalCenter": true,
-    "_isAbsVerticalCenter": true,
-    "_originalWidth": 40,
-    "_originalHeight": 36,
-    "_alignMode": 2,
-    "_lockFlags": 0,
     "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "fdQ3ytQplEbJgg9sAgmJxw"
+    "fileId": "53ii67J8xDVrua6S5FYfxL"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -3009,6 +2991,12 @@
       "__type__": "cc.Vec2",
       "x": 0,
       "y": 0
+    },
+    "_anchorPosition": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
     },
     "_anchorPreset": 15,
     "_id": ""

@@ -1,4 +1,5 @@
 ﻿import { _decorator, screen } from 'cc';
+import { EDITOR } from 'cc/env';
 
 export class Define {
 
@@ -15,5 +16,7 @@ export class Define {
 
     public static readonly MinRepeatedTimerInterval: number = 100;
 
-    public static readonly Debug = true;
+    public static get Debug(){
+        return EDITOR;
+    }
 }
