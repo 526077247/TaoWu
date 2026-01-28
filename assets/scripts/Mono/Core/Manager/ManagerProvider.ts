@@ -29,7 +29,7 @@ export class ManagerProvider
         }
         return res[1] as T;
     }
-    public static registerManager<T extends IManager<P1, P2, P3>, P1 = void, P2 = void, P3 = void>(classType: new (...args: any[]) => T,p1?: P1,p2?: P2,p3?: P3, name: string = ""): T
+    public static registerManager<T extends IManager<P1, P2, P3, P4>, P1 = void, P2 = void, P3 = void, P4 = void>(classType: new (...args: any[]) => T,p1?: P1,p2?: P2,p3?: P3, p4?: P4, name: string = ""): T
     {
         var res = ManagerProvider.instance.managersDictionary.tryGetValue(classType, name);
         if (!res[0])
@@ -44,7 +44,7 @@ export class ManagerProvider
             {
                 ManagerProvider.instance.lateUpdateManagers.addLast(u);
             }
-            (res[1] as T).init(p1, p2, p3);
+            (res[1] as T).init(p1, p2, p3, p4);
             ManagerProvider.instance.managersDictionary.add(classType,name,res[1]);
             ManagerProvider.instance.allManagers.addLast(res[1]);
         }

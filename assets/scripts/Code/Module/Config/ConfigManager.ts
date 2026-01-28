@@ -3,7 +3,6 @@ import { JsonHelper } from "../../../Mono/Helper/JsonHelper";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ConfigLoader } from "./ConfigLoader";
 import { IConfigLoader } from "./IConfigLoader";
-import { register } from "../Generate/Config/ConfigManager.register"
 import { Log } from "../../../Mono/Module/Log/Log";
 export class ConfigManager implements IManager{
 
@@ -45,6 +44,7 @@ export class ConfigManager implements IManager{
         this.allConfig.clear();
         const configBytes: Map<string, any> = new Map<string, any>();
 		await this.configLoader.getAllConfigBytes(configBytes);
+        const { register } = await import("../Generate/Config/ConfigManager.register")
         register(configBytes);
     }
 

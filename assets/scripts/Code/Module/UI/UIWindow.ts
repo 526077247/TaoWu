@@ -1,6 +1,6 @@
 import { ObjectPool } from "../../../Mono/Core/ObjectPool";
 import { UIBaseView } from "./UIBaseView";
-import { UILayerNames } from "./UIManager";
+import { UILayerNames } from "./UILayerNames";
 
 export enum UIWindowLoadingState{
     NotStart, // 未开始

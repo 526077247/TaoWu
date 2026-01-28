@@ -1,5 +1,6 @@
 import { IScene } from "../../Module/Scene/IScene";
-import { UILayerNames, UIManager } from "../../Module/UI/UIManager";
+import { UILayerNames } from "../../Module/UI/UILayerNames";
+import { UIManager } from "../../Module/UI/UIManager";
 import { UILoadingView } from "../UI/UILoading/UILoadingView";
 import { UIMainView } from "../UI/UIMain/UIMainView";
 

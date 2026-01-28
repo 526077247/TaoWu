@@ -18,23 +18,8 @@ import { I18NManager } from '../I18N/I18NManager';
 import { II18N } from '../I18N/II18N';
 import { AnchorPreset, RectTransform } from '../../../Mono/Module/UI/RectTransfrom';
 import { SystemInfoHelper } from '../../../Mono/Helper/SystemInfoHelper';
-
-export enum UILayerNames
-{
-    GameBackgroundLayer,
-    BackgroundLayer,
-    GameLayer,
-    SceneLayer,
-    NormalLayer,
-    TipLayer,
-    TopLayer,
-}
-
-export class UILayerDefine{
-    public name : UILayerNames;
-    public planeDistance : number;
-    public zOrder: number;
-}
+import { UILayerNames } from './UILayerNames';
+import { UILayerDefine } from './UILayerDefine';
 
 const configs :UILayerDefine[] = [
     {
@@ -151,7 +136,7 @@ export class UIManager implements IManager {
             var layer = configs[i];
             const go = new Node(UILayerNames[layer.name]);
             this._gameObject.addChild(go);
-            let newLayer: UILayer = ManagerProvider.registerManager<UILayer, UILayerDefine, Node>(UILayer, layer, go, null, UILayerNames[layer.name]);
+            let newLayer: UILayer = ManagerProvider.registerManager<UILayer, UILayerDefine, Node, Vec2, Camera>(UILayer, layer, go, this.resolution, this.getUICamera(), UILayerNames[layer.name]);
             this.layers.set(layer.name,newLayer);
             this.windowStack.set(layer.name,new LinkedList<string>());
             Log.info("create layer "+UILayerNames[layer.name]);
