@@ -361,10 +361,11 @@ export class GameObjectPoolManager implements IManager {
         if (!!pooledGo)
         {
             var inst = instantiate(pooledGo);
-            if(this.goInstCountCache.has(path))
-                this.goInstCountCache[path]++;
+            var count = this.goInstCountCache.get(path);
+            if(!!count)
+                this.goInstCountCache.set(path, count+1);
             else 
-                this.goInstCountCache[path] = 1;
+                this.goInstCountCache.set(path, 1);
             this.instPathCache.set(inst, path);
             return inst;
         }
