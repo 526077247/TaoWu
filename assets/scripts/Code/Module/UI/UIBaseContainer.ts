@@ -10,7 +10,7 @@ import * as string from "../../../Mono/Helper/StringHelper"
 import { RectTransform } from "../../../Mono/Module/UI/RectTransfrom";
 export abstract class UIBaseContainer {
 
-    protected abstract getConstructor(): new () => UIBaseContainer;
+    public abstract getConstructor(): new () => UIBaseContainer;
 
     private parent: UIBaseContainer;
     private components : UnOrderDoubleKeyDictionary<string, new (...args: any[]) => any, UIBaseContainer>; //[path]:[component_name:UIBaseContainer]

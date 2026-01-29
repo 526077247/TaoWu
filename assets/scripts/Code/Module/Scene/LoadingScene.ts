@@ -23,7 +23,7 @@ export class LoadingScene implements IScene
         return[cleanup, loadScene, prepare]
     }
     
-    public getDontDestroyWindow(): string[]{
+    public getDontDestroyWindow(): Array<new()=>void>{
         return []
     }
     /**

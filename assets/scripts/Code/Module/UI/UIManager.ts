@@ -9,7 +9,7 @@ import { CoroutineLockManager, CoroutineLock } from '../CoroutineLock/CoroutineL
 import { CoroutineLockType } from '../CoroutineLock/CoroutineLockType';
 import { IOnCreate } from './IOnCreate';
 import { IOnEnable } from './IOnEnable';
-import { UIBaseView } from './UIBaseView';
+import type { UIBaseView } from './UIBaseView';
 import { UILayer } from "./UILayer"
 import { UIWindow, UIWindowLoadingState } from './UIWindow';
 import * as string from "../../../Mono/Helper/StringHelper"
@@ -70,8 +70,8 @@ export class UIManager implements IManager {
     public resolution: Vec2
    
     private layers: Map<UILayerNames, UILayer>;//所有可用的层级
-    private windowStack: Map<UILayerNames, LinkedList<string>>;//窗口记录队列
-    private windows: Map<string, UIWindow>; //所有存活的窗体  {uiName:window}
+    private windowStack: Map<UILayerNames, LinkedList<new()=>void>>;//窗口记录队列
+    private windows: Map<new()=>void, UIWindow>; //所有存活的窗体  {uiName:window}
 
     private boxes: Map<UIBaseView, UIWindow> ; //所有存活的消息盒子  {instance:window}
     public get screenSizeFlag()
@@ -87,8 +87,8 @@ export class UIManager implements IManager {
         var safeArea = SystemInfoHelper.safeArea;
         this._widthPadding = safeArea.xMin;
         UIManager._instance = this;
-        this.windows = new Map<string, UIWindow>();
-        this.windowStack = new Map<UILayerNames, LinkedList<string>>();
+        this.windows = new Map<new()=>void, UIWindow>();
+        this.windowStack = new Map<UILayerNames, LinkedList<new()=>void>>();
         this.boxes = new Map<UIBaseView, UIWindow>();
         this.initLayer();
         // Messager.Instance.AddListener<int, int>(0, MessageId.OnKeyInput, OnKeyInput);
@@ -138,7 +138,7 @@ export class UIManager implements IManager {
             this._gameObject.addChild(go);
             let newLayer: UILayer = ManagerProvider.registerManager<UILayer, UILayerDefine, Node, Vec2, Camera>(UILayer, layer, go, this.resolution, this.getUICamera(), UILayerNames[layer.name]);
             this.layers.set(layer.name,newLayer);
-            this.windowStack.set(layer.name,new LinkedList<string>());
+            this.windowStack.set(layer.name,new LinkedList<new()=>void>());
             Log.info("create layer "+UILayerNames[layer.name]);
         }
     }
@@ -171,7 +171,7 @@ export class UIManager implements IManager {
      * @param active 2打开且loading,1打开,-1关闭,0不做限制
      * @returns 
      */
-    public isWindowActive<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView, active:number = 0) {
+    public isWindowActive<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView, active:number = 0) {
         const uiName = this.getUIName(ui);
         let target = this.getWindow(uiName);
         if (target == null)
@@ -198,7 +198,7 @@ export class UIManager implements IManager {
      * @param active 2打开且loading,1打开，-1关闭,0不做限制
      * @returns 
      */
-    public getWindow(uiName:string, active:number = 0):UIWindow{
+    public getWindow(uiName:new()=>void, active:number = 0):UIWindow{
         const target = this.windows.get(uiName);
         if (!!target)
         {
@@ -223,10 +223,9 @@ export class UIManager implements IManager {
      */
     public getView<T extends UIBaseView>(type: new () => T,active:number = 0): T 
     {
-        const uiName = type.name;
         if (this.windows != null)
         {
-            const target = this.windows.get(uiName);
+            const target = this.windows.get(type);
             if(!target)  return null;
             if (active == 0 || active * (target.active ? 1 : -1) > 0)
             {
@@ -277,7 +276,7 @@ export class UIManager implements IManager {
      * @returns 
      */
     public getLayerTopWindow(layer: UILayerNames): UIWindow {
-        var wins: LinkedList<string> = this.windowStack.get(layer);
+        var wins: LinkedList<new()=>void> = this.windowStack.get(layer);
         if (wins.size <= 0) return null;
         for (var node = wins.first; node != null; node = node.next)
         {
@@ -350,7 +349,7 @@ export class UIManager implements IManager {
      * @param uiName 
      * @returns 
      */
-    public async closeWindow<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView) {
+    public async closeWindow<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView) {
         var target = this.getWindow(this.getUIName(ui), 1);
         if (target == null) return;
         while (target.loadingState != UIWindowLoadingState.LoadOver)
@@ -413,8 +412,8 @@ export class UIManager implements IManager {
      * @param layer 
      * @param exceptUINames 
      */
-    public async closeWindowByLayer(layer: UILayerNames, ...exceptUINames: string[]) {
-        const dictUINames: Set<string> = new Set<string>()
+    public async closeWindowByLayer(layer: UILayerNames, ...exceptUINames: Array<new()=>void>) {
+        const dictUINames: Set<new()=>void> = new Set<new()=>void>()
     
         if (exceptUINames != null && exceptUINames.length > 0)
         {
@@ -441,12 +440,12 @@ export class UIManager implements IManager {
      * @param ui 
      * @param clear 现有缓存达到多少开始销毁，-1表示无限
      */
-    public async destroyWindow<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView , clear:number = -1){
+    public async destroyWindow<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView , clear:number = -1){
         const uiName = this.getUIName(ui);
         let target = this.getWindow(uiName);
         if (target != null)
         {
-            await this.closeWindow(uiName);
+            await this.closeWindow(ui);
             this.innerDestroyWindow(target, clear);
             this.windows.delete(target.name);
             target.dispose();
@@ -475,8 +474,8 @@ export class UIManager implements IManager {
      * 销毁除指定窗口外所有窗口
      * @param typeNames 
      */
-    public async destroyWindowExceptNames(...typeNames: string[]){
-        const dictUINames: Set<string> = new Set<string>()
+    public async destroyWindowExceptNames(...typeNames: Array<new()=>void>){
+        const dictUINames: Set<new()=>void> = new Set<new()=>void>()
         if (typeNames != null)
         {
             for (let i = 0; i < typeNames.length; i++)
@@ -597,7 +596,7 @@ export class UIManager implements IManager {
         let coroutineLock: CoroutineLock = null;
         try
         {
-            coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.UIManager, string.getHash(target.name));
+            coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.UIManager, string.getHash(target.prefabPath));
             target.active = true;
             const res: T = target.view as T;
             var needLoad = target.loadingState == UIWindowLoadingState.NotStart;
@@ -606,9 +605,8 @@ export class UIManager implements IManager {
             {
                 await this.innerOpenWindowGetGameObject(target.prefabPath, target);
             }
-
             this.innerResetWindowLayer(target);
-            await this.addWindowToStack(target, p1, p2, p3);
+            await this.addWindowToStack(target, p1, p2, p3, p4);
             target.loadingState = UIWindowLoadingState.LoadOver;
             return res;
         }
@@ -630,7 +628,7 @@ export class UIManager implements IManager {
         var node: Node = go;
         node.setParent(this.getLayer(target.layer).node, false);
 
-        node.name = target.name;
+        node.name = target.name.name;
         view.setNode(node);
         var viewAny = view as any;
         if(!!viewAny?.onCreate){
@@ -787,17 +785,13 @@ export class UIManager implements IManager {
         rectTrans.offsetMax = new Vec2(padding * rectTrans.anchorMax.x, top * (1 - rectTrans.anchorMin.y));
     }
 
-    private getUIName<T extends UIBaseView | void>(ui: (new () => T)| string | UIBaseView){
-        let uiName:string
-        if(ui instanceof UIBaseView){
-            var window = ui as UIBaseView;
-            uiName = window.constructor.name;
-        } else if(ui instanceof Function){
-            uiName = (ui as any).name;
+    private getUIName<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView){
+        if(ui instanceof Function){
+            return ui;
         }else{
-            uiName = ui as string;
+            var window = ui as UIBaseView;
+            return window.getConstructor();
         }       
-        return uiName;
     }
 
 }

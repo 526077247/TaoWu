@@ -1,7 +1,7 @@
 import { UIBaseContainer } from "../UI/UIBaseContainer";
 
 export class UIEmptyView extends UIBaseContainer{
-    protected getConstructor(){
+    public getConstructor(){
         return UIEmptyView;
     }
 

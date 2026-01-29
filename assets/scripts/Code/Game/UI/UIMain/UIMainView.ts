@@ -21,7 +21,7 @@ export class UIMainView extends UIBaseView implements IOnCreate, IOnEnable, IOnW
 
     public static readonly PrefabPath:string = "ui/uimain/prefabs/uiMainView";
 
-    protected getConstructor()
+    public getConstructor()
     {
         return UIMainView;
     }

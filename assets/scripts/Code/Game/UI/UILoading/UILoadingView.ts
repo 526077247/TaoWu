@@ -11,7 +11,7 @@ export class UILoadingView extends UIBaseView implements IOnCreate, IOnEnable, I
     private slider: UISlider
 
     private progress: number
-    protected getConstructor()
+    public getConstructor()
     {
         return UILoadingView;
     }

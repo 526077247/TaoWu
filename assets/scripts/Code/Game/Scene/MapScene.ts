@@ -25,9 +25,9 @@ export class MapScene extends SceneManagerProvider implements IScene {
     }
     
     private win: UILoadingView;
-    private dontDestroyWindow: string[] = [UILoadingView.name];
+    private dontDestroyWindow: Array<new()=>void> = [UILoadingView];
 
-    public getDontDestroyWindow(): string[]
+    public getDontDestroyWindow(): Array<new()=>void> 
     {
         return this.dontDestroyWindow;
     }

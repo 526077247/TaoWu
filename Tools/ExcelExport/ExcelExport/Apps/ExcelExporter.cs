@@ -244,19 +244,18 @@ namespace TaoWu
                 Task.WaitAll(tasks.ToArray());
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine("import { JsonHelper } from '../../../../Mono/Helper/JsonHelper';");
-                stringBuilder.AppendLine("import { ConfigManager } from '../../Config/ConfigManager';");
 
                 for (int i = 0; i < configList.Count; i++)
                 {
                     stringBuilder.AppendLine($"import {{ {configList[i]}, {configList[i]}Category }} from './{configList[i]}';");
                 }
 
-                stringBuilder.AppendLine("export function register(configBytes: Map<string, any>){");
+                stringBuilder.AppendLine("export function register(configBytes: Map<string, any>, loadOneInThread:Function){");
                 for (int i = 0; i < configList.Count; i++)
                 {
                     stringBuilder.AppendLine($"\tJsonHelper.registerClass({configList[i]},'{configList[i]}');");
                     stringBuilder.AppendLine($"\tJsonHelper.registerClass({configList[i]}Category,'{configList[i]}Category');");
-                    stringBuilder.AppendLine($"\tConfigManager.instance.loadOneInThread({configList[i]}Category,'{configList[i]}Category', configBytes);");
+                    stringBuilder.AppendLine($"\tloadOneInThread({configList[i]}Category,'{configList[i]}Category', configBytes);");
                 }
                 stringBuilder.AppendLine("}");
 

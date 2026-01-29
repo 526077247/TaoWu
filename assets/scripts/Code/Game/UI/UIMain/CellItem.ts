@@ -4,7 +4,7 @@ import { UIText } from "../../../Module/UIComponent/UIText";
 
 export class CellItem extends UIBaseContainer implements IOnCreate{
 
-    protected getConstructor()
+    public getConstructor()
     {
         return CellItem;
     }

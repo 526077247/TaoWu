@@ -5,7 +5,7 @@ import { UIBaseContainer } from "../UI/UIBaseContainer";
 
 export class UIInput extends UIBaseContainer implements IOnDestroy {
 
-    protected getConstructor(){
+    public getConstructor(){
         return UIInput;
     }
     private input: EditBox;

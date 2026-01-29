@@ -8,7 +8,7 @@ import { SoundManager } from "../Resource/SoundManager";
 
 export class UIButton extends UIBaseContainer implements IOnDestroy {
 
-    protected getConstructor(){
+    public getConstructor(){
         return UIButton;
     }
     private button: Button;

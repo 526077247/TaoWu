@@ -1,4 +1,5 @@
 ﻿import { UIBaseContainer }  from "./UIBaseContainer"
+import { UIManager } from "./UIManager";
 export abstract class UIBaseView extends UIBaseContainer {
 
     public get canBack(): boolean{
@@ -10,7 +11,6 @@ export abstract class UIBaseView extends UIBaseContainer {
      */
     public async closeSelf(): Promise<void>
     {
-        const { UIManager } = await import("./UIManager");
         var close = await UIManager.instance.closeBox(this);
         if(!close) await UIManager.instance.closeWindow(this);
     }

@@ -6,7 +6,7 @@ import { IOnDestroy } from "../UI/IOnDestroy";
 import { UIBaseContainer } from "../UI/UIBaseContainer";
 
 export class UICopyGameObject extends UIBaseContainer implements IOnDestroy{
-    protected getConstructor(){
+    public getConstructor(){
         return UICopyGameObject;
     }
     private comp: CopyGameObject;

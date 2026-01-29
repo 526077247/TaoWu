@@ -13,7 +13,7 @@ import { I18NManager } from "../../../Module/I18N/I18NManager";
 
 export class UIToast extends UIBaseView implements IOnCreate, IOnEnable<string|I18NKey, number|null>
 {
-    protected getConstructor(){
+    public getConstructor(){
         return UIToast;
     }
     public static readonly PrefabPath:string = "ui/uicommon/prefabs/uiToast";

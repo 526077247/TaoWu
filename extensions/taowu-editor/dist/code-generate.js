@@ -231,7 +231,7 @@ export class ${fileName} extends UIBaseView implements IOnCreate, IOnEnable {
 
     public static readonly PrefabPath:string = "${Editor.Utils.Path.stripExt(prefabPath[1])}";
 
-    protected getConstructor()
+    public getConstructor()
     {
         return ${fileName};
     }

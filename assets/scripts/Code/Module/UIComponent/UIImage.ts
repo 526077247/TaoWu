@@ -8,7 +8,7 @@ import { ImageLoaderManager } from "../Resource/ImageLoaderManager";
 
 export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<string> {
 
-    protected getConstructor(){
+    public getConstructor(){
         return UIImage;
     }
 

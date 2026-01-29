@@ -12,7 +12,7 @@ export class MenuPara
 }
 export class UIMenu extends UIBaseContainer implements IOnCreate
 {
-    protected getConstructor(){
+    public getConstructor(){
         return UIMenu;
     }
     public space: UICopyGameObject;

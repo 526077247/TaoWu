@@ -5,7 +5,7 @@ import { UIBaseContainer } from "../UI/UIBaseContainer";
 
 export class UISlider extends UIBaseContainer implements IOnDestroy {
 
-    protected getConstructor(){
+    public getConstructor(){
         return UISlider;
     }
     private slider: Slider;

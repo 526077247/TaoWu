@@ -5,7 +5,7 @@ import { UIText } from "../../../Module/UIComponent/UIText";
 export class DateItem extends UIBaseContainer implements IOnCreate
 {
 
-    protected getConstructor()
+    public getConstructor()
     {
         return DateItem;
     }

@@ -16,7 +16,7 @@ export class MsgBoxPara
 
 export class UIMsgBoxWin extends UIBaseView implements IOnCreate,IOnEnable<MsgBoxPara>,IOnDisable
 {
-    protected getConstructor(){
+    public getConstructor(){
         return UIMsgBoxWin;
     }
 

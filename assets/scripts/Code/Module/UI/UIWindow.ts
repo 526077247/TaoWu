@@ -13,7 +13,7 @@ export class UIWindow {
     /**
      * 窗口名字
      */
-    public name:string;
+    public name: new()=>void;
     /**
      * 是否激活
      */

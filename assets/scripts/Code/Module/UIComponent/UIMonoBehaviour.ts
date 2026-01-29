@@ -5,7 +5,7 @@ import { Log } from "../../../Mono/Module/Log/Log";
 export class UIMonoBehaviour<T extends Component> extends UIBaseContainer{
 
     private component: T;
-    protected getConstructor(){
+    public getConstructor(){
         return UIMonoBehaviour;
     }
 

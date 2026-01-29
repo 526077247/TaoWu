@@ -8,7 +8,7 @@ import { IOnDestroy } from "../UI/IOnDestroy";
 import { UIBaseContainer } from "../UI/UIBaseContainer";
 
 export class UILoopListView2 extends UIBaseContainer implements IOnDestroy{
-    protected getConstructor(){
+    public getConstructor(){
         return UILoopListView2;
     }
     private loopListView: LoopListView2;

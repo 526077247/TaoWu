@@ -9,7 +9,7 @@ export interface IScene
      */
     getProgressPercent(): [cleanup:number,loadScene:number,prepare:number];
 
-    getDontDestroyWindow(): string[];
+    getDontDestroyWindow(): Array<new()=>void>;
     /**
      * 场景切换中不释放，切换完毕后释放的资源列表
      */

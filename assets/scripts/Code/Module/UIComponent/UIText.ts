@@ -9,7 +9,7 @@ import * as string from "../../../Mono/Helper/StringHelper"
 
 export class UIText extends UIBaseContainer implements II18N {
 
-    protected getConstructor(){
+    public getConstructor(){
         return UIText;
     }
     private text: Label;

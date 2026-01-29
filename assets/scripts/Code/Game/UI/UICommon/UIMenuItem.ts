@@ -7,7 +7,7 @@ import { MenuPara } from "./UIMenu";
 import * as string from "../../../../Mono/Helper/StringHelper"
 import { math } from "cc";
 export class UIMenuItem extends UIBaseContainer implements IOnCreate{
-    protected getConstructor(){
+    public getConstructor(){
         return UIMenuItem;
     }
 

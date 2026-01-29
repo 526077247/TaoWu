@@ -22,7 +22,7 @@ export enum EventTriggerType {
 }
 
 export class UIEventTrigger extends UIBaseContainer implements IOnDestroy, IOnCreate{
-    protected getConstructor(){
+    public getConstructor(){
         return UIEventTrigger;
     }
 
