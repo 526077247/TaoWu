@@ -305,6 +305,25 @@ export class UIEventTrigger extends UIBaseContainer implements IOnDestroy, IOnCr
         this.removeEvent(EventTriggerType.EndDrag, callback);
     }
 
+    public setOnPointerExit(callback: (event: EventTouch) => void): void {
+        this.removeOnPointerExit();
+        this.addEvent(EventTriggerType.PointerExit, callback);
+    }
+    
+    public setOnPointerDown(callback: (event: EventTouch) => void): void {
+        this.removeOnPointerDown();
+        this.addEvent(EventTriggerType.PointerDown, callback);
+    }
+    
+    public setOnPointerUp(callback: (event: EventTouch) => void): void {
+        this.removeOnPointerUp();
+        this.addEvent(EventTriggerType.PointerUp, callback);
+    }
+    
+    public setOnPointerClick(callback: (event: EventTouch) => void): void {
+        this.removeOnPointerClick();
+        this.addEvent(EventTriggerType.PointerClick, callback);
+    }
     /**
      * 清空所有事件
      */

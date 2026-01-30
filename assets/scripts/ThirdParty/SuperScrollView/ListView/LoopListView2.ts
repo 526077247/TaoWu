@@ -379,7 +379,14 @@ export class LoopListView2 extends Component {
 
     // 设置列表项数量
     public setListItemCount(itemCount: number, resetPos: boolean = true): void {
-        if (itemCount === this.mItemTotalCount) return;
+        if (itemCount === this.mItemTotalCount) {
+            if (resetPos && itemCount > 0)
+            {
+                this.movePanelToItemIndex(0, 0);
+                return;
+            }
+            return;
+        }
 
         this.curSnapData.clear();
         this.mItemTotalCount = itemCount;

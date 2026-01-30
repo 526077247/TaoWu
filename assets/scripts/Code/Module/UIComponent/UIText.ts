@@ -1,4 +1,4 @@
-import { Label, math } from "cc";
+import { Label, math, RichText, Tween, tween } from "cc";
 import { I18NText } from "../../../Mono/Module/I18N/I18NText";
 import { Log } from "../../../Mono/Module/Log/Log";
 import { I18NKey } from "../Const/I18NKey";
@@ -13,6 +13,7 @@ export class UIText extends UIBaseContainer implements II18N {
         return UIText;
     }
     private text: Label;
+    private text2: RichText;
     private i18nCompTouched: I18NText;
     private textKey: I18NKey|null = null;
     private keyParams : any;
@@ -24,8 +25,13 @@ export class UIText extends UIBaseContainer implements II18N {
             this.text = this.getNode().getComponent<Label>(Label);
             if (this.text == null)
             {
-                Log.error(`添加UI侧组件UIText时，物体${this.getNode().name}上没有找到Label组件`);
+                this.text2 = this.getNode().getComponent<RichText>(RichText);
+                if (this.text2 == null)
+                {
+                    Log.error(`添加UI侧组件UIText时，物体${this.getNode().name}上没有找到Label或RichText组件`);
+                }
             }
+            this.i18nCompTouched = this.getNode().getComponent<I18NText>(I18NText);
         }
     }
 
@@ -37,7 +43,10 @@ export class UIText extends UIBaseContainer implements II18N {
             let text = I18NManager.instance.i18NGetText(this.textKey);
             if (!string.isNullOrEmpty(text) && this.keyParams != null)
                 text = string.format(text, ...this.keyParams);
-            this.text.string = text;
+            if (this.text != null)
+                this.text.string = text;
+            else if (this.text2 != null)
+                this.text2.string = text;
         }
     }
 
@@ -58,7 +67,11 @@ export class UIText extends UIBaseContainer implements II18N {
     public getText(): string
     {
         this.activatingComponent();
-        return this.text.string;
+        if (this.text != null)
+            return this.text.string;
+        else if (this.text2 != null)
+            return this.text2.string;
+        return null;
     }
 
     public setText(text: string)
@@ -68,7 +81,10 @@ export class UIText extends UIBaseContainer implements II18N {
         }
         this.disableI18Component();
         this.textKey = null;
-        this.text.string = text;
+        if (this.text != null)
+            this.text.string = text;
+        else if (this.text2 != null)
+            this.text2.string = text;
     }
 
     public setI18NKey(key: I18NKey, ...paras: any[])
@@ -96,7 +112,10 @@ export class UIText extends UIBaseContainer implements II18N {
             let text = I18NManager.instance.i18NGetText(this.textKey);
             if (!string.isNullOrEmpty(text) && this.keyParams != null)
                 text = string.format(text, ...this.keyParams);
-            this.text.string = text;
+            if (this.text != null)
+                this.text.string = text;
+            else if (this.text2 != null)
+                this.text2.string = text;
         }
     }
 
@@ -104,11 +123,58 @@ export class UIText extends UIBaseContainer implements II18N {
     {
         if(color instanceof math.Color){
             this.activatingComponent();
-            this.text.color = color;
+            if (this.text != null)
+                this.text.color = color;
+            else if (this.text2 != null)
+                this.text2.fontColor = color;
             return;
         }
         if(string.isNullOrEmpty(color)) return;
         this.activatingComponent();
         this.text.color.fromHEX(color)
+        if (this.text != null)
+            this.text.color.fromHEX(color)
+        else if (this.text2 != null)
+            this.text2.fontColor.fromHEX(color)
+    }
+
+    public lastNum: number = 0;
+    public tween: Tween
+    public setNum(number: number){
+        this.disableI18Component();
+        this.tween?.stop();
+        if (this.text != null)
+            this.text.string = String(number)
+        else if (this.text2 != null)
+            this.text2.string = String(number)
+        this.lastNum = number;
+    }
+    public doNum(number: number, during:number = 0.5){
+        this.disableI18Component();
+        if(Math.abs(number - this.lastNum) == 1){
+            this.setNum(number);
+            return;
+        }
+        const startValue = this.lastNum
+        let currentValue = startValue;
+        this.tween?.stop();
+        this.tween = tween({ value: startValue })
+            .to(during, { value: number }, {
+                onUpdate: (target) => {
+                currentValue = Math.floor(target.value);
+                if (this.text != null) {
+                    this.text.string = String(currentValue)
+                    this.lastNum = currentValue;
+                }
+                else if (this.text2 != null){
+                    this.text2.string = currentValue.toString();
+                    this.lastNum = currentValue;
+                }
+            },
+        }).call(()=>{
+            this.tween = null;
+            this.lastNum = number;
+        });
+        this.tween.start();
     }
 }
