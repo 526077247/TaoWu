@@ -1,7 +1,7 @@
 import { sys } from "cc";
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { JsonHelper } from "../../../Mono/Helper/JsonHelper";
-
+import * as string from "../../../Mono/Helper/StringHelper";
 export class CacheManager implements IManager {
 
     private static _instance: CacheManager;
@@ -31,9 +31,9 @@ export class CacheManager implements IManager {
     public getInt(key: string, defaultValue: number = 0): number
     {
         const str = sys.localStorage.getItem(key);
-        if(!!str){
+        if(!string.isNullOrEmpty(str)){
             const val = Number.parseInt(str);
-            if(!!val && !Number.isNaN(val)){
+            if(val != null && !Number.isNaN(val)){
                 return val;
             }
         }

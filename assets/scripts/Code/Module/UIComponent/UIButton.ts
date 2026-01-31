@@ -1,4 +1,4 @@
-import { Button, math, Sprite } from "cc";
+import { Button, math, Size, Sprite } from "cc";
 import { Log } from "../../../Mono/Module/Log/Log";
 import { IOnDestroy } from "../UI/IOnDestroy";
 import { UIBaseContainer } from "../UI/UIBaseContainer";
@@ -16,6 +16,8 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
     private spritePath: string;
     private image: Sprite;
     private version: number = 0;
+    private playSound: boolean;
+    private size: Size;
 
     public onDestroy(){
         this.version = 0;
@@ -49,14 +51,16 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
             {
                 Log.error(`添加UI侧组件UIButton时，物体${this.getNode().name}上没有找到Sprite组件`);
             }
+            this.size = this.getTransform().contentSize.clone();
         }
     }
 
-    public setOnClick(callback: () => void)
+    public setOnClick(callback: () => void, playSound = true)
     {
         this.activatingComponent();
         this.removeOnClick();
         this.onClick = callback;
+        this.playSound = playSound;
         this.button!.node.on(Button.EventType.CLICK, this.onClickEvent, this);
     }
 
@@ -70,7 +74,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
     }
 
     private onClickEvent(button: Button){
-        SoundManager.instance.playSound("audio/sound/commonclick");
+        if(!!this.playSound) SoundManager.instance.playSound("audio/sound/commonclick");
         if(!!this.onClick){
             this.onClick()
         }
@@ -128,22 +132,28 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
             this.image.spriteFrame = sprite;
             if(setNativeSize)
                 this.setNativeSize();
-            // if (this.bgAutoFit != null)
-            // {
-            //     this.bgAutoFit.SetSprite(sprite);
-            //     this.bgAutoFit.enabled = true;
-            // }
+            else
+                this.getTransform().contentSize = this.getTransform().contentSize.set(this.size);
         }
         if(!string.isNullOrEmpty(baseSpritePath))
             ImageLoaderManager.instance.releaseImage(baseSpritePath);
     }
 
-    public setNativeSize()
-    {
+    public setNativeSize(){
         if(this.image == null || this.image.spriteFrame == null) return;
-        let uiTrans = this.getTransform();
-        uiTrans.width = this.image.spriteFrame.width;
-        uiTrans.height = this.image.spriteFrame.height;
+        if(!!this.size){
+            this.image.sizeMode = 0;
+            const sprite = this.image.spriteFrame;
+            const flagY = sprite.rect.height / this.size.height;
+            const flagX = sprite.rect.width / this.size.width;
+            const size = this.getTransform().contentSize;
+            if(flagY >= flagX){
+                size.set(sprite.rect.width* this.size.height/sprite.rect.height ,this.size.height);
+            }else{
+                size.set(this.size.width ,sprite.rect.height* this.size.width/sprite.rect.width);
+            }
+            this.getTransform().contentSize = size;
+        }
     }
 
     public getSpritePath()

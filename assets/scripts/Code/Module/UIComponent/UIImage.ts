@@ -1,4 +1,4 @@
-import { math, Sprite, SpriteFrame } from "cc";
+import { math, Size, Sprite, SpriteFrame } from "cc";
 import { Log } from "../../../Mono/Module/Log/Log";
 import { IOnCreate } from "../UI/IOnCreate";
 import { IOnDestroy } from "../UI/IOnDestroy";
@@ -17,6 +17,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
     private isSetSprite: boolean;
     private version: number = 0;
     private cacheUrl: string;
+    private size: Size;
 
     public onCreate(path: string)
     {
@@ -54,16 +55,17 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             {
                 Log.error(`添加UI侧组件UIImage时，物体${this.getNode().name}上没有找到Sprite组件`);
             }
+            this.size = this.getTransform().contentSize.clone();
         }
     }
 
     /**
      * 设置图片地址（注意尽量不要和SetOnlineSpritePath混用
      * @param spritePath 
-     * @param sizeMode 
+     * @param setNativeSize 
      * @returns 
      */
-    public async setSpritePath(spritePath: string, sizeMode = Sprite.SizeMode.CUSTOM): Promise<void>
+    public async setSpritePath(spritePath: string, setNativeSize = false): Promise<void>
     {
         this.version++;
         const thisVersion = this.version;
@@ -73,7 +75,6 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             return;
         }
         this.activatingComponent();
-        // if (this.bgAutoFit != null) this.bgAutoFit.enabled = false;
         this.image.enabled = false;
         var baseSpritePath = this.spritePath;
 
@@ -94,32 +95,47 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             }
             this.spritePath = spritePath;
             this.image.enabled = true;
-            this.image.spriteFrame = sprite;
             this.isSetSprite = false;
-            this,this.image.sizeMode = sizeMode;
-            // if (this.bgAutoFit != null)
-            // {
-            //     this.bgAutoFit.SetSprite(sprite);
-            //     this.bgAutoFit.enabled = true;
-            // }
+            this.image.spriteFrame = sprite;
+            if(setNativeSize)
+                this.setNativeSize();
+            else
+                this.getTransform().contentSize = this.getTransform().contentSize.set(this.size);
         }
         if(!string.isNullOrEmpty(baseSpritePath))
             ImageLoaderManager.instance.releaseImage(baseSpritePath);
        
     }
 
+    public setNativeSize(){
+        if(this.image == null || this.image.spriteFrame == null) return;
+        if(!!this.size){
+            this.image.sizeMode = 0;
+            const sprite = this.image.spriteFrame;
+            const flagY = sprite.rect.height / this.size.height;
+            const flagX = sprite.rect.width / this.size.width;
+            const size = this.getTransform().contentSize;
+            if(flagY >= flagX){
+                size.set(sprite.rect.width* this.size.height/sprite.rect.height ,this.size.height);
+            }else{
+                size.set(this.size.width ,sprite.rect.height* this.size.width/sprite.rect.width);
+            }
+            this.getTransform().contentSize = size;
+        }
+    }
+
     /**
      * 设置网络图片地址（注意尽量不要和SetSpritePath混用
      * @param spritePath 
-     * @param sizeMode 
+     * @param setNativeSize 
      * @param defaultSpritePath 
      */
-    public async setOnlineSpritePath(url: string, sizeMode = Sprite.SizeMode.CUSTOM, defaultSpritePath: string = null)
+    public async setOnlineSpritePath(url: string, setNativeSize = false, defaultSpritePath: string = null)
     {
         this.activatingComponent();
         if (!string.isNullOrEmpty(defaultSpritePath))
         {
-            await this.setSpritePath(defaultSpritePath, sizeMode);
+            await this.setSpritePath(defaultSpritePath, setNativeSize);
         }
         this.version++;
         const thisVersion = this.version;
