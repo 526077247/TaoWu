@@ -360,6 +360,7 @@ ${func}
         });
         let jj = 0;
         for (const kv of pathMap) {
+            if(kv[1] == null) continue;
             await Editor.Message.request('scene', 'set-property', {
                 uuid: root.uuid,
                 path: `__comps__.${compIndex}.data.${jj}`,
@@ -385,7 +386,6 @@ ${func}
             });
             jj++;
         }
-        console.log(tree);
         await Editor.Message.request('scene', 'save-scene');
     }
 }
