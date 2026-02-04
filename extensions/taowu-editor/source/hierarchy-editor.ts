@@ -21,6 +21,13 @@ export function onNodeMenu(nodeInfo:any) {
                 CodeGenerate.generateUICode(list);
             }
         });
+        menu.push(
+        {
+            label: "绑定UI节点",
+            async click() {
+                CodeGenerate.bindUINodeByPrefab();
+            }
+        });
         return menu;
     };
     
@@ -34,6 +41,13 @@ export function onPanelMenu(){
         async click() {
             var list = Editor.Selection.getSelected("node");
             CodeGenerate.generateUICode(list);
+        }
+    });
+    menu.push(
+    {
+        label: "绑定UI节点",
+        async click() {
+            CodeGenerate.bindUINodeByPrefab();
         }
     });
     return menu;

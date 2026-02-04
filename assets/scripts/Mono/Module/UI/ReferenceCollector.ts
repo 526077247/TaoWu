@@ -30,9 +30,10 @@ export class ReferenceCollector extends Component {
             const element = this.data[index];
             if(element.key == key){
                 element.value = value;
-                break;
+                return;
             }
         }
+        this.data.push({key:key, value: value})
     }
 
 

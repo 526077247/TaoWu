@@ -3,6 +3,7 @@ import path from "path";
 import { ETTask } from "./ettask";
 import { INode } from "@cocos/creator-types/editor/packages/scene/@types/public";
 import { FileHelper } from "./file-helper";
+import { Utils } from "@cocos/creator-types/editor/utils/index";
 
 export class CodeGenerate{
     private static readonly uiPath = FileHelper.uiPath
@@ -17,6 +18,7 @@ export class CodeGenerate{
         ["cc.Slider" , "UISlider"],
         ["cc.Sprite" , "UIImage"],
         ["cc.Label" , "UIText"],
+        ["cc.RichText" , "UIText"],
     ])
     public static async getPath(node: INode){
         let path = node.name.value;
@@ -242,5 +244,148 @@ ${func}
         }
     }
 
+    public static async bindUINode(node: string){
+        var root = await Editor.Message.request('scene', 'query-node', node);
+        while(root.parent?.value != null){
+            var pNode = await Editor.Message.request('scene', 'query-node', root.parent.value.uuid);
+            if(pNode.name.value == "should_hide_in_hierarchy") break;
+            root = pNode
+        }
+        if(root.__type__ == "cc.Scene") return;
+        if(root.__prefab__!=null){
+            await Editor.Message.request('asset-db', 'open-asset', root.__prefab__.uuid);
+            await this.bindUINodeByPrefab();
+        }
+    }
 
+    public static async bindUINodeByPrefab(){
+        while(!await Editor.Message.request('scene', 'query-is-ready')) ;
+        const tree = await Editor.Message.request('scene', 'query-node-tree') as any;
+        var root = tree;
+        if(root?.children == null) return;
+        for (let index = 0; index < root.children.length; index++) {
+            const element = root.children[index];
+            if(element.name == "should_hide_in_hierarchy"){
+                root = element.children[0];
+                break;
+            }
+        }
+        const scripts = await Editor.Message.request('asset-db', 'query-assets', { ccType: 'cc.Script' });
+        let script = null;
+        for (let index = 0; index < scripts.length; index++) {
+            if(scripts[index].name.toLowerCase().indexOf(root.name.toLowerCase())>=0){
+                script = scripts[index];
+                break;
+            }
+        }
+        if(script == null) {
+            console.error("query-script fail!");
+            return;
+        }
+        const ts = fs.readFileSync(script.file, { encoding: "utf-8"});
+        const lines = ts.split('\n');
+        const pathMap = new Map<string, any>();
+        for (let index = 0; index < lines.length; index++) {
+            let line = lines[index];
+            if(line.indexOf("this.addComponent(")>=0){
+                line = line.replace(' ','');
+                const vs = line.split("\"");
+                if(vs.length>2) {
+                    pathMap.set(vs[1], null);
+                }
+            }
+        }
+        let comp = null;
+        let compIndex = -1;
+        for (let index = 0; index < root.components.length; index++) {
+            if(root.components[index].type == "ReferenceCollector"){
+                comp = root.components[index];
+                compIndex = index;
+                break;
+            }
+        }
+        if(!comp){
+            const res = Editor.Message.request('scene', 'create-component', { 
+                uuid: root.uuid,
+                component: 'ReferenceCollector'
+            });
+            if(!res) {
+                console.error("create-component fail!");
+                return;
+            }
+
+            var pNode = await Editor.Message.request('scene', 'query-node-tree', root.uuid) as any;
+            for (let index = 0; index < pNode.components.length; index++) {
+                if(pNode.components[index].type == "ReferenceCollector"){
+                    comp = pNode.components[index];
+                    compIndex = index;
+                    break;
+                }
+            }
+        }
+        let count = 0;
+        for (const kv of pathMap) {
+            const path = kv[0];
+            const vs = path.split('/');
+            var node = root;
+            for (let index = 0; index < vs.length; index++) {
+                const name = vs[index];
+                let find = false;
+                for (let i = 0; i < node.children.length; i++) {
+                    if(name == node.children[i].name){
+                        node = node.children[i];
+                        find = true;
+                        break;
+                    }
+                }
+                if(!find){
+                    node = null;
+                    break;
+                }
+            }
+            if(node!=null){
+                pathMap.set(path, node)
+                console.log(path+" "+node.uuid);
+            }else{
+                count++;
+            }
+        }
+
+        await Editor.Message.request('scene', 'set-property', {
+            uuid: root.uuid,
+            path: `__comps__.${compIndex}.data.length`,
+            dump: {
+                value: count,
+            },
+        });
+        let jj = 0;
+        for (const kv of pathMap) {
+            await Editor.Message.request('scene', 'set-property', {
+                uuid: root.uuid,
+                path: `__comps__.${compIndex}.data.${jj}`,
+                dump: {
+                    type: "KeyValuePiar",
+                    value: {},
+                },
+            });
+            await Editor.Message.request('scene', 'set-property', {
+                uuid: root.uuid,
+                path: `__comps__.${compIndex}.data.${jj}.key`,
+                dump: {
+                    value: kv[0],
+                },
+            });
+            await Editor.Message.request('scene', 'set-property', {
+                uuid: root.uuid,
+                path: `__comps__.${compIndex}.data.${jj}.value`,
+                dump: {
+                    type: "cc.Node",
+                    value: { uuid: kv[1].uuid},
+                },
+            });
+            jj++;
+        }
+        console.log(tree);
+        await Editor.Message.request('scene', 'save-scene');
+    }
 }
