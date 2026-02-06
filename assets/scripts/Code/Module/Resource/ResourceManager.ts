@@ -19,7 +19,6 @@ export class ResourceManager implements IManager {
     private assetMap: Map<Asset, AssetManager.Bundle>;
 
     private loadingOpCount: number;
-    private currentSceneAssets: SceneAsset;
 
     public init(): void {
         ResourceManager._instance = this;

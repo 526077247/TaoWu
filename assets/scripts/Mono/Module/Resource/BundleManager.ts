@@ -1,5 +1,6 @@
 import { _decorator, assetManager, AssetManager } from 'cc';
 import { IManager } from '../../Core/Manager/IManager';
+import { ObjectPool } from '../../Core/ObjectPool';
 
 export class BundleManager implements IManager {
     private static _instance: BundleManager;
@@ -37,7 +38,7 @@ export class BundleManager implements IManager {
             return bundle;
         }
 
-        return await new Promise<AssetManager.Bundle>((resolve) => {
+        const bundle = await new Promise<AssetManager.Bundle>((resolve) => {
             assetManager.loadBundle(url || name, (err, bundle) => {
                 if (err) {
                     console.error(err);
@@ -49,6 +50,17 @@ export class BundleManager implements IManager {
                 resolve(bundle);
             });
         });
+
+        if(bundle != null && (bundle.deps?.length??0 > 0)){
+            const temp = ObjectPool.instance.fetch(Array<Promise<AssetManager.Bundle>>);
+            for (let index = 0; index < bundle.deps.length; index++) {
+                const dep = bundle.deps[index];
+                temp.push(this.loadBundle(dep));
+            }
+            await Promise.all(temp)
+            ObjectPool.instance.recycle(temp);
+        }
+        return bundle;
     }
 
     /**
