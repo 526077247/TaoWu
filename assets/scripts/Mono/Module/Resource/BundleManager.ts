@@ -57,7 +57,8 @@ export class BundleManager implements IManager {
                 const dep = bundle.deps[index];
                 temp.push(this.loadBundle(dep));
             }
-            await Promise.all(temp)
+            await Promise.all(temp);
+            temp.length = 0;
             ObjectPool.instance.recycle(temp);
         }
         return bundle;
