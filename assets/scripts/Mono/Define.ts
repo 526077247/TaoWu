@@ -1,4 +1,4 @@
-﻿import { _decorator, screen } from 'cc';
+﻿import { _decorator, screen, view } from 'cc';
 import { EDITOR } from 'cc/env';
 
 export class Define {
@@ -7,9 +7,11 @@ export class Define {
     private static readonly dHeight = 1366;
 
     public static readonly DesignScreenWidth =
-        screen.windowSize.width > screen.windowSize.height ? Math.max(Define.dWidth, Define.dHeight) : Math.min(Define.dWidth, Define.dHeight);
+        (EDITOR?view.getDesignResolutionSize().width > view.getDesignResolutionSize().height:screen.windowSize.width > screen.windowSize.height)
+         ? Math.max(Define.dWidth, Define.dHeight) : Math.min(Define.dWidth, Define.dHeight);
     public static readonly DesignScreenHeight =
-        screen.windowSize.width > screen.windowSize.height ? Math.min(Define.dWidth, Define.dHeight) : Math.max(Define.dWidth, Define.dHeight);
+        (EDITOR?view.getDesignResolutionSize().width > view.getDesignResolutionSize().height:screen.windowSize.width > screen.windowSize.height)
+         ? Math.min(Define.dWidth, Define.dHeight) : Math.max(Define.dWidth, Define.dHeight);
     public static LogLevel = 1;
 
     public static Process = 1;
