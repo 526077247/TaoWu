@@ -15,6 +15,7 @@ import { ConfigManager } from "./Module/Config/ConfigManager"
 import { ImageLoaderManager } from "./Module/Resource/ImageLoaderManager"
 import { CameraManager } from "./Module/Camera/CameraManager"
 import { SoundManager } from "./Module/Resource/SoundManager"
+import { MaterialManager } from "./Module/Resource/MaterialManager"
 
 export class Entry 
 {  
@@ -38,7 +39,7 @@ export class Entry
             ManagerProvider.registerManager(ResourceManager);
             ManagerProvider.registerManager(GameObjectPoolManager);
             ManagerProvider.registerManager(ImageLoaderManager);
-
+            ManagerProvider.registerManager(MaterialManager);
 
             ManagerProvider.registerManager(I18NManager);
             ManagerProvider.registerManager(UIManager);

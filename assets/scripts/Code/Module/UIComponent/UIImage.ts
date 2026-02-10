@@ -5,6 +5,7 @@ import { IOnDestroy } from "../UI/IOnDestroy";
 import { UIBaseContainer } from "../UI/UIBaseContainer";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ImageLoaderManager } from "../Resource/ImageLoaderManager";
+import { MaterialManager } from "../Resource/MaterialManager";
 
 export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<string> {
 
@@ -18,6 +19,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
     private version: number = 0;
     private cacheUrl: string;
     private size: Size;
+    private grayState: boolean = false;
 
     public onCreate(path: string)
     {
@@ -205,5 +207,28 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
         this.activatingComponent();
         this.image.spriteFrame = sprite;
         this.isSetSprite = true;
+    }
+
+    public setFillRange(value: number)
+    {
+        this.activatingComponent();
+        this.image.fillRange = value;
+    }
+
+    public async setImageGray(isGray: boolean)
+    {
+        if (this.grayState == isGray) return;
+        this.activatingComponent();
+        this.grayState = isGray;
+        let mt = null;
+        if (isGray)
+        {
+            mt = await MaterialManager.instance.loadMaterialAsync("ui/uicommon/materials/uigray");
+            if (!this.grayState)
+            {
+                mt = null;
+            }
+        }
+        this.image.material = mt;
     }
 }

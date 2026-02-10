@@ -99,7 +99,7 @@ export class JsonHelper {
             
             // 序列化所有自有属性
             for (const key in obj) {
-                if (obj.hasOwnProperty(key) && (!hasIgnore||!JsonHelper.isIgnoreProperty(className,key))) {
+                if (obj.hasOwnProperty(key) && obj[key] != null && (!hasIgnore||!JsonHelper.isIgnoreProperty(className,key))) {
                     serializedObj[key] = this.serialize(obj[key], `${path}.${key}`);
                 }
             }
@@ -119,7 +119,7 @@ export class JsonHelper {
         // 处理普通对象
         const result: Record<string, any> = {};
         for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
+            if (obj.hasOwnProperty(key) && obj[key] != null) {
                 result[key] = this.serialize(obj[key], `${path}.${key}`);
             }
         }
