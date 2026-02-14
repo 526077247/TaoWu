@@ -20,7 +20,8 @@ export class ReferenceCollector extends Component {
         this.dict = new Map<string, Node>();
         for (let index = 0; index < this.data.length; index++) {
             const element = this.data[index];
-            this.dict.set(element.key,element.value);
+            if(element?.key!= null && element.key!= '')
+                this.dict.set(element.key,element.value);
         }
     }
 
@@ -28,7 +29,7 @@ export class ReferenceCollector extends Component {
         this.dict.set(key,value);
         for (let index = 0; index < this.data.length; index++) {
             const element = this.data[index];
-            if(element.key == key){
+            if(element?.key == key){
                 element.value = value;
                 return;
             }
