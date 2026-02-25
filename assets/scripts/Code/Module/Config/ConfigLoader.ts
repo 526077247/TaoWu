@@ -16,14 +16,14 @@ export class ConfigLoader implements IConfigLoader{
                 if (err) {
                     Log.error(err);
                     resolve();
-                    BundleManager.instance.releaseBundle(bundle);
+                    BundleManager.instance.releaseBundle(bundle, true);
                     return null;
                 }
                 for (const asset of assets) {
                     const jsonAsset = asset as JsonAsset;
                     if(!!jsonAsset) output.set(asset.name, jsonAsset.json)
                 }
-                BundleManager.instance.releaseBundle(bundle);
+                BundleManager.instance.releaseBundle(bundle, true);
                 resolve();
             });
         });
@@ -40,12 +40,12 @@ export class ConfigLoader implements IConfigLoader{
                 if (err) {
                     Log.error(err);
                     resolve(null);
-                    BundleManager.instance.releaseBundle(bundle);
+                    BundleManager.instance.releaseBundle(bundle, true);
                     return null;
                 }
                 let res = null;
                 if(!!jsonAsset) res = jsonAsset.json;
-                BundleManager.instance.releaseBundle(bundle);
+                BundleManager.instance.releaseBundle(bundle, true);
                 resolve(res);
             });
         });

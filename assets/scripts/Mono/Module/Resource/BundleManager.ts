@@ -1,7 +1,10 @@
 import { _decorator, assetManager, AssetManager } from 'cc';
 import { IManager } from '../../Core/Manager/IManager';
 import { ObjectPool } from '../../Core/ObjectPool';
-
+import { CoroutineLock, CoroutineLockManager } from '../../../Code/Module/CoroutineLock/CoroutineLockManager';
+import { CoroutineLockType } from '../../../Code/Module/CoroutineLock/CoroutineLockType';
+import * as string from '../../Helper/StringHelper'
+import { Log } from '../Log/Log';
 export class BundleManager implements IManager {
     private static _instance: BundleManager;
 
@@ -31,26 +34,41 @@ export class BundleManager implements IManager {
      * @returns ab包或null
      */
     public async loadBundle(name: string, url: string = null): Promise<AssetManager.Bundle> {
-        if(this._cacheBundle.has(name)) {
-            const bundle = this._cacheBundle.get(name);
-            let count = this._cacheBundleRefCount.get(bundle);
-            this._cacheBundleRefCount.set(bundle, count + 1);
-            return bundle;
-        }
+        let coroutineLock: CoroutineLock = null;
+        let bundle: AssetManager.Bundle = null;
+        try
+        {
+            coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.Bundle, string.getHash(name));
 
-        const bundle = await new Promise<AssetManager.Bundle>((resolve) => {
-            assetManager.loadBundle(url || name, (err, bundle) => {
-                if (err) {
-                    console.error(err);
-                    resolve(null)
-                    return
-                }
-                this._cacheBundle[name] = bundle;
-                this._cacheBundleRefCount.set(bundle, 1);
-                resolve(bundle);
+            if(this._cacheBundle.has(name)) {
+                bundle = this._cacheBundle.get(name);
+                let count = this._cacheBundleRefCount.get(bundle);
+                this._cacheBundleRefCount.set(bundle, count + 1);
+                return bundle;
+            }
+
+            bundle = await new Promise<AssetManager.Bundle>((resolve) => {
+                assetManager.loadBundle(url || name, (err, bundle) => {
+                    if (err) {
+                        console.error(err);
+                        resolve(null)
+                        return
+                    }
+                    this._cacheBundle.set(name, bundle);
+                    this._cacheBundleRefCount.set(bundle, 1);
+                    resolve(bundle);
+                });
             });
-        });
-
+        }
+        catch (ex)
+        {
+            Log.error(ex);
+            return null;
+        }
+        finally
+        {
+            coroutineLock?.dispose();
+        }
         if(bundle != null && (bundle.deps?.length??0 > 0)){
             const temp = ObjectPool.instance.fetch(Array<Promise<AssetManager.Bundle>>);
             for (let index = 0; index < bundle.deps.length; index++) {
@@ -79,6 +97,15 @@ export class BundleManager implements IManager {
                 bundle.releaseAll();
                 assetManager.removeBundle(bundle);
                 this._cacheBundleRefCount.delete(bundle);
+            }
+            if(bundle != null && (bundle.deps?.length??0 > 0)){
+                for (let index = 0; index < bundle.deps.length; index++) {
+                    const name = bundle.deps[index];
+                    if(this._cacheBundle.has(name)) {
+                        bundle = this._cacheBundle.get(name);
+                        this.releaseBundle(bundle);
+                    }
+                }
             }
         }
     }

@@ -1,4 +1,8 @@
 ﻿export class TimeInfo {
+    public static readonly OneDay = 86400000;
+    public static readonly Hour = 3600000;
+    public static readonly Minute = 60000;
+
     private static _instance: TimeInfo;
 
     public static get instance(): TimeInfo {

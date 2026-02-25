@@ -71,12 +71,12 @@ export class ResourceManager implements IManager {
                 if (err) {
                     console.error(err);
                     resolve(null);
-                    BundleManager.instance.releaseBundle(bundle);
+                    BundleManager.instance.releaseBundle(bundle,true);
                     return null;
                 }
                 if(!this.assetMap){
                     resolve(null);
-                    BundleManager.instance.releaseBundle(bundle);
+                    BundleManager.instance.releaseBundle(bundle,true);
                     data.addRef();
                     data.decRef();
                     return null;
@@ -91,7 +91,7 @@ export class ResourceManager implements IManager {
     public releaseAsset(pooledGo: Asset){
         if (this.assetMap.has(pooledGo)){
             var bundle = this.assetMap.get(pooledGo);
-            BundleManager.instance.releaseBundle(bundle);
+            BundleManager.instance.releaseBundle(bundle,true);
             pooledGo.decRef();
             this.assetMap.delete(pooledGo);
         }
@@ -99,7 +99,7 @@ export class ResourceManager implements IManager {
 
     public clearAssetsCache(){
         for (const [asset,bundle] of this.assetMap) {
-            BundleManager.instance.releaseBundle(bundle);
+            BundleManager.instance.releaseBundle(bundle,true);
             asset.decRef();
         }
         this.assetMap.clear();
@@ -126,12 +126,12 @@ export class ResourceManager implements IManager {
                 if (err) {
                     console.error(err);
                     resolve(null);
-                    BundleManager.instance.releaseBundle(bundle);
+                    BundleManager.instance.releaseBundle(bundle,true);
                     return null;
                 }
                 if(!this.assetMap){
                     resolve(null);
-                    BundleManager.instance.releaseBundle(bundle);
+                    BundleManager.instance.releaseBundle(bundle,true);
                     data.addRef();
                     data.decRef();
                     return null;
