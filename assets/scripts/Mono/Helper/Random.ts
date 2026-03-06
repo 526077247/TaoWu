@@ -27,7 +27,7 @@ export class Random {
         this.m_w = (18000 * (this.m_w & 65535) + (this.m_w >> 16)) & mask;
         var result = ((this.m_z << 16) + this.m_w) & mask;
         result /= 4294967296;
-        return result + 0.5;
+        return result;
     }
 
     /**
