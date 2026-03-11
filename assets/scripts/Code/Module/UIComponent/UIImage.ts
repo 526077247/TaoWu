@@ -6,7 +6,11 @@ import { UIBaseContainer } from "../UI/UIBaseContainer";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ImageLoaderManager } from "../Resource/ImageLoaderManager";
 import { MaterialManager } from "../Resource/MaterialManager";
-
+export enum SizeType{
+    None,
+    NativeSize,
+    PreserveAspect,
+}
 export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<string> {
 
     public getConstructor(){
@@ -64,10 +68,10 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
     /**
      * 设置图片地址（注意尽量不要和SetOnlineSpritePath混用
      * @param spritePath 
-     * @param setNativeSize 
+     * @param setSizeType
      * @returns 
      */
-    public async setSpritePath(spritePath: string, setNativeSize = false): Promise<void>
+    public async setSpritePath(spritePath: string, setSizeType: SizeType = SizeType.None): Promise<void>
     {
         this.version++;
         const thisVersion = this.version;
@@ -99,8 +103,10 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             this.image.enabled = true;
             this.isSetSprite = false;
             this.image.spriteFrame = sprite;
-            if(setNativeSize)
+            if(setSizeType == SizeType.NativeSize)
                 this.setNativeSize();
+            else if(setSizeType == SizeType.PreserveAspect)
+                this.setPreserveAspect();
             else
                 this.getTransform().contentSize = this.getTransform().contentSize.set(this.size);
         }
@@ -108,8 +114,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             ImageLoaderManager.instance.releaseImage(baseSpritePath);
        
     }
-
-    public setNativeSize(){
+    public setPreserveAspect(){
         if(this.image == null || this.image.spriteFrame == null) return;
         if(!!this.size){
             this.image.sizeMode = 0;
@@ -125,19 +130,29 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
             this.getTransform().contentSize = size;
         }
     }
+    public setNativeSize(){
+        if(this.image == null || this.image.spriteFrame == null) return;
+        if(!!this.size){
+            this.image.sizeMode = 0;
+            const sprite = this.image.spriteFrame;
+            const size = this.getTransform().contentSize;
+            size.set(sprite.rect.width,sprite.rect.height);
+            this.getTransform().contentSize = size;
+        }
+    }
 
     /**
      * 设置网络图片地址（注意尽量不要和SetSpritePath混用
      * @param spritePath 
-     * @param setNativeSize 
+     * @param setSizeType 
      * @param defaultSpritePath 
      */
-    public async setOnlineSpritePath(url: string, setNativeSize = false, defaultSpritePath: string = null)
+    public async setOnlineSpritePath(url: string, setSizeType: SizeType = SizeType.None, defaultSpritePath: string = null)
     {
         this.activatingComponent();
         if (!string.isNullOrEmpty(defaultSpritePath))
         {
-            await this.setSpritePath(defaultSpritePath, setNativeSize);
+            await this.setSpritePath(defaultSpritePath, setSizeType);
         }
         this.version++;
         const thisVersion = this.version;
