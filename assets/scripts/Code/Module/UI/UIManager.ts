@@ -445,9 +445,9 @@ export class UIManager implements IManager {
         let target = this.getWindow(uiName);
         if (target != null)
         {
+            this.windows.delete(target.name);
             await this.closeWindow(ui);
             this.innerDestroyWindow(target, clear);
-            this.windows.delete(target.name);
             target.dispose();
         }
     }
