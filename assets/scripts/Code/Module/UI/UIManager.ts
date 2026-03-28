@@ -377,11 +377,13 @@ export class UIManager implements IManager {
         {
             await TimerManager.instance.waitAsync(1);
         }
-
-        this.innerCloseWindow(target);
-        this.innerDestroyWindow(target, clear);
-        this.boxes.delete(view);
-        target.dispose();
+        if(this.boxes.has(view))
+        {
+            this.boxes.delete(view);
+            this.innerCloseWindow(target);
+            this.innerDestroyWindow(target, clear);
+            target.dispose();
+        }
         return true;
     }
 
@@ -445,10 +447,18 @@ export class UIManager implements IManager {
         let target = this.getWindow(uiName);
         if (target != null)
         {
-            this.windows.delete(target.name);
-            await this.closeWindow(ui);
-            this.innerDestroyWindow(target, clear);
-            target.dispose();
+            while (target.loadingState != UIWindowLoadingState.LoadOver)
+            {
+                await TimerManager.instance.waitAsync(1);
+            }
+            if(this.windows.has(target.name))
+            {
+                this.windows.delete(target.name)
+                this.removeFromStack(target);
+                this.innerCloseWindow(target);
+                this.innerDestroyWindow(target, clear);
+                target.dispose();
+            }
         }
     }
 
