@@ -1,5 +1,4 @@
-﻿import { _decorator } from 'cc';
-import { IManager } from "../../Core/Manager/IManager";
+﻿import { IManager } from "../../Core/Manager/IManager";
 import { MultiMap } from "../../Core/Object/MultiMap";
 import { Queue } from "../../Core/Object/Queue";
 import { IUpdate } from "../Update/IUpdate"
@@ -226,7 +225,7 @@ export class TimerManager implements IManager,IUpdate {
         try {
             cancellationToken?.add(CancelAction);
             ret = await tcs;
-        } catch (ex) {
+        } catch (ex: any) {
             ret = false;
             Log.error(ex);
         } finally {
@@ -263,7 +262,7 @@ export class TimerManager implements IManager,IUpdate {
         try {
             cancellationToken?.add(cancelAction);
             ret = await tcs;
-        } catch (ex) {
+        } catch (ex: any) {
             ret = false;
             Log.error(ex);
         } finally {

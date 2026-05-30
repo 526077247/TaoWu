@@ -1,4 +1,3 @@
-import { Log } from "../../../../Mono/Module/Log/Log";
 import { LoopGridView } from "../../../../ThirdParty/SuperScrollView/GridView/LoopGridView";
 import { LoopGridViewItem } from "../../../../ThirdParty/SuperScrollView/GridView/LoopGridViewItem";
 import { LoopListView2 } from "../../../../ThirdParty/SuperScrollView/ListView/LoopListView2";

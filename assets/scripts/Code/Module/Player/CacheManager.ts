@@ -50,7 +50,7 @@ export class CacheManager implements IManager {
         var jStr = sys.localStorage.getItem(key);
         if (jStr == null) return null;
         var res = JsonHelper.fromJson<T>(type,jStr);
-        this.cacheObj[key] = res;
+        this.cacheObj.set(key,res);
         return res;
     }
     
@@ -66,7 +66,7 @@ export class CacheManager implements IManager {
     
     public setValue<T extends object>(key: string, value: T)
     {
-        this.cacheObj[key] = value;
+        this.cacheObj.set(key,value);
         var jStr = JsonHelper.toJson(value);
         sys.localStorage.setItem(key, jStr);
     }

@@ -1,5 +1,5 @@
 
 export interface IOnWidthPaddingChange
 {
-    get isOnWidthPaddingChange();
+    get isOnWidthPaddingChange(): boolean;
 }

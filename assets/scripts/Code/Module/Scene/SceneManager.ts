@@ -103,7 +103,7 @@ export class SceneManager implements IManager{
         Log.info("InnerSwitchScene GameObjectPool Cleanup");
         if (needClean)
         {
-            const ignorePathArray = []
+            const ignorePathArray:string[] = []
             
             if (ignoreClean != null) ignorePathArray.concat(ignoreClean);
             ignorePathArray[ignorePathArray.length] = UIToast.PrefabPath;
@@ -134,8 +134,8 @@ export class SceneManager implements IManager{
         try {
             sys.garbageCollect()
             sys.garbageCollect()
-        } catch (e) {
-            Log.info('Manual GC not supported:', e.message);
+        } catch (e: any) {
+            Log.info('Manual GC not supported:', e?.message);
         }
 
 

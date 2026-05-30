@@ -1,4 +1,4 @@
-import { IUpdate } from "db://assets/scripts/Mono/Module/Update/IUpdate";
+import { IUpdate } from "../../../../Mono/Module/Update/IUpdate";
 import { IOnCreate } from "../../../Module/UI/IOnCreate";
 import { IOnEnable } from "../../../Module/UI/IOnEnable";
 import { UIBaseView } from "../../../Module/UI/UIBaseView";

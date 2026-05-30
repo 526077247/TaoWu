@@ -3,7 +3,6 @@ import { JsonHelper } from "../../../Mono/Helper/JsonHelper";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ConfigLoader } from "./ConfigLoader";
 import { IConfigLoader } from "./IConfigLoader";
-import { Log } from "../../../Mono/Module/Log/Log";
 import { register } from "../Generate/Config/ConfigManager.register"
 export class ConfigManager implements IManager{
 

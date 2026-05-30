@@ -77,7 +77,7 @@ export class I18NManager implements IManager {
     {
         let i18nKey: number;
         if(typeof key != "number") {
-            i18nKey = I18NKey[key];
+            i18nKey = I18NKey[key as keyof typeof I18NKey] as number;
         } else {
             i18nKey = key
         }
@@ -106,7 +106,7 @@ export class I18NManager implements IManager {
     public i18NGetParamText(key: string| I18NKey| number, ...paras: any[]){
         let i18nKey: number;
         if(typeof key != "number") {
-            i18nKey = I18NKey[key];
+            i18nKey = I18NKey[key as keyof typeof I18NKey] as number;
         } else {
             i18nKey = key
         }

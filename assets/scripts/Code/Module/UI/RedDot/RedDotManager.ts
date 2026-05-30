@@ -84,7 +84,11 @@ export class RedDotManager implements IManager{
         this._toParentDict.delete(target);
         if (!string.isNullOrEmpty(parent))
         {
-            this._redDotNodeParentsDict[parent].Remove(target);
+            const arr = this._redDotNodeParentsDict.get(parent);
+            const index = arr.indexOf(target);
+            if (index !== -1) {
+                arr.splice(index, 1);
+            }
         }
     }
 

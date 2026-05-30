@@ -630,13 +630,14 @@ export class GameObjectPoolManager implements IManager {
             else
             {
                 let cpath = path + "/" + child.name;
-                if (record.has(cpath))
+                const oldVal = record.get(cpath);
+                if (!!oldVal)
                 {
-                    record[cpath] += 1;
+                    record.set(cpath, oldVal + 1);
                 }
                 else
                 {
-                    record[cpath] = 1;
+                    record.set(cpath, 1);
                 }
                 totalChildCount += this.recursiveGetChildCount(child, cpath, record);
             }

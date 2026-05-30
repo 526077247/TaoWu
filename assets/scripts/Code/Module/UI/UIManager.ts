@@ -577,7 +577,7 @@ export class UIManager implements IManager {
             this.windowStack.get(layerName).remove(uiName);
         }
 
-        this.windowStack[layerName].AddFirst(uiName);
+        this.windowStack.get(layerName).addFirst(uiName);
         this.innerAddWindowToStack(target);
     }
 

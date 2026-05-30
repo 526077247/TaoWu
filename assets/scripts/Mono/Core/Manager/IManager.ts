@@ -1,6 +1,6 @@
 export interface IManagerDestroy
 {
-    destroy();
+    destroy(): void;
 }
 
 export interface IManager<P1 = void, P2 = void, P3 = void, P4 = void> extends IManagerDestroy 

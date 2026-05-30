@@ -76,7 +76,7 @@ export class ImageLoaderManager implements IManager{
             var sv = await this.loadSingleImageAsyncInternal(imagePath, assetType);
             return sv.asset;
         }
-        catch (ex)
+        catch (ex: any)
         {
             Log.error(ex);
         }
@@ -104,7 +104,7 @@ export class ImageLoaderManager implements IManager{
             }
             return sv.texture;
         }
-        catch (ex)
+        catch (ex: any)
         {
             Log.error(ex);
         }
@@ -268,7 +268,7 @@ export class ImageLoaderManager implements IManager{
                             });
                         }
                     }
-                    catch(ex)
+                    catch(ex: any)
                     {
                         Log.error(ex);
                     }
@@ -280,7 +280,7 @@ export class ImageLoaderManager implements IManager{
                 }
             }
         }
-        catch (ex)
+        catch (ex: any)
         {
             Log.error(ex);
         }
@@ -317,10 +317,10 @@ export class ImageLoaderManager implements IManager{
                 }
             }
             for (let index = 0; index < temp.length; index++) {
-                const data = this.cacheOnlineImage[temp[index]];
-                if (data.asset != null)
+                const data = this.cacheOnlineImage.get(temp[index]);
+                if (data?.asset != null)
                 {
-                    data.asset.destroy();
+                    data?.asset.destroy();
                 }
                 var img = data.texture.image;
                 data.texture.destroy();

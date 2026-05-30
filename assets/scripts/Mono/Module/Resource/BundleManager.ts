@@ -60,7 +60,7 @@ export class BundleManager implements IManager {
                 });
             });
         }
-        catch (ex)
+        catch (ex: any)
         {
             Log.error(ex);
             return null;

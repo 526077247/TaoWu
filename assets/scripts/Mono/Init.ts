@@ -34,7 +34,7 @@ export class Init extends Component {
         {
             ManagerProvider.update();
         }
-        catch(e)
+        catch(e: any)
         {
             Log.error(e);
         }
@@ -46,7 +46,7 @@ export class Init extends Component {
         {
             ManagerProvider.lateUpdate();
         }
-        catch(e)
+        catch(e: any)
         {
             Log.error(e);
         }

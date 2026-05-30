@@ -19,7 +19,7 @@ export class UIMenu extends UIBaseContainer implements IOnCreate
 
     public paras: MenuPara[];
     public uiMenuItems: UIMenuItem[];
-    public activeIndex;
+    public activeIndex: number;
     private onActiveIndexChanged: (para: MenuPara)=>void;
 
     public onCreate()

@@ -126,8 +126,8 @@ export class CoroutineLockManager implements IManager, IUpdate{
         while (this.timeOutIds.count > 0)
         {
             const time = this.timeOutIds.dequeue();
-            var list = this.timers[time];
-            for (let i = 0; i < list.Count; ++i)
+            var list = this.timers.get(time);
+            for (let i = 0; i < list.length; ++i)
             {
                 const coroutineLockTimer:CoroutineLockTimer = list[i];
                 this.timerOutTimer.enqueue(coroutineLockTimer);

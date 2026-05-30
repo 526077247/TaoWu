@@ -1,11 +1,11 @@
-import { CanvasGroup } from "db://assets/scripts/Mono/Module/UI/CanvasGroup";
+import { CanvasGroup } from "../../../../Mono/Module/UI/CanvasGroup";
 import { I18NKey } from "../../../Module/Const/I18NKey";
 import { GameObjectPoolManager } from "../../../Module/Resource/GameObjectPoolManager";
 import { IOnCreate } from "../../../Module/UI/IOnCreate";
 import { IOnEnable } from "../../../Module/UI/IOnEnable";
 import { UIMonoBehaviour } from "../../../Module/UIComponent/UIMonoBehaviour";
 import { UIText } from "../../../Module/UIComponent/UIText";
-import { TimerManager } from "db://assets/scripts/Mono/Module/Timer/TimerManager";
+import { TimerManager } from "../../../../Mono/Module/Timer/TimerManager";
 import { math } from "cc";
 import { UIBaseView } from "../../../Module/UI/UIBaseView";
 import { UIManager } from "../../../Module/UI/UIManager";

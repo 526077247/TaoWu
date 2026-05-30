@@ -48,7 +48,7 @@ export class Entry
             ManagerProvider.registerManager(SceneManager);
             ManagerProvider.registerManager(SoundManager);
             await SceneManager.instance.switchScene(LoginScene)
-        } catch (e) {
+        } catch (e: any) {
             Log.error(e);
         }
     }

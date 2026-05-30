@@ -1,9 +1,9 @@
 ﻿export interface IUpdate
 {
-    update();
+    update(): void;
 }
 
 export interface ILateUpdate
 {
-    lateUpdate();
+    lateUpdate(): void;
 }

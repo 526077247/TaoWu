@@ -52,7 +52,7 @@ export class MapScene extends SceneManagerProvider implements IScene {
        
     }
 
-    public async onPrepare(progressStart,progressEnd)
+    public async onPrepare(progressStart:number,progressEnd:number)
     {
         
     }
@@ -62,7 +62,7 @@ export class MapScene extends SceneManagerProvider implements IScene {
 
     }
 
-    public async setProgress(value)
+    public async setProgress(value:number)
     {
         this.win.setProgress(value);
     }

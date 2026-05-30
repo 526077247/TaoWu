@@ -1,4 +1,4 @@
 export interface IOnDisable
 {
-    onDisable();
+    onDisable(): void;
 }
