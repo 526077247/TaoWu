@@ -15,11 +15,11 @@ export class I18NText extends Component {
 
     onEnable() {
         this.onSwitchLanguage();
-        I18NBridge.instance.onLanguageChangeEvt.subscribe(this.onSwitchLanguage);
+        I18NBridge.instance.onLanguageChangeEvt.subscribe(this.onSwitchLanguage, this);
     }
 
     onDisable(){
-        I18NBridge.instance.onLanguageChangeEvt.unsubscribe(this.onSwitchLanguage);
+        I18NBridge.instance.onLanguageChangeEvt.unsubscribe(this.onSwitchLanguage, this);
     }
 
     private onSwitchLanguage()

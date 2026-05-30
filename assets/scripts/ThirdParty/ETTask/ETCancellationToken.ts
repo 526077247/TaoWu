@@ -1,5 +1,4 @@
 ﻿import { ETTask } from "./ETTask"
-import { Log } from "../../Mono/Module/Log/Log"
 export class ETCancellationToken {
     private actions: Set<() => void> | null = new Set();
     private _isCancellationRequested = false;
@@ -67,7 +66,7 @@ export class ETCancellationToken {
             if (ETTask.ExceptionHandler) {
                 ETTask.ExceptionHandler(e);
             } else {
-                Log.error("Unhandled exception in cancellation token callbacks:", e);
+                console.error("Unhandled exception in cancellation token callbacks:", e);
             }
         }
     }

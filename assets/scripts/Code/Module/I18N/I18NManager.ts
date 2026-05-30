@@ -150,11 +150,11 @@ export class I18NManager implements IManager {
 
     public registerI18NEntity(entity: II18N)
     {
-        this.onLanguageChangeEvt.subscribe(entity.onLanguageChange);
+        this.onLanguageChangeEvt.subscribe(entity.onLanguageChange, entity);
     }
 
     public removeI18NEntity(entity: II18N)
     {
-        this.onLanguageChangeEvt.unsubscribe(entity.onLanguageChange);
+        this.onLanguageChangeEvt.unsubscribe(entity.onLanguageChange, entity);
     }
 }
