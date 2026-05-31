@@ -1,4 +1,4 @@
 export interface II18N
 {
-    onLanguageChange();
+    onLanguageChange(): void;
 }

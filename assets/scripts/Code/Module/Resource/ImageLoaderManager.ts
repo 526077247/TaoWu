@@ -1,12 +1,9 @@
-import { Asset, assetManager, ImageAsset, native, RenderTexture, SpriteFrame, Texture2D } from "cc";
+import { native, SpriteFrame, Texture2D } from "cc";
 import { IManager } from "../../../Mono/Core/Manager/IManager";
 import { LruCache } from "../../../Mono/Core/Object/LruCache";
-import { CoroutineLock, CoroutineLockManager } from "../CoroutineLock/CoroutineLockManager";
-import { CoroutineLockType } from "../CoroutineLock/CoroutineLockType";
 import { ResourceManager } from "./ResourceManager";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { Log } from "../../../Mono/Module/Log/Log";
-import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { HttpManager } from "../../../Mono/Module/Http/HttpManager";
 class SpriteValue
 {
@@ -35,6 +32,9 @@ export class ImageLoaderManager implements IManager{
 
     private cacheSingleSprite: LruCache<string, SpriteValue>;
     private cacheOnlineImage: Map<string, SpriteValue> ;
+    private pendingLoads: Map<string, Promise<SpriteValue>> = new Map();
+    private isDestroyed = false;
+
     public init(){
         ImageLoaderManager._instance = this;
         this.cacheSingleSprite = new LruCache<string, SpriteValue>();
@@ -50,6 +50,12 @@ export class ImageLoaderManager implements IManager{
     }
 
     public destroy() {
+        this.isDestroyed = true;
+        this.clear(); // 清空缓存，释放资源
+        this.pendingLoads.clear();
+        this.cacheSingleSprite = null;
+        this.cacheOnlineImage = null;
+        this.pendingLoads = null;
         ImageLoaderManager._instance = null;
     }
 
@@ -68,22 +74,9 @@ export class ImageLoaderManager implements IManager{
     public async loadSpriteAsync(imagePath: string): Promise<SpriteFrame>{
         const res = this.loadSpriteSync(imagePath);
         if(res != null) return res;
-        let coroutineLock: CoroutineLock = null;
-        try
-        {
-            coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.Resources, string.getHash(imagePath));
-            const assetType = this.getSpriteLoadInfoByPath(imagePath);
-            var sv = await this.loadSingleImageAsyncInternal(imagePath, assetType);
-            return sv.asset;
-        }
-        catch (ex: any)
-        {
-            Log.error(ex);
-        }
-        finally
-        {
-            coroutineLock?.dispose();
-        }
+        const assetType = this.getSpriteLoadInfoByPath(imagePath);
+        const sv = await this.loadSingleImageAsyncInternal(imagePath, assetType);
+        return sv?.asset;
     }
 
     /**
@@ -93,25 +86,12 @@ export class ImageLoaderManager implements IManager{
      */
     public async loadTextureAsync(imagePath: string): Promise<Texture2D>
     {
-        let coroutineLock: CoroutineLock = null;
-        try
-        {
-            coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.Resources, string.getHash(imagePath));
-            const assetType = this.getSpriteLoadInfoByPath(imagePath);
-            var sv = await this.loadSingleImageAsyncInternal(imagePath, assetType);
-            if(sv.texture == null){
-                Log.error("不能加载图集中的图片");
-            }
-            return sv.texture;
+        const assetType = this.getSpriteLoadInfoByPath(imagePath);
+        const sv = await this.loadSingleImageAsyncInternal(imagePath, assetType);
+        if(sv?.texture == null){
+            Log.error("不能加载图集中的图片");
         }
-        catch (ex: any)
-        {
-            Log.error(ex);
-        }
-        finally
-        {
-            coroutineLock?.dispose();
-        }
+        return sv?.texture;
     }
 
     /**
@@ -168,35 +148,52 @@ export class ImageLoaderManager implements IManager{
     }
     private async loadSingleImageAsyncInternal(assetAddress: string, type: SpriteType): Promise<SpriteValue>
     {
-        const res = this.loadSingleImageSyncInternal(assetAddress);
-        if(res != null) return res;
-        const cacheCls = this.cacheSingleSprite;
-        const asset: SpriteFrame = await ResourceManager.instance.loadAsync<SpriteFrame>(SpriteFrame,assetAddress+"/spriteFrame");
-        if (asset != null)
-        {
-            let value = cacheCls.get(assetAddress);
-            if (!!value)
-            {
-                value.refCount++;
+        const cached = this.loadSingleImageSyncInternal(assetAddress);
+        if (cached) return cached;
+
+        const pending = this.pendingLoads.get(assetAddress);
+        if (pending) {
+            const result = await pending;
+            if (result) {
+                result.refCount++;
             }
-            else
-            {
-                value = new SpriteValue();
-                value.asset = asset;
-                if(type == SpriteType.Sprite){
-                    value.texture = asset.texture as Texture2D;
-                }
-                value.refCount = 1
-                cacheCls.set(assetAddress, value);
-                return value;
-            }
-        }
-        else
-        {
-            Log.error("图片精灵不存在！请检查图片设置！\n" + assetAddress);
+            return result;
         }
 
-        return null;
+        const loadTask = this.doLoadSingleImage(assetAddress, type);
+        this.pendingLoads.set(assetAddress, loadTask);
+        
+        try {
+            const result = await loadTask;
+            return result;
+        } catch(ex: any) {
+            Log.error(ex)
+        } finally {
+            this.pendingLoads.delete(assetAddress);
+        }
+    }
+
+    private async doLoadSingleImage(assetAddress: string, type: SpriteType): Promise<SpriteValue> {
+        const asset = await ResourceManager.instance.loadAsync<SpriteFrame>(SpriteFrame, assetAddress + "/spriteFrame");
+        if (this.isDestroyed) return null;
+        if (asset == null) {
+            Log.error("图片精灵不存在！请检查图片设置！\n" + assetAddress);
+            return null;
+        }
+
+        let value = this.cacheSingleSprite.get(assetAddress);
+        if (value) {
+            value.refCount++;
+        } else {
+            value = new SpriteValue();
+            value.asset = asset;
+            if (type === SpriteType.Sprite) {
+                value.texture = asset.texture as Texture2D;
+            }
+            value.refCount = 1;
+            this.cacheSingleSprite.set(assetAddress, value);
+        }
+        return value;
     }
 
 
@@ -225,70 +222,74 @@ export class ImageLoaderManager implements IManager{
     public async getOnlineTexture(url: string, tryCount: number = 3): Promise<Texture2D>
     {
         if (string.isNullOrWhiteSpace(url)) return null;
-        let coroutineLock: CoroutineLock = null;
-        try
-        {
-            coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.Resources, string.getHash(url));
-            let data = this.cacheOnlineImage.get(url);
-            if (!!data)
-            {
-                data.refCount++;
-                return data.texture;
+
+        // 同步缓存命中
+        let data = this.cacheOnlineImage.get(url);
+        if (data) {
+            data.refCount++;
+            return data.texture;
+        }
+
+        // 检查 pending
+        const pending = this.pendingLoads.get(url);
+        if (pending) {
+            const result = await pending;
+            if (result) {
+                result.refCount++;
             }
-            let texture = await HttpManager.instance.httpGetImageOnline(url, true);
-            if (texture != null)
-            {
-                data = new SpriteValue();
-                data.texture = texture;
-                data.refCount = 1;
-                this.cacheOnlineImage.set(url, data);
-                return data.texture;
-            }
-            else
-            {
-                for (let i = 0; i < tryCount; i++)
-                {
-                    texture = await HttpManager.instance.httpGetImageOnline(url, false);
-                    if (texture != null) break;
-                }
-                if (texture != null)
-                {
-                    data = new SpriteValue();
-                    data.texture = texture;
-                    data.refCount = 1;
-                    this.cacheOnlineImage.set(url, data);
-                    try
-                    {
-                        const pixelData = this.convertToUint8Array(texture.image.data);
-                        if(!!pixelData){
-                            native.saveImageData(pixelData, texture.width, texture.height, HttpManager.instance.localFile(url)).then(()=>{
-                                Log.info("Save image data success");
-                            }).catch(()=>{
-                                Log.info("Fail to save image data");
-                            });
-                        }
-                    }
-                    catch(ex: any)
-                    {
-                        Log.error(ex);
-                    }
-                    return data.texture;
-                }
-                else
-                {
-                    Log.error("网络无资源 " + url);
-                }
+            return result?.texture;
+        }
+
+        // 创建加载任务
+        const loadTask = this.doLoadOnlineTexture(url, tryCount);
+        this.pendingLoads.set(url, loadTask);
+        try {
+            const result = await loadTask;
+            return result?.texture;
+        } catch(ex: any) {
+            Log.error(ex)
+        } finally {
+            this.pendingLoads.delete(url);
+        }
+    }
+
+    private async doLoadOnlineTexture(url: string, tryCount: number): Promise<SpriteValue> {
+        let texture = await HttpManager.instance.httpGetImageOnline(url, true);
+        if (this.isDestroyed) return null;
+        if (!texture) {
+            for (let i = 0; i < tryCount; i++) {
+                texture = await HttpManager.instance.httpGetImageOnline(url, false);
+                if (texture) break;
             }
         }
-        catch (ex: any)
+        if (!texture) {
+            Log.error("网络无资源 " + url);
+            return null;
+        }
+
+        const data = new SpriteValue();
+        data.texture = texture;
+        data.refCount = 1;
+        this.cacheOnlineImage.set(url, data);
+
+        try
+        {
+            const pixelData = this.convertToUint8Array(texture.image.data);
+            if(!!pixelData){
+                native.saveImageData(pixelData, texture.width, texture.height, HttpManager.instance.localFile(url)).then(()=>{
+                    Log.info("Save image data success");
+                }).catch(()=>{
+                    Log.info("Fail to save image data");
+                });
+            }
+        }
+        catch(ex: any)
         {
             Log.error(ex);
         }
-        finally
-        {
-            coroutineLock?.dispose();
-        }
+        return data;
     }
+
 
     public releaseOnlineImage(url: string, clear: boolean = true)
     {
@@ -325,7 +326,7 @@ export class ImageLoaderManager implements IManager{
                 var img = data.texture.image;
                 data.texture.destroy();
                 img?.destroy();
-                this.cacheOnlineImage.delete(url);
+                this.cacheOnlineImage.delete(temp[index]);
             }
         }
     }
