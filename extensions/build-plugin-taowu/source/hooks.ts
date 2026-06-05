@@ -5,7 +5,7 @@ import * as JavaScriptObfuscator from 'javascript-obfuscator';
 
 // 自定义混淆函数
 const obfuscateMainJs = (options: any, result: any) => {
-    const destDir = result.paths.dir; 
+    const destDir = path.join(result.paths.dir, "assets", "main");
     // 从构建选项获取配置
     const enableObfuscate = options.packages['build-plugin-taowu'].enableObfuscate;
     if (!enableObfuscate) {

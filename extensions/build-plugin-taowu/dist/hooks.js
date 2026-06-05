@@ -39,7 +39,7 @@ const path = __importStar(require("path"));
 const JavaScriptObfuscator = __importStar(require("javascript-obfuscator"));
 // 自定义混淆函数
 const obfuscateMainJs = (options, result) => {
-    const destDir = result.paths.dir;
+    const destDir = path.join(result.paths.dir, "assets", "main");
     // 从构建选项获取配置
     const enableObfuscate = options.packages['build-plugin-taowu'].enableObfuscate;
     if (!enableObfuscate) {
