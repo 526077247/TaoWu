@@ -1,13 +1,13 @@
 import { BuildHook, IBuildResult, IBuildTaskOption, ITaskOptions } from '../@types';
-import * as fs from 'fs-extra';
+import * as fs from "fs";
 import * as path from 'path';
 import * as JavaScriptObfuscator from 'javascript-obfuscator';
 
 // 自定义混淆函数
-const obfuscateMainJs = (options: any, result: any) => {
-    const destDir = path.join(result.paths.dir, "assets", "main");
+const obfuscateMainJs = (options: IBuildTaskOption, result: IBuildResult) => {
+    let destDir = path.join(result.paths.dir, "assets", "main");
     // 从构建选项获取配置
-    const enableObfuscate = options.packages['build-plugin-taowu'].enableObfuscate;
+    const enableObfuscate = options.packages["taowu-editor"].enableObfuscate;
     if (!enableObfuscate) {
         console.log('[CodeObfuscate] 代码混淆未启用，跳过');
         return;
@@ -22,7 +22,7 @@ const obfuscateMainJs = (options: any, result: any) => {
             if (stat.isDirectory()) {
                 const result = findMainJs(fullPath);
                 if (result) return result;
-            } else if (/^index\.[a-f0-9]+\.js$/.test(file)) {
+            } else if (/^index(?:\.[a-f0-9]+)?\.js$/.test(file)) {
                 return fullPath;
             }
         }
@@ -57,7 +57,7 @@ const obfuscateMainJs = (options: any, result: any) => {
             });
             fs.writeFileSync(targetFile, obfuscatedResult.getObfuscatedCode());
             console.log(`[混淆插件] ✅ 混淆完成: ${targetFile}`);
-        } catch (error) {
+        } catch (error: any) {
             console.error(`[混淆插件] ❌ 混淆失败: ${error.message}`);
         }
     } else {

@@ -1,0 +1,105 @@
+{
+  "__version__": "1.3.9",
+  "log": {
+    "level": 4
+  },
+  "common": {
+    "binGroupConfig": {
+      "threshold": 16,
+      "enable": false
+    },
+    "polyfills": {
+      "asyncFunctions": true
+    },
+    "buildPath": "project://build",
+    "outputName": "android",
+    "mainBundleCompressionType": "merge_dep",
+    "platform": "android",
+    "useSplashScreen": false
+  },
+  "BuildTaskManager": {
+    "taskMap": {
+      "1780668433926": {
+        "type": "build",
+        "id": "1780668433926",
+        "progress": 0.23333333333333334,
+        "state": "processing",
+        "stage": "make",
+        "message": "native:(make) start...",
+        "detailMessage": "[runCmd gradlew.bat] .\r",
+        "options": {
+          "name": "TaoWu",
+          "server": "",
+          "engineModulesConfigKey": "defaultConfig",
+          "platform": "android",
+          "buildPath": "project://build",
+          "debug": false,
+          "buildMode": "normal",
+          "mangleProperties": false,
+          "md5Cache": false,
+          "skipCompressTexture": false,
+          "sourceMaps": false,
+          "overwriteProjectSettings": {
+            "macroConfig": {
+              "cleanupImageCache": "inherit-project-setting"
+            },
+            "includeModules": {
+              "physics": "inherit-project-setting",
+              "physics-2d": "inherit-project-setting",
+              "gfx-webgl2": "off"
+            }
+          },
+          "nativeCodeBundleMode": "wasm",
+          "polyfills": {
+            "asyncFunctions": false
+          },
+          "experimentalEraseModules": false,
+          "startSceneAssetBundle": false,
+          "bundleConfigs": [],
+          "inlineEnum": true,
+          "useBuiltinServer": false,
+          "md5CacheOptions": {
+            "excludes": [],
+            "includes": [],
+            "replaceOnly": [],
+            "handleTemplateMd5Link": true
+          },
+          "mainBundleIsRemote": false,
+          "mainBundleCompressionType": "merge_dep",
+          "useSplashScreen": false,
+          "bundleCommonChunk": false,
+          "packAutoAtlas": true,
+          "startScene": "9ea28805-dc27-4325-b00b-521f029a25db",
+          "outputName": "android",
+          "taskName": "android",
+          "scenes": [
+            {
+              "url": "db://assets/assetsPackage/scenes/initScene/init.scene",
+              "uuid": "9ea28805-dc27-4325-b00b-521f029a25db"
+            },
+            {
+              "url": "db://assets/assetsPackage/scenes/loadingScene/loading.scene",
+              "uuid": "15382222-dc2d-431c-8bb1-a16675e69955",
+              "bundle": "db://assets/assetsPackage/scenes/loadingScene"
+            },
+            {
+              "url": "db://assets/assetsPackage/scenes/loginScene/login.scene",
+              "uuid": "3a2125e8-4cad-410c-81b5-cf38ad6495b2",
+              "bundle": "db://assets/assetsPackage/scenes/loginScene"
+            }
+          ],
+          "wasmCompressionMode": false,
+          "binGroupConfig": {
+            "threshold": 16,
+            "enable": false
+          },
+          "packages": {},
+          "__version__": "1.3.9",
+          "logDest": "project://temp/builder/log/android2026-6-5 22-07.log"
+        },
+        "time": "2026-6-5 23:13:37",
+        "dirty": false
+      }
+    }
+  }
+}

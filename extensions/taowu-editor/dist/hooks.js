@@ -34,14 +34,14 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.onAfterBuild = void 0;
-const fs = __importStar(require("fs-extra"));
+const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const JavaScriptObfuscator = __importStar(require("javascript-obfuscator"));
 // 自定义混淆函数
 const obfuscateMainJs = (options, result) => {
-    const destDir = path.join(result.paths.dir, "assets", "main");
+    let destDir = path.join(result.paths.dir, "assets", "main");
     // 从构建选项获取配置
-    const enableObfuscate = options.packages['build-plugin-taowu'].enableObfuscate;
+    const enableObfuscate = options.packages["taowu-editor"].enableObfuscate;
     if (!enableObfuscate) {
         console.log('[CodeObfuscate] 代码混淆未启用，跳过');
         return;
@@ -57,7 +57,7 @@ const obfuscateMainJs = (options, result) => {
                 if (result)
                     return result;
             }
-            else if (/^index\.[a-f0-9]+\.js$/.test(file)) {
+            else if (/^index(?:\.[a-f0-9]+)?\.js$/.test(file)) {
                 return fullPath;
             }
         }

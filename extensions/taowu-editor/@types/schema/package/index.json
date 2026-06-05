@@ -55,10 +55,5 @@
             "default": "1.0.0"
         }
     },
-    "required": [
-        "author",
-        "name",
-        "package_version",
-        "version"
-    ]
+    "required": ["author", "name", "package_version", "version"]
 }

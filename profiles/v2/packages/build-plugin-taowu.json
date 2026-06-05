@@ -1,0 +1,22 @@
+{
+  "__version__": "1.0.0",
+  "builder": {
+    "options": {
+      "android": {
+        "enableObfuscate": false,
+        "__version__": "1.0.0"
+      }
+    },
+    "taskOptionsMap": {
+      "1780668433926": {
+        "enableObfuscate": false,
+        "__version__": "1.0.0"
+      },
+      "1780668433926}": {
+        "enableObfuscate": false,
+        "__version__": "1.0.0"
+      }
+    },
+    "__version__": "1.3.9"
+  }
+}

@@ -6,7 +6,6 @@ library/
 temp/
 local/
 build/
-profiles/
 native
 .creator/
 #//////////////////////////
@@ -29,4 +28,3 @@ node_modules/
 /Tools/ExcelExport/.vs
 /Bin
 /Excel/Json
-/extensions/taowu-editor/node_modules
