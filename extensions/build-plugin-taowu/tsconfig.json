@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "commonjs",
+        "inlineSourceMap": false,
+        "outDir": "./dist",
+        "rootDir": "./source",
+        "allowJs": true,
+        "lib": [
+            "dom",
+            "esnext"
+        ],
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "types": [
+            "@cocos/creator-types/editor",
+            "@cocos/creator-types/editor/packages/builder/@types/public/global",
+        ]
+    },
+    "exclude": [
+        "./dist"
+    ],
+    "include": [
+        "./source"
+    ]
+}
