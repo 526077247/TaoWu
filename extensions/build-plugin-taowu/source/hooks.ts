@@ -4,7 +4,16 @@ import * as path from 'path';
 import * as JavaScriptObfuscator from 'javascript-obfuscator';
 
 // 自定义混淆函数
-const obfuscateMainJs = (destDir: string) => {
+const obfuscateMainJs = (options: any, result: any) => {
+    const destDir = result.paths.dir; 
+    // 从构建选项获取配置
+    const enableObfuscate = options.packages['build-plugin-taowu'].enableObfuscate;
+    if (!enableObfuscate) {
+        console.log('[CodeObfuscate] 代码混淆未启用，跳过');
+        return;
+    }
+    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${destDir}`);
+
     const findMainJs = (dir: string): string | null => {
         const files = fs.readdirSync(dir);
         for (const file of files) {
@@ -58,7 +67,5 @@ const obfuscateMainJs = (destDir: string) => {
 
 // 导出的构建钩子
 export const onAfterBuild: BuildHook.onAfterBuild = async function (options: IBuildTaskOption, result: IBuildResult) {
-    const destDir = path.join(result.paths.dir,"assets","main"); 
-    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${destDir}`);
-    obfuscateMainJs(destDir);
+    obfuscateMainJs(options, result);
 };

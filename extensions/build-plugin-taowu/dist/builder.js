@@ -5,6 +5,16 @@ exports.hooks = exports.unload = exports.load = exports.configs = void 0;
 exports.configs = {
     '*': {
         hooks: './hooks',
+        options: {
+            enableObfuscate: {
+                label: '启用代码混淆',
+                description: '构建后对代码混淆',
+                default: true,
+                render: {
+                    ui: 'ui-checkbox'
+                }
+            }
+        }
     },
     // 可以配置其他平台，如 android, ios 等
 };

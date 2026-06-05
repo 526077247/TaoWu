@@ -38,7 +38,15 @@ const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const JavaScriptObfuscator = __importStar(require("javascript-obfuscator"));
 // 自定义混淆函数
-const obfuscateMainJs = (destDir) => {
+const obfuscateMainJs = (options, result) => {
+    const destDir = result.paths.dir;
+    // 从构建选项获取配置
+    const enableObfuscate = options.packages['build-plugin-taowu'].enableObfuscate;
+    if (!enableObfuscate) {
+        console.log('[CodeObfuscate] 代码混淆未启用，跳过');
+        return;
+    }
+    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${destDir}`);
     const findMainJs = (dir) => {
         const files = fs.readdirSync(dir);
         for (const file of files) {
@@ -92,8 +100,6 @@ const obfuscateMainJs = (destDir) => {
 };
 // 导出的构建钩子
 const onAfterBuild = async function (options, result) {
-    const destDir = path.join(result.paths.dir, "assets", "main");
-    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${destDir}`);
-    obfuscateMainJs(destDir);
+    obfuscateMainJs(options, result);
 };
 exports.onAfterBuild = onAfterBuild;

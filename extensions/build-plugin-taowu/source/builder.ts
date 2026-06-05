@@ -5,6 +5,16 @@ import { BuildPlugin, IBuildTaskOption } from '../@types';
 export const configs: BuildPlugin.Configs = {
     '*': {
         hooks: './hooks',
+        options: {
+            enableObfuscate: {
+                label: '启用代码混淆',
+                description: '构建后对代码混淆',
+                default: true,
+                render: {
+                    ui: 'ui-checkbox'
+                }
+            }
+        }
     },
     // 可以配置其他平台，如 android, ios 等
 };
