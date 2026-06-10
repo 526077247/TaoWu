@@ -39,7 +39,10 @@ const path = __importStar(require("path"));
 const JavaScriptObfuscator = __importStar(require("javascript-obfuscator"));
 // 自定义混淆函数
 const obfuscateMainJs = (options, result) => {
-    let destDir = path.join(result.paths.dir, "assets", "main");
+    let destDir = path.join(result.paths.dir, "subpackages", "main");
+    if (!fs.existsSync(destDir)) {
+        destDir = path.join(result.paths.dir, "assets", "main");
+    }
     // 从构建选项获取配置
     const enableObfuscate = options.packages["taowu-editor"].enableObfuscate;
     if (!enableObfuscate) {
@@ -57,7 +60,7 @@ const obfuscateMainJs = (options, result) => {
                 if (result)
                     return result;
             }
-            else if (/^index(?:\.[a-f0-9]+)?\.js$/.test(file)) {
+            else if (/^(index|game)(?:\.[a-f0-9]+)?\.js$/.test(file)) {
                 return fullPath;
             }
         }

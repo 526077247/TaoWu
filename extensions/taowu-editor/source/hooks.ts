@@ -5,7 +5,10 @@ import * as JavaScriptObfuscator from 'javascript-obfuscator';
 
 // 自定义混淆函数
 const obfuscateMainJs = (options: IBuildTaskOption, result: IBuildResult) => {
-    let destDir = path.join(result.paths.dir, "assets", "main");
+    let destDir = path.join(result.paths.dir, "subpackages", "main");
+    if(!fs.existsSync(destDir)){
+        destDir = path.join(result.paths.dir, "assets", "main");
+    }
     // 从构建选项获取配置
     const enableObfuscate = options.packages["taowu-editor"].enableObfuscate;
     if (!enableObfuscate) {
@@ -22,7 +25,7 @@ const obfuscateMainJs = (options: IBuildTaskOption, result: IBuildResult) => {
             if (stat.isDirectory()) {
                 const result = findMainJs(fullPath);
                 if (result) return result;
-            } else if (/^index(?:\.[a-f0-9]+)?\.js$/.test(file)) {
+            } else if (/^(index|game)(?:\.[a-f0-9]+)?\.js$/.test(file)) {
                 return fullPath;
             }
         }
