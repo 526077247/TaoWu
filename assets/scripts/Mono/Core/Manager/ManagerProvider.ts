@@ -55,7 +55,7 @@ export class ManagerProvider
     public static removeManager<T extends IManagerDestroy>(classType: new (...args: any[]) => T, name:string = "")
     {
         var res = ManagerProvider.instance.managersDictionary.tryGetValue(classType, name);
-        if (!res[0])
+        if (res[0])
         {
             var u = res[1] as any;
             if (!!u.update)

@@ -38,7 +38,7 @@ export class ResourceManager implements IManager {
     public getBundleAndAssetName(packagePath: string): [bundle:string,asset:string] {
         var vs = packagePath.split('/');
         if (vs.length <= 2) {
-           return [packagePath.length == 2?packagePath[0]:"" ,packagePath[packagePath.length-1]];
+           return [vs.length == 2 ? vs[0]:"" ,vs[vs.length - 1]];
         }
         
         let res = ""

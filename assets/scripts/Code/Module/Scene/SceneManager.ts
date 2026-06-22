@@ -105,7 +105,7 @@ export class SceneManager implements IManager{
         {
             const ignorePathArray:string[] = []
             
-            if (ignoreClean != null) ignorePathArray.concat(ignoreClean);
+            if (ignoreClean != null) ignorePathArray.push(...ignoreClean);
             ignorePathArray[ignorePathArray.length] = UIToast.PrefabPath;
             GameObjectPoolManager.instance.cleanup(true, ...ignorePathArray);
             slidValue += 0.01;

@@ -308,7 +308,7 @@ export class TimerManager implements IManager,IUpdate {
             Log.error(`time too small: ${time}`);
             return BigInt(0);
         }
-        return this.newRepeatedTimer(time, type, func, target);
+        return this.newRepeatedTimerInner(time, type, func, target);
     }
 
     public addChild(timerClass: TimerClass, time: number, type: number, func: () => void, target: any): TimerAction {

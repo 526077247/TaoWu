@@ -102,8 +102,8 @@ export class BundleManager implements IManager {
                 for (let index = 0; index < bundle.deps.length; index++) {
                     const name = bundle.deps[index];
                     if(this._cacheBundle.has(name)) {
-                        bundle = this._cacheBundle.get(name);
-                        this.releaseBundle(bundle);
+                        const cacheBundle = this._cacheBundle.get(name);
+                        this.releaseBundle(cacheBundle);
                     }
                 }
             }
