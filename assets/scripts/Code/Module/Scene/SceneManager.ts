@@ -70,6 +70,7 @@ export class SceneManager implements IManager{
 
         let [cleanup, loadScene, prepare] = scene.getProgressPercent();
         let total = cleanup + loadScene + prepare;
+        if (total <= 0) total = 1;
         cleanup = cleanup / total * 0.9;
         loadScene = loadScene / total * 0.9;
         prepare = prepare / total * 0.9;

@@ -403,9 +403,13 @@ export class UIManager implements IManager {
             await TimerManager.instance.waitAsync(1);
         }
         await TimerManager.instance.waitTillAsync(time);
+        if(!this.boxes.has(view))
+        {
+            return;
+        }
+        this.boxes.delete(view);
         this.innerCloseWindow(target);
         this.innerDestroyWindow(target);
-        this.boxes.delete(view);
         target.dispose();
     }
 
@@ -613,7 +617,13 @@ export class UIManager implements IManager {
             target.loadingState = UIWindowLoadingState.Loading;
             if (needLoad)
             {
-                await this.innerOpenWindowGetGameObject(target.prefabPath, target);
+                const success = await this.innerOpenWindowGetGameObject(target.prefabPath, target);
+                if (!success)
+                {
+                    target.active = false;
+                    target.loadingState = UIWindowLoadingState.NotStart;
+                    return null;
+                }
             }
             this.innerResetWindowLayer(target);
             await this.addWindowToStack(target, p1, p2, p3, p4);
@@ -626,14 +636,14 @@ export class UIManager implements IManager {
         }
     }
 
-    private async innerOpenWindowGetGameObject(path: string, target: UIWindow)
+    private async innerOpenWindowGetGameObject(path: string, target: UIWindow): Promise<boolean>
     {
         const view = target.view;
         var go = await GameObjectPoolManager.instance.getGameObjectAsync(path);
         if (go == null)
         {
             Log.error(`UIManager InnerOpenWindow ${target.prefabPath} fail`);
-            return;
+            return false;
         }
         var node: Node = go;
         node.setParent(this.getLayer(target.layer).node, false);
@@ -647,6 +657,7 @@ export class UIManager implements IManager {
         if(!!viewAny?.onLanguageChange){
             I18NManager.instance.registerI18NEntity(viewAny as II18N);
         }
+        return true;
     }
 
     private innerResetWindowLayer(window: UIWindow)

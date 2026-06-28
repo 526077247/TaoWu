@@ -77,7 +77,10 @@ export class LruCache<TKey, TValue> implements Iterable<[TKey, TValue]> {
         
         this._capacity = value;
         while (this.linkedList.size > this._capacity) {
-            this.linkedList.removeLast();
+            const last = this.linkedList.removeLast();
+            this.dictionary.delete(last);
+            const value = this.dictionary.get(last);
+            this.popCb?.(last, value);
         }
     }
 

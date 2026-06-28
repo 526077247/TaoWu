@@ -67,10 +67,10 @@ export class HttpManager
         const md5URLString: string = string.getHashString(url.trim());
         let path = dir;
         if (sys.isNative) {
-            `${native.fileUtils.getWritablePath()}/${dir}`;
-        } 
+            path = `${native.fileUtils.getWritablePath()}/${dir}`;
+        }
         // this.checkDirAndCreateWhenNeeded(path);
-        let savePath: string = path + `/${dir}/` + md5URLString + extend;
+        let savePath: string = path + `/${md5URLString}` + extend;
         //Log.Info("=======savePath:" + savePath);
         return savePath;
     }
@@ -96,8 +96,8 @@ export class HttpManager
         if(headers!=null)
         {
             for (const key in headers) {
-                if (Object.prototype.hasOwnProperty.call(param, key)) {
-                    const val = param[key];
+                if (Object.prototype.hasOwnProperty.call(headers, key)) {
+                    const val = headers[key];
                     xhr.setRequestHeader(key, val)
                 }
             }
@@ -136,8 +136,8 @@ export class HttpManager
         if(headers!=null)
         {
             for (const key in headers) {
-                if (Object.prototype.hasOwnProperty.call(param, key)) {
-                    const val = param[key];
+                if (Object.prototype.hasOwnProperty.call(headers, key)) {
+                    const val = headers[key];
                     xhr.setRequestHeader(key, val)
                 }
             }

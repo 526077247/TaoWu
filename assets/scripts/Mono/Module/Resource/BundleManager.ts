@@ -69,7 +69,7 @@ export class BundleManager implements IManager {
         {
             coroutineLock?.dispose();
         }
-        if(bundle != null && (bundle.deps?.length??0 > 0)){
+        if(bundle != null && ((bundle.deps?.length ?? 0) > 0)){
             const temp = ObjectPool.instance.fetch(Array<Promise<AssetManager.Bundle>>);
             for (let index = 0; index < bundle.deps.length; index++) {
                 const dep = bundle.deps[index];
@@ -91,20 +91,20 @@ export class BundleManager implements IManager {
         if(!!this._cacheBundleRefCount && this._cacheBundleRefCount.has(bundle)) {
             let count = this._cacheBundleRefCount.get(bundle);
             count--;
+            if(count < 0) count = 0;
             this._cacheBundleRefCount.set(bundle, count);
+            const deps = (bundle.deps && bundle.deps.length > 0) ? bundle.deps.slice() : [];
             if(count <= 0 && clear){
                 this._cacheBundle.delete(bundle.name);
+                this._cacheBundleRefCount.delete(bundle);
                 bundle.releaseAll();
                 assetManager.removeBundle(bundle);
-                this._cacheBundleRefCount.delete(bundle);
             }
-            if(bundle != null && (bundle.deps?.length??0 > 0)){
-                for (let index = 0; index < bundle.deps.length; index++) {
-                    const name = bundle.deps[index];
-                    if(this._cacheBundle.has(name)) {
-                        const cacheBundle = this._cacheBundle.get(name);
-                        this.releaseBundle(cacheBundle);
-                    }
+            for (let index = 0; index < deps.length; index++) {
+                const name = deps[index];
+                if(this._cacheBundle.has(name)) {
+                    const cacheBundle = this._cacheBundle.get(name);
+                    this.releaseBundle(cacheBundle, clear);
                 }
             }
         }

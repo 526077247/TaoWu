@@ -294,6 +294,7 @@ export class ImageLoaderManager implements IManager{
     public releaseOnlineImage(url: string, clear: boolean = true)
     {
         const data = this.cacheOnlineImage.get(url);
+        if (!data) return;
         data.refCount--;
         if (clear && data.refCount <= 0)
         {
