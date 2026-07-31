@@ -1,4 +1,5 @@
 import { Log } from "../../../../Mono/Module/Log/Log";
+import { ConfigManager } from "../../Config/ConfigManager";
 
 export class SceneConfig {
 	/** Id*/
@@ -14,11 +15,14 @@ export class SceneConfig {
 
 export class SceneConfigCategory{
 
-    public constructor(){
-        SceneConfigCategory.instance = this;
-    }
+    private static _instance: SceneConfigCategory;
 
-    public static instance:SceneConfigCategory;
+    public static get instance(): SceneConfigCategory {
+        if (!this._instance) {
+            this._instance = ConfigManager.instance.get(SceneConfigCategory);
+        }
+        return this._instance;
+    }
 
     private dict = new Map<number, SceneConfig>();
 

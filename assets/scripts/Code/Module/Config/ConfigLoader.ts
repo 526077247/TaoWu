@@ -29,13 +29,13 @@ export class ConfigLoader implements IConfigLoader{
         });
 
     }
-    public async getOneConfigBytes(configName: string): Promise<string>{
+    public async getOneConfigBytes(configName: string): Promise<any>{
         var bundle = await BundleManager.instance.loadBundle("config");
         if(bundle == null) {
             return;
         }
 
-        return await new Promise<string>((resolve) => {
+        return await new Promise<any>((resolve) => {
             bundle.load(configName, JsonAsset, (err, jsonAsset)=> {
                 if (err) {
                     Log.error(err);

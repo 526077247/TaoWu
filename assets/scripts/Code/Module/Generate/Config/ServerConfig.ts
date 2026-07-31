@@ -1,4 +1,5 @@
 import { Log } from "../../../../Mono/Module/Log/Log";
+import { ConfigManager } from "../../Config/ConfigManager";
 
 export class ServerConfig {
 	/** Id*/
@@ -18,11 +19,14 @@ export class ServerConfig {
 
 export class ServerConfigCategory{
 
-    public constructor(){
-        ServerConfigCategory.instance = this;
-    }
+    private static _instance: ServerConfigCategory;
 
-    public static instance:ServerConfigCategory;
+    public static get instance(): ServerConfigCategory {
+        if (!this._instance) {
+            this._instance = ConfigManager.instance.get(ServerConfigCategory);
+        }
+        return this._instance;
+    }
 
     private dict = new Map<number, ServerConfig>();
 
