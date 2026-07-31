@@ -5,6 +5,8 @@ import { ETTask } from "./ettask";
 
 export class FileHelper{
     public static readonly uiPath = ["ui", "uihall", "uigame"]
+
+    private static assetAddQueue: Promise<void> = Promise.resolve();
     /**
      * 创建子文件夹
      * @param selectPath
@@ -221,7 +223,11 @@ export class FileHelper{
      * @param uuid 
      * @returns 
      */
-    public static async onAssetAdd(uuid:string){
+    public static onAssetAdd(uuid:string){
+        this.assetAddQueue = this.assetAddQueue.then(() => this.onAssetAddAsync(uuid));
+    }
+
+    private static async onAssetAddAsync(uuid:string){
         if(uuid.indexOf('@')>=0) return
         const url = await Editor.Message.request('asset-db', 'query-url', uuid);
         if(url != null && url.indexOf('assetsPackage') >= 0){
@@ -232,7 +238,6 @@ export class FileHelper{
                 await this.setAtlasImageMeta(uuid);
             }
         }
-        
     }
 
 

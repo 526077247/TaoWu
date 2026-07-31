@@ -42,6 +42,7 @@ const path_1 = __importDefault(require("path"));
 const ettask_1 = require("./ettask");
 class FileHelper {
     static uiPath = ["ui", "uihall", "uigame"];
+    static assetAddQueue = Promise.resolve();
     /**
      * 创建子文件夹
      * @param selectPath
@@ -237,7 +238,10 @@ class FileHelper {
      * @param uuid
      * @returns
      */
-    static async onAssetAdd(uuid) {
+    static onAssetAdd(uuid) {
+        this.assetAddQueue = this.assetAddQueue.then(() => this.onAssetAddAsync(uuid));
+    }
+    static async onAssetAddAsync(uuid) {
         if (uuid.indexOf('@') >= 0)
             return;
         const url = await Editor.Message.request('asset-db', 'query-url', uuid);
