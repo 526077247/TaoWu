@@ -1,0 +1,3 @@
+[submodule "extensions/taowu-inspector"]
+	path = extensions/taowu-inspector
+	url = https://github.com/526077247/TaoWuInspector.git
