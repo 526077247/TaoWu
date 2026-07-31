@@ -258,7 +258,7 @@ class FileHelper {
                 "presetId": "91I12GucVJMaomwAqK5UYN"
             };
             meta.userData.type = "sprite-frame";
-            if (meta.subMetas != null) {
+            if (meta.subMetas != null && meta.userData.redirect) {
                 var vs = meta.userData.redirect.split('@');
                 if (vs.length == 2) {
                     var ud = meta.subMetas[vs[1]].userData;
@@ -273,7 +273,7 @@ class FileHelper {
         var meta = await Editor.Message.request('asset-db', 'query-asset-meta', uuid);
         if (meta != null) {
             meta.userData.type = "sprite-frame";
-            if (meta.subMetas != null) {
+            if (meta.subMetas != null && meta.userData.redirect) {
                 var vs = meta.userData.redirect.split('@');
                 if (vs.length == 2) {
                     var ud = meta.subMetas[vs[1]].userData;
