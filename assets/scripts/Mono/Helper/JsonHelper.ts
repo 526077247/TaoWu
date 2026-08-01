@@ -64,13 +64,13 @@ export class JsonHelper {
         
         // 处理 Date 对象
         if (obj instanceof Date) {
-            return { _type: 'Date', _value: obj.toISOString() };
+            return { _t: 'Date', _value: obj.toISOString() };
         }
         
         // 处理 Map 对象
         if (obj instanceof Map) {
             return {
-                _type: 'Map',
+                _t: 'Map',
                 _value: Array.from(obj.entries()).map(([key, value]) => [
                     this.serialize(key, `${path}.key`),
                     this.serialize(value, `${path}.value`)
@@ -81,7 +81,7 @@ export class JsonHelper {
         // 处理 Set 对象
         if (obj instanceof Set) {
             return {
-                _type: 'Set',
+                _t: 'Set',
                 _value: Array.from(obj.values()).map((value, i) => 
                     this.serialize(value, `${path}[${i}]`)
                 )
@@ -94,7 +94,7 @@ export class JsonHelper {
             const hasIgnore = JsonHelper.ignoreProperties.has(className);
             // 获取可序列化的属性
             const serializedObj: Record<string, any> = {
-                _type: className
+                _t: className
             };
             
             // 序列化所有自有属性
@@ -109,7 +109,7 @@ export class JsonHelper {
                 const custom = obj.toJSON();
                 return {
                     ...this.serialize(custom, `${path}.toJSON()`),
-                    _type: className
+                    _t: className
                 };
             }
             
@@ -156,8 +156,8 @@ export class JsonHelper {
             );
         }
         // 处理特殊类型
-        if ('_type' in data || !!type) {
-            const typeNmae = data._type;
+        if ('_t' in data || !!type) {
+            const typeNmae = data._t;
             // 处理 Date
             if (typeNmae === 'Date') {
                 return new Date(data._value);
@@ -190,7 +190,7 @@ export class JsonHelper {
             const instance = new type();
             // 反序列化属性
             for (const key in data) {
-                if (key !== '_type' && data.hasOwnProperty(key) && (!hasIgnore||!JsonHelper.isIgnoreProperty(typeNmae, key))) {
+                if (key !== '_t' && data.hasOwnProperty(key) && (!hasIgnore||!JsonHelper.isIgnoreProperty(typeNmae, key))) {
                     (instance as any)[key] = this.deserialize(null, data[key], `${path}.${key}`);
                 }
             }

@@ -22,6 +22,11 @@ export interface ITaoWuPropertyMeta {
     textarea?: boolean;
     color?: boolean;
     tableList?: boolean;
+    valueDropdown?: {
+        memberName?: string;
+        values?: (number | string)[];
+        labels?: string[];
+    };
 }
 
 export interface ITaoWuClassMeta {

@@ -139,3 +139,21 @@ export function Button(name?: string) {
         TaoWuRegistry.register(getClassName(target), propertyKey, { button: { name } });
     };
 }
+
+/** 值下拉选择 (类似 Odin ValueDropdown)
+ * @param values 字符串(方法名/字段名) 或 值数组
+ * @param labels 可选标签数组
+ */
+export function ValueDropdown(values: string | (number | string)[], labels?: string[]) {
+    return function (target: any, propertyKey: string) {
+        if (typeof values === 'string') {
+            TaoWuRegistry.register(getClassName(target), propertyKey, {
+                valueDropdown: { memberName: values, labels }
+            });
+        } else {
+            TaoWuRegistry.register(getClassName(target), propertyKey, {
+                valueDropdown: { values, labels }
+            });
+        }
+    };
+}
