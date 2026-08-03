@@ -1,11 +1,10 @@
-import { Button, Color, Label, Material, math, Size, Sprite } from "cc";
+import { Button, Color, Label, math, Size, Sprite } from "cc";
 import { Log } from "../../../Mono/Module/Log/Log";
 import { IOnDestroy } from "../UI/IOnDestroy";
 import { UIBaseContainer } from "../UI/UIBaseContainer";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ImageLoaderManager } from "../Resource/ImageLoaderManager";
 import { SoundManager } from "../Resource/SoundManager";
-import { MaterialManager } from "../Resource/MaterialManager";
 import { TextColorCtrl } from "../../../Mono/Module/UI/TextColorCtrl";
 import { SizeType } from "./UIImage";
 
@@ -21,7 +20,6 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
     private version: number = 0;
     private playSound: boolean;
     private size: Size;
-    private grayState: boolean = false;
 
     public onDestroy(){
         this.version = 0;
@@ -209,42 +207,27 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
         }
     }
 
-    public async setBtnGray(isGray: boolean, includeText: boolean, affectInteractable = true){
-        this.grayState = isGray;
+    public setBtnGray(isGray: boolean, includeText: boolean, affectInteractable = true){
         this.activatingImageComponent();
-        var mt: Material = null;
-        if(isGray){
-            mt = await MaterialManager.instance.loadMaterialAsync("ui/uicommon/materials/uigray");
-            if(!this.grayState){
-                mt = null;
-            }
-        }
         if(this.image != null){
-            this.image.material = mt;
+            this.image.grayscale = isGray;
             if (affectInteractable)
             {
-                this.button.interactable = !this.grayState;
+                this.button.interactable = !isGray;
             }
         }
-
-        this.setBtnGrayInner(mt, this.grayState, includeText);
+        this.setBtnGrayInner(isGray, includeText);
     }
 
-    private setBtnGrayInner(grayMaterial: Material, isGray: boolean, includeText: boolean){
+    private setBtnGrayInner(isGray: boolean, includeText: boolean){
         this.activatingImageComponent();
         const go = this.getNode();
         if(go == null){
             return;
         }
-        const mt = grayMaterial;
         var coms = go.getComponentsInChildren<Sprite>(Sprite);
         for (let index = 0; index < coms.length; index++) {
-            if(mt == null){
-                coms[index].enabled = false;
-                coms[index].enabled = true;
-            }else{
-                coms[index].material = mt;
-            }
+            coms[index].grayscale = isGray
         }
         if(includeText){
             var textComs = go.getComponentsInChildren<Label>(Label);
