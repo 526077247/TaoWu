@@ -17,11 +17,17 @@ export class ReferenceCollector extends Component {
 
     private dict: Map<string, Node>;
     onLoad(){
-        this.dict = new Map<string, Node>();
-        for (let index = 0; index < this.data.length; index++) {
-            const element = this.data[index];
-            if(element?.key!= null && element.key!= '')
-                this.dict.set(element.key,element.value);
+        this.init();
+    }
+
+    private init(){
+        if(!this.dict){
+            this.dict = new Map<string, Node>();
+            for (let index = 0; index < this.data?.length; index++) {
+                const element = this.data[index];
+                if(element?.key!= null && element.key!= '')
+                    this.dict.set(element.key,element.value);
+            }
         }
     }
 
@@ -41,6 +47,7 @@ export class ReferenceCollector extends Component {
     //使用泛型返回对应key的Node
 	public get<T extends Component | Node>(type: new (...args: any[]) => T, key: string) : T 
 	{
+        this.init();
 		let dictGo: Node = this.dict.get(key)
 		if (!dictGo)
 		{

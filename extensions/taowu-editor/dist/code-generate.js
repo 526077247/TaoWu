@@ -325,16 +325,45 @@ ${func}
             console.error("query-script fail!");
             return;
         }
-        const ts = fs.readFileSync(script.file, { encoding: "utf-8" });
-        const lines = ts.split('\n');
         const pathMap = new Map();
-        for (let index = 0; index < lines.length; index++) {
-            let line = lines[index];
-            if (line.indexOf("this.addComponent(") >= 0) {
-                line = line.replace(' ', '');
-                const vs = line.split("\"");
-                if (vs.length > 2) {
-                    pathMap.set(vs[1], null);
+        // 解析 TS 文件提取所有 addComponent 路径
+        const ts = fs.readFileSync(script.file, { encoding: "utf-8" });
+        // 1. 静态路径: this.addComponent(Type, "path") 或 this.addComponent(Type, `path`)
+        const staticRegex = /this\.addComponent\(\s*[\w.]+\s*,\s*['"`]([^'"`${]+)['"`]\s*\)/g;
+        let match;
+        while ((match = staticRegex.exec(ts)) !== null) {
+            pathMap.set(match[1], null);
+        }
+        // 2. 循环路径: for (let i = 0; i < N; i++) { this.addComponent(Type, "prefix" + i + "suffix") }
+        const forLoopRegex = /for\s*\(\s*let\s+(\w+)\s*=\s*(\d+)\s*;\s*\1\s*<\s*(\d+)\s*;\s*\1\s*\+\+\s*\)\s*\{([\s\S]*?)\}/g;
+        let forMatch;
+        while ((forMatch = forLoopRegex.exec(ts)) !== null) {
+            const varName = forMatch[1];
+            const start = parseInt(forMatch[2]);
+            const end = parseInt(forMatch[3]);
+            const body = forMatch[4];
+            // 提取 addComponent 第二个参数的完整表达式 (引号开始到逗号或右括号结束)
+            const concatRegex = /this\.addComponent\(\s*[\w.]+\s*,\s*([^)]+)\)/g;
+            let concatMatch;
+            while ((concatMatch = concatRegex.exec(body)) !== null) {
+                const expr = concatMatch[1].trim();
+                // 检查表达式中是否包含循环变量
+                if (expr.indexOf(varName) < 0)
+                    continue;
+                for (let i = start; i < end; i++) {
+                    // 将循环变量替换为当前值
+                    let evalExpr = expr.replace(new RegExp('\\b' + varName + '\\b', 'g'), String(i));
+                    // 将模板字符串 `prefix${i}suffix` 转换为普通字符串拼接后求值
+                    evalExpr = evalExpr.replace(/`([^`]*)`/g, (_m, tpl) => {
+                        return "'" + tpl.replace(/\$\{([^}]+)\}/g, "' + ($1) + '") + "'";
+                    });
+                    try {
+                        const path = eval(evalExpr);
+                        if (typeof path === 'string' && path.length > 0) {
+                            pathMap.set(path, null);
+                        }
+                    }
+                    catch (e) { }
                 }
             }
         }
@@ -365,7 +394,7 @@ ${func}
                 }
             }
         }
-        let count = 0;
+        let foundCount = 0;
         for (const kv of pathMap) {
             const path = kv[0];
             const vs = path.split('/');
@@ -388,16 +417,17 @@ ${func}
             if (node != null) {
                 pathMap.set(path, node);
                 console.log(path + " " + node.uuid);
+                foundCount++;
             }
             else {
-                count++;
+                console.warn('[TaoWuEditor] 节点未找到: ' + path);
             }
         }
         await Editor.Message.request('scene', 'set-property', {
             uuid: root.uuid,
             path: `__comps__.${compIndex}.data.length`,
             dump: {
-                value: count,
+                value: foundCount,
             },
         });
         let jj = 0;
