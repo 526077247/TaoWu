@@ -22,7 +22,7 @@ export class SceneConfigCategory{
         if (!this._instance) {
             JsonHelper.registerClass(SceneConfig,"SceneConfig");
             JsonHelper.registerClass(SceneConfigCategory,"SceneConfigCategory");
-            this._instance = ConfigManager.instance.get(SceneConfigCategory);
+            this._instance = ConfigManager.instance.get(SceneConfigCategory,"SceneConfigCategory");
         }
         return this._instance;
     }

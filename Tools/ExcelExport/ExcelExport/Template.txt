@@ -14,7 +14,7 @@ export class (ConfigName)Category{
         if (!this._instance) {
             JsonHelper.registerClass((ConfigName),"(ConfigName)");
             JsonHelper.registerClass((ConfigName)Category,"(ConfigName)Category");
-            this._instance = ConfigManager.instance.get((ConfigName)Category);
+            this._instance = ConfigManager.instance.get((ConfigName)Category,"(ConfigName)Category");
         }
         return this._instance;
     }

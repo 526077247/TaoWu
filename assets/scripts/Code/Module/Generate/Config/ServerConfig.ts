@@ -26,7 +26,7 @@ export class ServerConfigCategory{
         if (!this._instance) {
             JsonHelper.registerClass(ServerConfig,"ServerConfig");
             JsonHelper.registerClass(ServerConfigCategory,"ServerConfigCategory");
-            this._instance = ConfigManager.instance.get(ServerConfigCategory);
+            this._instance = ConfigManager.instance.get(ServerConfigCategory,"ServerConfigCategory");
         }
         return this._instance;
     }

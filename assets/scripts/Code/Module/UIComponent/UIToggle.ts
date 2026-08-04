@@ -52,4 +52,13 @@ export class UIToggle extends UIBaseContainer implements IOnDestroy {
             this.onValueChange(toggle.isChecked)
         }
     }
+
+    public setIsOn(isOn: boolean, notify: boolean = true){
+        this.activatingComponent();
+        if(notify){
+            this.toggle.isChecked = isOn;
+        }else{
+            this.toggle.setIsCheckedWithoutNotify(isOn);
+        }
+    }
 }

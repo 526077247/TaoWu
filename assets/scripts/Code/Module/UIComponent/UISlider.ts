@@ -1,4 +1,4 @@
-import { Slider } from "cc";
+import { math, Slider } from "cc";
 import { Log } from "../../../Mono/Module/Log/Log";
 import { IOnDestroy } from "../UI/IOnDestroy";
 import { UIBaseContainer } from "../UI/UIBaseContainer";
@@ -124,9 +124,9 @@ export class UISlider extends UIBaseContainer implements IOnDestroy {
     {
         this.activatingComponent();
         if (!this.isWholeNumbers){
-            this.slider.progress = (value - this.min) / (this.max - this.min);
+            this.slider.progress = math.clamp01((value - this.min) / (this.max - this.min));
         }else{
-            this.slider.progress = (Math.floor(value) - this.min) / (this.max - this.min);
+            this.slider.progress = math.clamp01((Math.floor(value) - this.min) / (this.max - this.min));
         }
        
     }
@@ -145,7 +145,7 @@ export class UISlider extends UIBaseContainer implements IOnDestroy {
     public setNormalizedValue(value: number)
     {
         this.activatingComponent();
-        this.slider.progress = value;
+        this.slider.progress = math.clamp01(value);
     }
     
     public getNormalizedValue(): number
