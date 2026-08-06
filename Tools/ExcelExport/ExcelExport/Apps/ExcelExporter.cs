@@ -1,16 +1,20 @@
 ﻿#define NOT_SERVER //导服务端配置开关
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using MongoDB.Bson.Serialization;
 using OfficeOpenXml;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+using TaoWu.LitJson;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using LicenseContext = OfficeOpenXml.LicenseContext;
 
 namespace TaoWu
@@ -18,9 +22,7 @@ namespace TaoWu
     public enum ConfigType
     {
         c = 0,
-#if !NOT_SERVER
         s = 1,
-#endif
     }
 
     class HeadInfo
@@ -229,6 +231,122 @@ namespace TaoWu
                         ExportClass(kv.Key, kv.Value.HeadInfos, ConfigType.c);
                     }
                 }
+                // foreach (string path in ExportHelper.FindFile(excelDir))
+                // {
+                //     ExportExcel(path);
+                // }
+
+                // 多线程导出
+                List<Task> tasks = new List<Task>();
+                foreach (string path in ExportHelper.FindFile(excelDir))
+                {
+                   Task task = Task.Run(() => ExportExcel(path));
+                   tasks.Add(task);
+                }
+                Task.WaitAll(tasks.ToArray());
+                Console.WriteLine("ExcelExporter 成功");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            finally
+            {
+                tables.Clear();
+                foreach (var kv in packages)
+                {
+                    kv.Value.Dispose();
+                }
+
+                packages.Clear();
+            }
+        }
+        public static void ExportTarget(string target)
+        {
+            string fullAbsolute = Path.GetFullPath(target);
+
+            var name = Path.GetFileName(target);
+            Console.WriteLine($"Exporter{name} 开始");
+            try
+            {
+                template = File.ReadAllText("Template.txt");
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+                foreach (string path in ExportHelper.FindFile(excelDir))
+                {
+                    string fullRelative = Path.GetFullPath(path, Directory.GetCurrentDirectory());
+                    bool ignoreCase = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                    if (!string.Equals(fullRelative, fullAbsolute, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) continue;
+                    string fileName = Path.GetFileName(path);
+                    if (!fileName.EndsWith(".xlsx") || fileName.StartsWith("~$") || fileName.Contains("#"))
+                    {
+                        continue;
+                    }
+
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                    string fileNameWithoutCS = fileNameWithoutExtension;
+                    string cs = "cs";
+                    if (fileNameWithoutExtension.Contains("@"))
+                    {
+                        string[] ss = fileNameWithoutExtension.Split("@");
+                        fileNameWithoutCS = ss[0];
+                        cs = ss[1];
+                    }
+
+                    if (cs == "")
+                    {
+                        cs = "cs";
+                    }
+
+                    ExcelPackage p = GetPackage(Path.GetFullPath(path));
+
+                    string protoName = fileNameWithoutCS;
+                    if (fileNameWithoutCS.Contains('_'))
+                    {
+                        protoName = fileNameWithoutCS.Substring(0, fileNameWithoutCS.LastIndexOf('_'));
+                    }
+
+                    Table table = GetTable(protoName);
+
+                    if (cs.Contains("c"))
+                    {
+                        table.C = true;
+                    }
+#if !NOT_SERVER
+                    if (cs.Contains("s"))
+                    {
+                        table.S = true;
+                    }
+#endif
+                    ExportExcelClass(p, protoName, table);
+                }
+
+                foreach (var kv in tables)
+                {
+                    if (kv.Value.C)
+                    {
+                        ExportClass(kv.Key, kv.Value.HeadInfos, ConfigType.c, true);
+                    }
+#if !NOT_SERVER
+                    if (kv.Value.S)
+                    {
+                        ExportClass(kv.Key, kv.Value.HeadInfos, ConfigType.s, true);
+                    }
+#endif
+                }
+
+                // 动态编译生成的配置代码
+                //configAssemblies[(int)ConfigType.c] = DynamicBuild(ConfigType.c);
+#if !NOT_SERVER
+                //configAssemblies[(int)ConfigType.s] = DynamicBuild(ConfigType.s);
+#endif
+                foreach (var kv in tables)
+                {
+                    if (kv.Value.C)
+                    {
+                        ExportClass(kv.Key, kv.Value.HeadInfos, ConfigType.c);
+                    }
+                }
                 //foreach (string path in ExportHelper.FindFile(excelDir))
                 //{
                 //    ExportExcel(path);
@@ -238,11 +356,15 @@ namespace TaoWu
                 List<Task> tasks = new List<Task>();
                 foreach (string path in ExportHelper.FindFile(excelDir))
                 {
+                    string fullRelative = Path.GetFullPath(path, Directory.GetCurrentDirectory());
+                    bool ignoreCase = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                    if (!string.Equals(fullRelative, fullAbsolute, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) continue;
                     Task task = Task.Run(() => ExportExcel(path));
                     tasks.Add(task);
                 }
                 Task.WaitAll(tasks.ToArray());
-                Console.WriteLine("ExcelExporter 成功");
+
+                Console.WriteLine("ExcelExporterTarget 成功");
             }
             catch (Exception e)
             {
@@ -298,20 +420,23 @@ namespace TaoWu
             if (cs.Contains("c"))
             {
                 ExportExcelJson(p, fileNameWithoutCS, table, ConfigType.c, relativePath);
+                MoveJson2Project(ConfigType.c, protoName, relativePath);
             }
-#if !NOT_SERVER
+
             if (cs.Contains("s"))
             {
                 ExportExcelJson(p, fileNameWithoutCS, table, ConfigType.s, relativePath);
-                //ExportExcelProtobuf(ConfigType.s, protoName, relativePath);
-            }
+#if !NOT_SERVER
+                MoveJson2Project(ConfigType.s, protoName, relativePath);
 #endif
+            }
+
         }
 
         private static string GetProtoDir(ConfigType configType, string relativeDir)
         {
 #if !NOT_SERVER
-            if (configType == ConfigType.c || configType == ConfigType.p)
+            if (configType == ConfigType.c)
             {
                 return string.Format(clientProtoDir, ".");
             }
@@ -482,9 +607,53 @@ namespace TaoWu
             using FileStream txt = new FileStream(jsonPath, FileMode.Create);
             using StreamWriter sw = new StreamWriter(txt);
             sw.Write(sb.ToString());
-            dir = GetProtoDir(ConfigType.c, relativeDir);
-            string path = Path.Combine(dir, $"{name}Category.json");
-            File.WriteAllText(path, sb.ToString());
+        }
+
+        static void MoveJson2Project(ConfigType configType, string protoName, string relativeDir)
+        {
+            string dir = GetProtoDir(configType, relativeDir);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            string p = Path.Combine(string.Format(jsonDir, configType, relativeDir));
+            string[] ss = Directory.GetFiles(p, $"{protoName}_*.txt");
+            List<string> jsonPaths = ss.ToList();
+            jsonPaths.Add(Path.Combine(string.Format(jsonDir, configType, relativeDir), $"{protoName}.txt"));
+
+            jsonPaths.Sort();
+            jsonPaths.Reverse();
+
+            JsonData root = null;
+            JsonData rootArray = null;
+            foreach (string jsonPath in jsonPaths)
+            {
+                if (!File.Exists(jsonPath)) continue; // 防御性检查
+
+                string jsonContent = File.ReadAllText(jsonPath);
+                JsonData data = JsonMapper.ToObject(jsonContent);
+                var list = data["list"];
+                if (root == null)
+                {
+                    root = data;
+                    rootArray = list;
+                    continue;
+                }
+                if (list.IsArray)
+                {
+                    // 若文件内容是数组，则逐个添加元素
+                    foreach (JsonData item in list)
+                    {
+                        rootArray.Add(item);
+                    }
+                }
+            }
+
+            string path = Path.Combine(dir, $"{protoName}Category.json");
+
+            string jsonOutput = JsonMapper.ToJson(root);
+            File.WriteAllText(path, jsonOutput);
         }
 
         static void ExportSheetJson(ExcelWorksheet worksheet, string name,
@@ -577,7 +746,13 @@ namespace TaoWu
                         if (i < list.Length - 1) value += ",";
                     }
                     return $"[{value}]";
+                case "decimal[][]":
+                case "double[][]":
+                case "uint[][]":
                 case "int[][]":
+                case "int32[][]":
+                case "long[][]":
+                case "float[][]":
                     return $"[{value}]";
                 case "int":
                 case "uint":

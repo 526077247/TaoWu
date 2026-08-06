@@ -448,6 +448,12 @@ namespace TaoWu.LitJson
 
                 current_symbol = automaton_stack.Pop ();
 
+                // 处理数组尾逗号：遇到']'且栈顶是Value(前一个逗号压入)时跳过该Value
+                if (current_symbol == (int) ParserToken.Value &&
+                    current_input == ']') {
+                    continue;
+                }
+
                 ProcessSymbol ();
 
                 if (current_symbol == current_input) {
