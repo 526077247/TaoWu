@@ -41,8 +41,8 @@ export class UIMsgBoxWin extends UIBaseView implements IOnCreate,IOnEnable<MsgBo
     public onEnable(a: MsgBoxPara){
         this.para = a;
         this.text.setText(a.content);
-        this.btn_cancel.setOnClick(this.onClickCancel);
-        this.btn_confirm.setOnClick(this.onClickConfirm);
+        this.btn_cancel.setOnClick(this.onClickCancel.bind(this));
+        this.btn_confirm.setOnClick(this.onClickConfirm.bind(this));
         this.confirmText.setText(a.confirmText);
         this.cancelText.setText(a.cancelText);
     }
