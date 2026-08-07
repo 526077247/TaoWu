@@ -31,11 +31,11 @@ namespace TaoWu
                             ExcelExporter.Export(true);
                             return 0;
                         }
-                    //case AppType.AttrExporter:
-                    //    {
-                    //        AttrExporter.Export();
-                    //        return 0;
-                    //    }
+                    case AppType.AttrExporter:
+                        {
+                            AttrExporter.Export();
+                            return 0;
+                        }
                     case AppType.I18NExporter:
                     {
                         ExcelExporter.ExportI18N();
