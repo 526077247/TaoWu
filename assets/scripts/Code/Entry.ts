@@ -10,12 +10,17 @@ import { CoroutineLockManager } from "./Module/CoroutineLock/CoroutineLockManage
 import { SceneManager } from "./Module/Scene/SceneManager"
 import { LoginScene } from "./Game/Scene/LoginScene"
 import { I18NManager } from "./Module/I18N/I18NManager"
-import { CacheManager } from "./Module/Player/CacheManager"
 import { ConfigManager } from "./Module/Config/ConfigManager"
 import { ImageLoaderManager } from "./Module/Resource/ImageLoaderManager"
 import { CameraManager } from "./Module/Camera/CameraManager"
 import { SoundManager } from "./Module/Resource/SoundManager"
 import { MaterialManager } from "./Module/Resource/MaterialManager"
+import { CacheManager } from "./Module/Player/CacheManager"
+import { ServerConfigManager } from "./Module/Update/ServerConfigManager"
+import { UIUpdateView } from "./Game/UI/UIUpdate/UIUpdateView"
+import { UILayerNames } from "./Module/UI/UILayerNames"
+import { Define } from "../Mono/Define"
+import { sys } from "cc"
 
 export class Entry 
 {  
@@ -27,30 +32,49 @@ export class Entry
     
     private static async startAsync() {
         try {
+            // === 阶段 A: 注册基础 Manager ===
             ManagerProvider.registerManager(Messager);
             ManagerProvider.registerManager(CoroutineLockManager);
             ManagerProvider.registerManager(TimerManager);
             ManagerProvider.registerManager(CacheManager);
 
-            ManagerProvider.registerManager(BundleManager);
+            const bm = ManagerProvider.registerManager(BundleManager);
+            await bm.loadLocalManifest();
+
             const cm = ManagerProvider.registerManager(ConfigManager);
             await cm.loadAsync();
-           
+
             ManagerProvider.registerManager(ResourceManager);
             ManagerProvider.registerManager(GameObjectPoolManager);
-            ManagerProvider.registerManager(ImageLoaderManager);
-            ManagerProvider.registerManager(MaterialManager);
 
             ManagerProvider.registerManager(I18NManager);
             ManagerProvider.registerManager(UIManager);
-            
-            ManagerProvider.registerManager(CameraManager);
-            ManagerProvider.registerManager(SceneManager);
-            ManagerProvider.registerManager(SoundManager);
-            await SceneManager.instance.switchScene(LoginScene)
+
+            if (!sys.isBrowser && (Define.Networked||Define.ForceUpdate)) {
+                ManagerProvider.registerManager(ServerConfigManager);
+                // === 阶段 B: 热更新检查 (参考 World Entry → UIUpdateView) ===
+                await UIManager.instance.openWindow<UIUpdateView, VoidFunction>(
+                    UIUpdateView, UIUpdateView.PrefabPath,
+                    Entry.startGame,null,null,null, UILayerNames.TopLayer
+                );
+            } else {
+                // 编辑器中直接进入游戏
+                Entry.startGame();
+            }
         } catch (e: any) {
             Log.error(e);
         }
     }
-}  
 
+    /**
+     * 更新完成后, 注册剩余 Manager 并进入游戏
+     */
+    private static async startGame() {
+        ManagerProvider.registerManager(ImageLoaderManager);
+        ManagerProvider.registerManager(MaterialManager);
+        ManagerProvider.registerManager(CameraManager);
+        ManagerProvider.registerManager(SceneManager);
+        ManagerProvider.registerManager(SoundManager);
+        await SceneManager.instance.switchScene(LoginScene);
+    }
+}

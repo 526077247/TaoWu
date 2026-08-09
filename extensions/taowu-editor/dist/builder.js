@@ -13,10 +13,33 @@ exports.configs = {
                 render: {
                     ui: 'ui-checkbox'
                 }
+            },
+            generateManifest: {
+                label: '生成热更版本清单',
+                description: '构建后自动生成 version.manifest.json',
+                default: true,
+                render: {
+                    ui: 'ui-checkbox'
+                }
+            },
+            version: {
+                label: '版本号',
+                description: '热更版本号 (纯数字，打开构建面板时自动填入当前时间戳)',
+                default: String(Date.now()),
+                render: {
+                    ui: 'ui-input'
+                }
+            },
+            channel: {
+                label: '渠道名',
+                description: '热更文件输出到 ./Release/打包模板名_渠道名 目录',
+                default: 'default',
+                render: {
+                    ui: 'ui-input'
+                }
             }
         }
     },
-    // 可以配置其他平台，如 android, ios 等
 };
 // 必须导出一个 load 方法
 const load = function () {

@@ -63,8 +63,13 @@ export function DisableIf(conditionProperty: string) {
 
 /** 自定义标签文本 */
 export function LabelText(text: string) {
-    return function (target: any, propertyKey: string) {
-        TaoWuRegistry.register(getClassName(target), propertyKey, { labelText: text });
+    return function (target: any, propertyKey?: string) {
+        if (propertyKey !== undefined) {
+            TaoWuRegistry.register(getClassName(target), propertyKey, { labelText: text });
+        } else {
+            const className = target.name || target.toString().match(/class\s+(\w+)/)?.[1] || '';
+            TaoWuRegistry.registerClass(className, { labelText: text });
+        }
     };
 }
 
@@ -83,9 +88,23 @@ export function PropertyOrder(order: number) {
 }
 
 /** 数值范围滑块 */
-export function PropertyRange(min: number, max: number) {
+export function Range(min: number, max: number) {
     return function (target: any, propertyKey: string) {
         TaoWuRegistry.register(getClassName(target), propertyKey, { range: { min, max } });
+    };
+}
+
+/** 数值范围最小值 */
+export function Min(min: number) {
+    return function (target: any, propertyKey: string) {
+        TaoWuRegistry.register(getClassName(target), propertyKey, { rangeMin: min });
+    };
+}
+
+/** 数值范围最大值 */
+export function Max(max: number) {
+    return function (target: any, propertyKey: string) {
+        TaoWuRegistry.register(getClassName(target), propertyKey, { rangeMax: max });
     };
 }
 

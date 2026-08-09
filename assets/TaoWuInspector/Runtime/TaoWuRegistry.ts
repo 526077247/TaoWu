@@ -16,7 +16,16 @@ export class TaoWuRegistry {
         if (!classMeta[propertyKey]) {
             classMeta[propertyKey] = {};
         }
-        Object.assign(classMeta[propertyKey], meta);
+        Object.assign(classMeta[propertyKey] as any, meta);
+    }
+
+    static registerClass(className: string, meta: { labelText?: string }): void {
+        if (!this.metadata.has(className)) {
+            this.metadata.set(className, {});
+        }
+        const classMeta = this.metadata.get(className)!;
+        if (!classMeta.__class__) classMeta.__class__ = {};
+        Object.assign(classMeta.__class__, meta);
     }
 
     static getMetadata(className: string): ITaoWuClassMeta | null {

@@ -1,4 +1,4 @@
-﻿import { _decorator, screen, view } from 'cc';
+﻿import { _decorator, screen, sys, view } from 'cc';
 import { EDITOR } from 'cc/env';
 
 export class Define {
@@ -20,5 +20,14 @@ export class Define {
 
     public static get Debug(){
         return EDITOR;
+    }
+
+    public static get ForceUpdate(){
+        return false;
+    }
+
+    public static get Networked(){
+        if(EDITOR) return false;
+        return sys.getNetworkType() != sys.NetworkType.NONE;
     }
 }

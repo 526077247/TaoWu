@@ -54,6 +54,12 @@ export class ResourceManager implements IManager {
 
 
     public async loadBundleByAssetPath(bundleName: string): Promise<AssetManager.Bundle> {
+        // 优先使用远程信息 (热更后的版本)
+        const remoteInfo = BundleManager.instance.getRemoteBundleInfo(bundleName);
+        if (remoteInfo) {
+            return await BundleManager.instance.loadBundle(bundleName, remoteInfo.url, remoteInfo.hash);
+        }
+        // fallback: 内置 bundle
         return await BundleManager.instance.loadBundle(bundleName);
     }
 

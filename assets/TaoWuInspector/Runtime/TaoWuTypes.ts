@@ -19,6 +19,8 @@ export interface ITaoWuPropertyMeta {
     onCollectionChanged?: string;
     button?: { name?: string };
     range?: { min: number; max: number };
+    rangeMin?: number;
+    rangeMax?: number;
     textarea?: boolean;
     color?: boolean;
     tableList?: boolean;
@@ -30,5 +32,6 @@ export interface ITaoWuPropertyMeta {
 }
 
 export interface ITaoWuClassMeta {
-    [propertyKey: string]: ITaoWuPropertyMeta;
-}
+            __class__?: { labelText?: string };
+            [propertyKey: string]: any;
+        }

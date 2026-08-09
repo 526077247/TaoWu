@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.onAfterBuild = void 0;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const crypto = __importStar(require("crypto"));
 const JavaScriptObfuscator = __importStar(require("javascript-obfuscator"));
 // 自定义混淆函数
 const obfuscateMainJs = (options, result) => {
@@ -43,7 +44,6 @@ const obfuscateMainJs = (options, result) => {
     if (!fs.existsSync(destDir)) {
         destDir = path.join(result.paths.dir, "assets", "main");
     }
-    // 从构建选项获取配置
     const enableObfuscate = options.packages["taowu-editor"].enableObfuscate;
     if (!enableObfuscate) {
         console.log('[CodeObfuscate] 代码混淆未启用，跳过');
@@ -71,24 +71,18 @@ const obfuscateMainJs = (options, result) => {
         try {
             const code = fs.readFileSync(targetFile, 'utf8');
             const obfuscatedResult = JavaScriptObfuscator.obfuscate(code, {
-                // ✅ 推荐启用的功能
-                compact: true, // 紧凑输出，移除换行
-                controlFlowFlattening: false, // 核心控制：禁用，避免体积剧增
-                deadCodeInjection: false, // 核心控制：禁用，防止无意义增肥
-                stringArray: true, // 启用字符串数组
-                stringArrayThreshold: 0.2, // 降低阈值，平衡体积
-                stringArrayEncoding: [], // 不编码，避免额外膨胀
-                rotateStringArray: true, // 打乱数组，安全度↑，体积影响小
-                shuffleStringArray: true, // 随机化数组，安全度↑，体积影响小
-                transformObjectKeys: false, // 不改对象键，保持体积稳定
-                // ❌ 严格控制/完全禁用的功能（高体积代价）
-                // deadCodeInjection: false,               // 绝对禁止，可膨胀+200%
-                // controlFlowFlattening: false,           // 绝对禁止，大代码影响显著
-                // selfDefending: false,                   // 禁用自我保护，避免额外开销
-                // 基础安全设置
-                identifierNamesGenerator: 'hexadecimal', // 十六进制变量名
-                renameGlobals: false, // 不改全局变量
-                unicodeEscapeSequence: false // 禁用Unicode转义
+                compact: true,
+                controlFlowFlattening: false,
+                deadCodeInjection: false,
+                stringArray: true,
+                stringArrayThreshold: 0.2,
+                stringArrayEncoding: [],
+                rotateStringArray: true,
+                shuffleStringArray: true,
+                transformObjectKeys: false,
+                identifierNamesGenerator: 'hexadecimal',
+                renameGlobals: false,
+                unicodeEscapeSequence: false
             });
             fs.writeFileSync(targetFile, obfuscatedResult.getObfuscatedCode());
             console.log(`[混淆插件] ✅ 混淆完成: ${targetFile}`);
@@ -101,8 +95,199 @@ const obfuscateMainJs = (options, result) => {
         console.warn(`[混淆插件] ⚠️ 未找到符合规则的 index.js`);
     }
 };
-// 导出的构建钩子
+function calculateDirHash(dir) {
+    const hash = crypto.createHash('md5');
+    const files = fs.readdirSync(dir).sort();
+    for (const file of files) {
+        const fullPath = path.join(dir, file);
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+            hash.update(calculateDirHash(fullPath));
+        }
+        else {
+            hash.update(fs.readFileSync(fullPath));
+        }
+    }
+    return hash.digest('hex').substring(0, 12);
+}
+function copyDir(src, dest) {
+    if (!fs.existsSync(dest)) {
+        fs.mkdirSync(dest, { recursive: true });
+    }
+    for (const entry of fs.readdirSync(src)) {
+        const srcPath = path.join(src, entry);
+        const destPath = path.join(dest, entry);
+        if (fs.statSync(srcPath).isDirectory()) {
+            copyDir(srcPath, destPath);
+        }
+        else {
+            fs.copyFileSync(srcPath, destPath);
+        }
+    }
+}
+/**
+ * 复制目录, 跳过指定的顶层子目录
+ */
+function copyDirExcluding(src, dest, exclude) {
+    if (!fs.existsSync(dest)) {
+        fs.mkdirSync(dest, { recursive: true });
+    }
+    const excludeSet = new Set(exclude);
+    for (const entry of fs.readdirSync(src)) {
+        if (excludeSet.has(entry))
+            continue;
+        const srcPath = path.join(src, entry);
+        const destPath = path.join(dest, entry);
+        if (fs.statSync(srcPath).isDirectory()) {
+            copyDirExcluding(srcPath, destPath, []);
+        }
+        else {
+            fs.copyFileSync(srcPath, destPath);
+        }
+    }
+}
+/**
+ * 同步等待 (busy-wait, 精度约 1ms)
+ */
+function sleepSync(ms) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) { }
+}
+/**
+ * 安全删除并重建目录 (Windows 下 rmSync 后句柄可能延迟释放, 需重试+等待)
+ */
+function safeRmAndMkdir(dir) {
+    if (fs.existsSync(dir)) {
+        for (let i = 0; i < 5; i++) {
+            try {
+                fs.rmSync(dir, { recursive: true, force: true });
+                break;
+            }
+            catch {
+                sleepSync(200);
+            }
+        }
+    }
+    for (let i = 0; i < 5; i++) {
+        try {
+            fs.mkdirSync(dir, { recursive: true });
+            return;
+        }
+        catch (e) {
+            if (i === 4)
+                throw e;
+            sleepSync(200);
+        }
+    }
+}
+/**
+ * 生成热更新版本清单
+ */
+const generateVersionManifest = (options, result) => {
+    const pkgConfig = options.packages["taowu-editor"] || {};
+    if (pkgConfig.generateManifest === false) {
+        console.log('[HotUpdate] 版本清单生成未启用，跳过');
+        return;
+    }
+    const buildDir = result.paths.dir;
+    const assetsDir = path.join(buildDir, "assets");
+    const remoteDir = path.join(buildDir, "remote");
+    // 收集所有 bundle: { name: { dir, builtin } }
+    const allBundles = new Map();
+    // 内置 bundle (assets/ 目录)
+    if (fs.existsSync(assetsDir)) {
+        for (const entry of fs.readdirSync(assetsDir)) {
+            const bundleDir = path.join(assetsDir, entry);
+            if (fs.statSync(bundleDir).isDirectory()) {
+                allBundles.set(entry, { dir: bundleDir, builtin: true });
+            }
+        }
+    }
+    // 远程 bundle (remote/ 目录)
+    if (fs.existsSync(remoteDir)) {
+        for (const entry of fs.readdirSync(remoteDir)) {
+            const bundleDir = path.join(remoteDir, entry);
+            if (fs.statSync(bundleDir).isDirectory()) {
+                allBundles.set(entry, { dir: bundleDir, builtin: false });
+            }
+        }
+    }
+    console.log(`[HotUpdate] Builtin bundles: ${[...allBundles.values()].filter(b => b.builtin).map(b => path.basename(b.dir)).join(', ')}`);
+    console.log(`[HotUpdate] Remote bundles: ${[...allBundles.values()].filter(b => !b.builtin).map(b => path.basename(b.dir)).join(', ')}`);
+    const version = pkgConfig.version || String(Date.now());
+    const channel = pkgConfig.channel || 'default';
+    // 从 settings.json 读取目标平台 + 服务器地址
+    const settingsPath = path.join(buildDir, "src", "settings.json");
+    let platformName = path.basename(buildDir);
+    let serverURL = "";
+    if (fs.existsSync(settingsPath)) {
+        try {
+            const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+            const rawPlatform = settings?.engine?.platform || platformName;
+            if (rawPlatform.startsWith('web'))
+                platformName = 'webgl';
+            else if (rawPlatform === 'android')
+                platformName = 'android';
+            else if (rawPlatform === 'ios')
+                platformName = 'ios';
+            else
+                platformName = 'pc';
+            console.log(`[HotUpdate] Platform: ${rawPlatform} → ${platformName}`);
+            // 读取构建面板的"资源服务器地址"
+            serverURL = settings?.assets?.server || "";
+            console.log(`[HotUpdate] Server URL: ${serverURL}`);
+        }
+        catch { }
+    }
+    // 精简格式: {v:version, c:渠道名, p:平台名, s:服务器地址, b:{bundleName:[hash, builtin]}}
+    const manifest = {
+        v: version,
+        c: channel,
+        p: platformName,
+        s: serverURL,
+        b: {}
+    };
+    for (const [name, info] of allBundles) {
+        const hash = calculateDirHash(info.dir);
+        manifest.b[name] = [hash, info.builtin];
+        console.log(`[HotUpdate] Bundle: ${name}, hash: ${hash}, builtin: ${info.builtin}`);
+    }
+    // 写入构建根目录 (随包发布)
+    const manifestPath = path.join(buildDir, "version.manifest.json");
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    console.log(`[HotUpdate] ✅ Version manifest generated: ${manifestPath}`);
+    // 复制到 CDN 输出目录: {项目根}/Release/{渠道名}_{平台名}
+    const projectRoot = path.resolve(buildDir, '..', '..');
+    const cdnOutputDir = path.join(projectRoot, 'Release', `${channel}_${platformName}`);
+    safeRmAndMkdir(cdnOutputDir);
+    fs.copyFileSync(manifestPath, path.join(cdnOutputDir, `${version}.bytes`));
+    // 同时写入 version.txt (只存版本号, 供运行时拼接 manifest URL)
+    fs.writeFileSync(path.join(cdnOutputDir, "version.txt"), version);
+    // 所有 bundle (内置+远程) 都按 hash 复制到 CDN
+    for (const [name, info] of allBundles) {
+        const hash = manifest.b[name][0];
+        copyDir(info.dir, path.join(cdnOutputDir, hash));
+    }
+    console.log(`[HotUpdate] ✅ Copied bundles to CDN directory: ${cdnOutputDir}`);
+    // 将构建产物整体复制到 Release 目录 (排除 remote/ 目录), 与 CDN 目录同级
+    const releaseRoot = path.join(projectRoot, 'Release');
+    const buildOutputDir = path.join(releaseRoot, `${platformName}_build`);
+    safeRmAndMkdir(buildOutputDir);
+    copyDirExcluding(buildDir, buildOutputDir, ['remote']);
+    console.log(`[HotUpdate] ✅ Copied build output (excluding remote) to: ${buildOutputDir}`);
+};
 const onAfterBuild = async function (options, result) {
-    obfuscateMainJs(options, result);
+    try {
+        obfuscateMainJs(options, result);
+    }
+    catch (e) {
+        console.error(`[taowu-editor] obfuscateMainJs error: ${e?.message}\n${e?.stack}`);
+    }
+    try {
+        generateVersionManifest(options, result);
+    }
+    catch (e) {
+        console.error(`[taowu-editor] generateVersionManifest error: ${e?.message}\n${e?.stack}`);
+    }
 };
 exports.onAfterBuild = onAfterBuild;
