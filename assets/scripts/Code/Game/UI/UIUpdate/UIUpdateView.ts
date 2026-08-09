@@ -32,12 +32,7 @@ export class UIUpdateView extends UIBaseView implements IOnCreate, IOnEnable<Voi
 
     private async startCheckUpdate() {
         const task = new UpdateTask();
-        await task.init(
-            (total, current) => {
-                const percent = total > 0 ? current / total : 0;
-                this.slider.setValue(percent);
-                Log.info(`[HotUpdate] ${(percent * 100).toFixed(1)}% (${current}/${total})`);
-            },
+        await task.init(this.updateProgress.bind(this),
             new SetUpdateListProcess(),
             new AppUpdateProcess(),
             new BundleUpdateProcess()//可选不在此处下载，后续则自动按需下载
@@ -56,5 +51,11 @@ export class UIUpdateView extends UIBaseView implements IOnCreate, IOnEnable<Voi
             // 失败也继续进入游戏 (降级处理)
             this.onOver?.();
         }
+    }
+
+    private updateProgress(total: number, current: number){
+        const percent = total > 0 ? current / total : 0;
+        this.slider.setValue(percent);
+        Log.info(`[HotUpdate] ${(percent * 100).toFixed(1)}% (${current}/${total})`);
     }
 }

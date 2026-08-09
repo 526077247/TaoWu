@@ -12,8 +12,6 @@ export class UpdateTask {
     public downloadingMaxNum = 10;
     public failedTryAgain = 2;
     public timeout = 8;
-
-    public localManifest: VersionManifest = null;
     public remoteManifest: VersionManifest = null;
 
     public async init(

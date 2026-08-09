@@ -66,8 +66,26 @@ export class BundleUpdateProcess extends UpdateProcess {
 
         if (allSuccess) {
             Log.info("[HotUpdate] All bundles downloaded successfully.");
+            // 更新完成, 保存最新远端 manifest 到本地 (作为下次启动的热更基线)
+            this.saveLatestManifest();
         }
 
         return UpdateRes.Over;
+    }
+
+    /**
+     * 把当前 remoteManifest 保存为本地最新远端清单
+     * 下次启动 loadLocalManifest 时优先读取, 实现增量热更基线
+     */
+    private saveLatestManifest(): void {
+        if (!this.remoteManifest) return;
+        const localManifest = BundleManager.instance.localManifest;
+        BundleManager.instance.saveRemoteManifest({
+            version: this.remoteManifest.version,
+            channel: localManifest?.channel || "default",
+            platform: localManifest?.platform || UpdateConfig.getPlatformName(),
+            server: localManifest?.server || "",
+            bundles: this.remoteManifest.bundles
+        });
     }
 }
