@@ -170,17 +170,7 @@ export class BundleManager implements IManager {
      */
     private fetchLocalText(filename: string): Promise<string> {
         return new Promise((resolve) => {
-            if (sys.isBrowser) {
-                const xhr = new XMLHttpRequest();
-                xhr.open("GET", filename, true);
-                xhr.timeout = 15000;
-                xhr.onreadystatechange = () => {
-                    if (xhr.readyState === 4) {
-                        resolve(xhr.status >= 200 && xhr.status < 400 ? xhr.responseText : null);
-                    }
-                };
-                xhr.send();
-            } else if (sys.isNative) {
+            if (sys.isNative) {
                 const jsb = (globalThis as any).jsb;
                 const fileUtils = jsb?.fileUtils;
                 if (fileUtils) {
@@ -195,7 +185,16 @@ export class BundleManager implements IManager {
                     resolve(null);
                 }
             } else {
-                resolve(null);
+                // 小游戏平台需要用其自身FileSystem API
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", filename, true);
+                xhr.timeout = 15000;
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                        resolve(xhr.status >= 200 && xhr.status < 400 ? xhr.responseText : null);
+                    }
+                };
+                xhr.send();
             }
         });
     }

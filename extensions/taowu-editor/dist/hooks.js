@@ -49,51 +49,90 @@ const obfuscateMainJs = (options, result) => {
         console.log('[CodeObfuscate] 代码混淆未启用，跳过');
         return;
     }
-    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${destDir}`);
-    const findMainJs = (dir) => {
-        const files = fs.readdirSync(dir);
-        for (const file of files) {
+    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${result.paths.dir}`);
+    // 混淆配置
+    const obfuscateOptions = {
+        compact: true,
+        controlFlowFlattening: false,
+        deadCodeInjection: false,
+        stringArray: true,
+        stringArrayThreshold: 0.2,
+        stringArrayEncoding: [],
+        rotateStringArray: true,
+        shuffleStringArray: true,
+        transformObjectKeys: false,
+        identifierNamesGenerator: 'hexadecimal',
+        renameGlobals: false,
+        unicodeEscapeSequence: false
+    };
+    const obfuscateFile = (filePath) => {
+        try {
+            const code = fs.readFileSync(filePath, 'utf8');
+            const obfuscatedResult = JavaScriptObfuscator.obfuscate(code, obfuscateOptions);
+            fs.writeFileSync(filePath, obfuscatedResult.getObfuscatedCode());
+            console.log(`[混淆插件] ✅ ${filePath}`);
+            return true;
+        }
+        catch (error) {
+            console.error(`[混淆插件] ❌ ${filePath}: ${error.message}`);
+            return false;
+        }
+    };
+    // 递归查找目录下所有 .js 文件 (跳过 .min.js、system.js 等引擎文件)
+    const JS_FILE_PATTERN = /^(?!.*\.min\.js$).*\.js$/;
+    const SYSTEM_FILE_PATTERN = /(?:^|[\\/])(system|cocos-js|cc\.min)\.js$/;
+    const findAndObfuscateJs = (dir, bundleName) => {
+        let count = 0;
+        if (!fs.existsSync(dir))
+            return 0;
+        for (const file of fs.readdirSync(dir)) {
             const fullPath = path.join(dir, file);
             const stat = fs.statSync(fullPath);
             if (stat.isDirectory()) {
-                const result = findMainJs(fullPath);
-                if (result)
-                    return result;
+                count += findAndObfuscateJs(fullPath, bundleName);
             }
-            else if (/^(index|game)(?:\.[a-f0-9]+)?\.js$/.test(file)) {
-                return fullPath;
+            else if (JS_FILE_PATTERN.test(file) && !SYSTEM_FILE_PATTERN.test(fullPath)) {
+                if (obfuscateFile(fullPath))
+                    count++;
             }
         }
-        return null;
+        return count;
     };
-    const targetFile = findMainJs(destDir);
-    if (targetFile) {
-        try {
-            const code = fs.readFileSync(targetFile, 'utf8');
-            const obfuscatedResult = JavaScriptObfuscator.obfuscate(code, {
-                compact: true,
-                controlFlowFlattening: false,
-                deadCodeInjection: false,
-                stringArray: true,
-                stringArrayThreshold: 0.2,
-                stringArrayEncoding: [],
-                rotateStringArray: true,
-                shuffleStringArray: true,
-                transformObjectKeys: false,
-                identifierNamesGenerator: 'hexadecimal',
-                renameGlobals: false,
-                unicodeEscapeSequence: false
-            });
-            fs.writeFileSync(targetFile, obfuscatedResult.getObfuscatedCode());
-            console.log(`[混淆插件] ✅ 混淆完成: ${targetFile}`);
-        }
-        catch (error) {
-            console.error(`[混淆插件] ❌ 混淆失败: ${error.message}`);
+    let totalCount = 0;
+    // 1. 混淆内置 bundles (assets/ 目录下的每个子目录)
+    const assetsDir = path.join(result.paths.dir, "assets");
+    if (fs.existsSync(assetsDir)) {
+        for (const entry of fs.readdirSync(assetsDir)) {
+            const bundleDir = path.join(assetsDir, entry);
+            if (fs.statSync(bundleDir).isDirectory()) {
+                const n = findAndObfuscateJs(bundleDir, entry);
+                totalCount += n;
+            }
         }
     }
-    else {
-        console.warn(`[混淆插件] ⚠️ 未找到符合规则的 index.js`);
+    // 2. 混淆远程 bundles (remote/ 目录下的每个子目录)
+    const remoteDir = path.join(result.paths.dir, "remote");
+    if (fs.existsSync(remoteDir)) {
+        for (const entry of fs.readdirSync(remoteDir)) {
+            const bundleDir = path.join(remoteDir, entry);
+            if (fs.statSync(bundleDir).isDirectory()) {
+                const n = findAndObfuscateJs(bundleDir, entry);
+                totalCount += n;
+            }
+        }
     }
+    // 3. 混淆 subpackages (subpackages/ 目录下的每个子目录)
+    const subpackagesDir = path.join(result.paths.dir, "subpackages");
+    if (fs.existsSync(subpackagesDir)) {
+        for (const entry of fs.readdirSync(subpackagesDir)) {
+            const bundleDir = path.join(subpackagesDir, entry);
+            if (fs.statSync(bundleDir).isDirectory()) {
+                const n = findAndObfuscateJs(bundleDir, entry);
+                totalCount += n;
+            }
+        }
+    }
+    console.log(`[混淆插件] 混淆完成，共处理 ${totalCount} 个 JS 文件`);
 };
 function calculateDirHash(dir) {
     const hash = crypto.createHash('md5');
@@ -209,6 +248,16 @@ const generateVersionManifest = (options, result) => {
             const bundleDir = path.join(remoteDir, entry);
             if (fs.statSync(bundleDir).isDirectory()) {
                 allBundles.set(entry, { dir: bundleDir, builtin: false });
+            }
+        }
+    }
+    // 分包 bundle (subpackages/ 目录)
+    const subpackagesDir = path.join(buildDir, "subpackages");
+    if (fs.existsSync(subpackagesDir)) {
+        for (const entry of fs.readdirSync(subpackagesDir)) {
+            const bundleDir = path.join(subpackagesDir, entry);
+            if (fs.statSync(bundleDir).isDirectory()) {
+                allBundles.set(entry, { dir: bundleDir, builtin: true });
             }
         }
     }

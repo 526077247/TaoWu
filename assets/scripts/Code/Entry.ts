@@ -47,7 +47,7 @@ export class Entry
             ManagerProvider.registerManager(I18NManager);
             ManagerProvider.registerManager(UIManager);
 
-            if (!sys.isBrowser && (Define.Networked||Define.ForceUpdate)) {
+            if (sys.isNative && (Define.Networked||Define.ForceUpdate)) {
                 await cm.loadAsync();
                 ManagerProvider.registerManager(ServerConfigManager);
                 // === 阶段 B: 热更新检查 (参考 World Entry → UIUpdateView) ===
