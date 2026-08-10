@@ -65,10 +65,10 @@ export class UpdateConfig {
 
     /** 获取当前平台名 (与构建时输出目录一致) */
     public static getPlatformName(): string {
-        if (sys.isBrowser) return "webgl";
         if (sys.platform === sys.Platform.ANDROID) return "android";
         if (sys.platform === sys.Platform.IOS) return "ios";
-        return "pc";
+        if (sys.platform === sys.Platform.WIN32) return "pc";
+        return "webgl";
     }
 
     /** 拼接 CDN manifest URL: {baseURL}/{渠道名}_{平台名}/{version}.bytes */

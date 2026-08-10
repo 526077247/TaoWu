@@ -54,10 +54,10 @@ export class UpdateTask {
     public static restartGame(): void {
         Log.info("[HotUpdate] Restarting game...");
         setTimeout(() => {
-            if (sys.isBrowser) {
-                window.location.reload();
-            } else {
+            if (sys.isNative) {
                 game.restart();
+            } else {
+                window.location.reload();
             }
         }, 500);
     }

@@ -55,7 +55,7 @@ export class BundleManager implements IManager {
      * 下次启动时 loadLocalManifest 优先读取这里保存的版本, 实现增量热更基线
      */
     public saveRemoteManifest(manifest: LocalManifest): void {
-        if (sys.isBrowser) return; // 浏览器自带缓存
+        if (!sys.isNative) return; // 浏览器自带缓存
         try {
             const path = this.getRemoteManifestPath(manifest.version);
             const json = JSON.stringify(manifest);
@@ -74,7 +74,7 @@ export class BundleManager implements IManager {
      * 浏览器返回 null (由 HTTP 缓存兜底), 原生扫描本地文件找最新版本
      */
     private loadSavedRemoteManifest(): LocalManifest {
-        if (sys.isBrowser) return null; // 浏览器自带缓存
+        if (!sys.isNative) return null; // 浏览器自带缓存
         try {
             const jsb = (globalThis as any).jsb;
             if (!jsb || !jsb.fileUtils) return null;

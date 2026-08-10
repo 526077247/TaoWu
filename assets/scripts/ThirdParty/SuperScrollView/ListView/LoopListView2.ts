@@ -232,7 +232,7 @@ export class LoopListView2 extends Component {
         this.mListViewInited = false;
     }
 
-    public cleanUp(name: string = null, beforeDestroy:(node)=> void = null)
+    public cleanUp(name: string = null, beforeDestroy:(node: Node)=> void = null)
     {
         if (name == null)
         {
