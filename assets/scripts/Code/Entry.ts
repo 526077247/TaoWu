@@ -1,10 +1,11 @@
+import { _decorator, sys } from "cc"
+const { ccclass } = _decorator;
 import { Log } from "../Mono/Module/Log/Log"
 import { ManagerProvider } from "../Mono/Core/Manager/ManagerProvider"
 import { Messager } from "../Mono/Module/Messager/Messager"
 import { TimerManager } from "../Mono/Module/Timer/TimerManager"
 import { ResourceManager } from "./Module/Resource/ResourceManager"
 import { UIManager } from "./Module/UI/UIManager"
-import { BundleManager } from "../Mono/Module/Resource/BundleManager"
 import { GameObjectPoolManager } from "./Module/Resource/GameObjectPoolManager"
 import { CoroutineLockManager } from "./Module/CoroutineLock/CoroutineLockManager"
 import { SceneManager } from "./Module/Scene/SceneManager"
@@ -20,8 +21,8 @@ import { ServerConfigManager } from "./Module/Update/ServerConfigManager"
 import { UIUpdateView } from "./Game/UI/UIUpdate/UIUpdateView"
 import { UILayerNames } from "./Module/UI/UILayerNames"
 import { Define } from "../Mono/Define"
-import { sys } from "cc"
 
+@ccclass('Entry')
 export class Entry 
 {  
     public static start()
@@ -38,11 +39,7 @@ export class Entry
             ManagerProvider.registerManager(TimerManager);
             ManagerProvider.registerManager(CacheManager);
 
-            const bm = ManagerProvider.registerManager(BundleManager);
-            await bm.loadLocalManifest();
-
             const cm = ManagerProvider.registerManager(ConfigManager);
-            await cm.loadAsync();
 
             ManagerProvider.registerManager(ResourceManager);
             ManagerProvider.registerManager(GameObjectPoolManager);
@@ -51,6 +48,7 @@ export class Entry
             ManagerProvider.registerManager(UIManager);
 
             if (!sys.isBrowser && (Define.Networked||Define.ForceUpdate)) {
+                await cm.loadAsync();
                 ManagerProvider.registerManager(ServerConfigManager);
                 // === 阶段 B: 热更新检查 (参考 World Entry → UIUpdateView) ===
                 await UIManager.instance.openWindow<UIUpdateView, VoidFunction>(
@@ -59,17 +57,24 @@ export class Entry
                 );
             } else {
                 // 编辑器中直接进入游戏
-                Entry.startGame();
+                Entry.startGameAsync(false);
             }
         } catch (e: any) {
             Log.error(e);
         }
     }
 
+    private static async startGame(){
+        Entry.startGameAsync(true);
+    }
+
+
     /**
      * 更新完成后, 注册剩余 Manager 并进入游戏
      */
-    private static async startGame() {
+    private static async startGameAsync(configInit: boolean)
+    {
+        if(!configInit) await ConfigManager.instance.loadAsync();
         ManagerProvider.registerManager(ImageLoaderManager);
         ManagerProvider.registerManager(MaterialManager);
         ManagerProvider.registerManager(CameraManager);

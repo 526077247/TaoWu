@@ -1,9 +1,6 @@
 import { _decorator, assetManager, AssetManager, sys } from 'cc';
 import { IManager } from '../../Core/Manager/IManager';
 import { ObjectPool } from '../../Core/ObjectPool';
-import { CoroutineLock, CoroutineLockManager } from '../../../Code/Module/CoroutineLock/CoroutineLockManager';
-import { CoroutineLockType } from '../../../Code/Module/CoroutineLock/CoroutineLockType';
-import * as string from '../../Helper/StringHelper'
 import { Log } from '../Log/Log';
 import { VersionManifest, BundleVersionInfo } from './VersionManifest';
 
@@ -23,6 +20,8 @@ export class BundleManager implements IManager {
 
     private _cacheBundle: Map<string, AssetManager.Bundle>;
     private _cacheBundleRefCount: Map<AssetManager.Bundle, number>;
+    /** 正在加载中的 bundle 请求 (name → Promise), 用于去重并发加载 */
+    private _loadingBundles: Map<string, Promise<AssetManager.Bundle>>;
     /** 远程 bundle 信息 (name → hash) */
     private _remoteBundleInfos: Map<string, string>;
     /** 远程 URL 前缀: {server}/{channel}_{platform}/ (由 ServerConfigManager init 后写入) */
@@ -36,6 +35,7 @@ export class BundleManager implements IManager {
         BundleManager._instance = this;
         this._cacheBundle = new Map<string, AssetManager.Bundle>();
         this._cacheBundleRefCount = new Map<AssetManager.Bundle, number>();
+        this._loadingBundles = new Map<string, Promise<AssetManager.Bundle>>();
         this._remoteBundleInfos = new Map<string, string>();
     }
 
@@ -204,6 +204,7 @@ export class BundleManager implements IManager {
         this.cleanUp();
         this._cacheBundleRefCount = null;
         this._cacheBundle = null;
+        this._loadingBundles = null;
         this._remoteBundleInfos = null;
         BundleManager._instance = null;
     }
@@ -220,6 +221,11 @@ export class BundleManager implements IManager {
         return { url: `${this._remoteURLPrefix}/${hash}`, hash };
     }
 
+    /** 检查指定 bundle 是否已加载到内存 */
+    public hasBundle(name: string): boolean {
+        return this._cacheBundle?.has(name) ?? false;
+    }
+
     /**
      * 加载一个ab包
      * @param name ab包名
@@ -229,19 +235,37 @@ export class BundleManager implements IManager {
      * @returns ab包或null
      */
     public async loadBundle(name: string, url: string = null, version: string = null, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
-        let coroutineLock: CoroutineLock = null;
-        let bundle: AssetManager.Bundle = null;
-        try
-        {
-            coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.Bundle, string.getHash(name));
+        // 已缓存：直接返回并增加引用计数
+        if (this._cacheBundle.has(name)) {
+            const bundle = this._cacheBundle.get(name);
+            let count = this._cacheBundleRefCount.get(bundle);
+            this._cacheBundleRefCount.set(bundle, count + 1);
+            return bundle;
+        }
 
-            if(this._cacheBundle.has(name)) {
-                bundle = this._cacheBundle.get(name);
+        // 正在加载中：等待已有请求完成，再增加引用计数
+        if (this._loadingBundles.has(name)) {
+            const bundle = await this._loadingBundles.get(name);
+            if (bundle != null) {
                 let count = this._cacheBundleRefCount.get(bundle);
                 this._cacheBundleRefCount.set(bundle, count + 1);
-                return bundle;
             }
+            return bundle;
+        }
 
+        // 发起加载，存入 pending map 以去重并发请求
+        const promise = this.loadBundleInternal(name, url, version, onProgress);
+        this._loadingBundles.set(name, promise);
+        try {
+            return await promise;
+        } finally {
+            this._loadingBundles.delete(name);
+        }
+    }
+
+    private async loadBundleInternal(name: string, url: string, version: string, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
+        let bundle: AssetManager.Bundle = null;
+        try {
             bundle = await new Promise<AssetManager.Bundle>((resolve) => {
                 const options: Record<string, any> = {};
                 // 远程加载时 URL 已含 hash，不传 version 让 Cocos 以 URL 为缓存键
@@ -262,15 +286,11 @@ export class BundleManager implements IManager {
                 });
             });
         }
-        catch (ex: any)
-        {
+        catch (ex: any) {
             Log.error(ex);
             return null;
         }
-        finally
-        {
-            coroutineLock?.dispose();
-        }
+
         if(bundle != null && ((bundle.deps?.length ?? 0) > 0)){
             const temp = ObjectPool.instance.fetch(Array<Promise<AssetManager.Bundle>>);
             for (let index = 0; index < bundle.deps.length; index++) {

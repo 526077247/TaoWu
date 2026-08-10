@@ -49,31 +49,6 @@ export class SetUpdateListProcess extends UpdateProcess {
 
             task.remoteManifest = parseManifest(JSON.parse(remoteText) as RawVersionManifest);
 
-            // Step 4: 对比内置 hash 与远程 hash (localManifest 已在 BundleManager init 阶段加载)
-            const bundles = task.remoteManifest.bundles;
-            let needUpdateCount = 0;
-            for (const name in bundles) {
-                const info = bundles[name];
-                const localHash = localManifest?.bundles?.[name]?.hash;
-
-                if (info.builtin && localHash === info.hash) {
-                    Log.info(`[HotUpdate] Bundle "${name}" builtin, up to date.`);
-                    continue;
-                }
-
-                BundleManager.instance.setRemoteBundleInfo(name, info.hash);
-                needUpdateCount++;
-                if (info.builtin) {
-                    Log.info(`[HotUpdate] Bundle "${name}" builtin but hash changed: ${localHash ?? "none"} → ${info.hash}`);
-                } else {
-                    Log.info(`[HotUpdate] Bundle "${name}" remote, CDN: ${localHash ?? "none"} → ${info.hash}`);
-                }
-            }
-
-            if (needUpdateCount === 0) {
-                Log.info("[HotUpdate] All bundles up to date.");
-            }
-
             return UpdateRes.Over;
         } catch (e: any) {
             Log.error("[HotUpdate] SetUpdateListProcess error:", e);

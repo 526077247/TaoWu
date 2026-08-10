@@ -35,7 +35,7 @@ export class UIUpdateView extends UIBaseView implements IOnCreate, IOnEnable<Voi
         await task.init(this.updateProgress.bind(this),
             new SetUpdateListProcess(),
             new AppUpdateProcess(),
-            new BundleUpdateProcess()//可选不在此处下载，后续则自动按需下载
+            new BundleUpdateProcess(true)//可选不在此处下载，后续则自动按需下载
         );
 
         const res = await task.process();

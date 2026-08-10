@@ -44,7 +44,7 @@ namespace TaoWu
                     case AppType.ExporterAll:
                         {
                             ExcelExporter.Export();
-                            //AttrExporter.Export();
+                            AttrExporter.Export();
                             ExcelExporter.ExportI18N();
                             return 0;
                         }

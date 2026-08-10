@@ -5,5 +5,21 @@
   "uuid": "e979dcbc-3d7c-41ff-992a-07b42c658ab9",
   "files": [],
   "subMetas": {},
-  "userData": {}
+  "userData": {
+    "isBundle": true,
+    "bundleName": "code",
+    "bundleFilterConfig": [
+      {
+        "range": "include",
+        "type": "url",
+        "patchOption": {
+          "patchType": "glob",
+          "value": "db://assets/scripts/Code/**/*"
+        },
+        "assets": [
+          ""
+        ]
+      }
+    ]
+  }
 }
