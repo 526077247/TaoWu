@@ -1,15 +1,8 @@
-import { _decorator, assetManager, AssetManager, sys } from 'cc';
+import { _decorator, assetManager, AssetManager, sys, settings } from 'cc';
 import { IManager } from '../../Core/Manager/IManager';
 import { ObjectPool } from '../../Core/ObjectPool';
 import { Log } from '../Log/Log';
-import { VersionManifest, BundleVersionInfo } from './VersionManifest';
-
-/** 解析后的包内 version.manifest.json (继承 VersionManifest, 额外含渠道/平台/服务器地址) */
-export interface LocalManifest extends VersionManifest {
-    channel: string;
-    platform: string;
-    server: string;
-}
+import { RawVersionManifest, UpdateSetting } from './VersionManifest';
 
 export class BundleManager implements IManager {
     private static _instance: BundleManager;
@@ -27,9 +20,11 @@ export class BundleManager implements IManager {
     /** 远程 URL 前缀: {server}/{channel}_{platform}/ (由 ServerConfigManager init 后写入) */
     private _remoteURLPrefix: string = "";
     /** 包内版本清单 */
-    private _localManifest: LocalManifest = null;
+    private _localManifest: RawVersionManifest = null;
     /** 本地缓存的远端 manifest 文件名前缀 (原生平台用文件存储, 带版本号) */
     private static readonly REMOTE_MANIFEST_PREFIX = "remote_manifest_";
+    /** localStorage key: 已缓存的最新远端版本号 */
+    private static readonly REMOTE_VERSION_KEY = "taowu_hotupdate_remote_version";
 
     public init() {
         BundleManager._instance = this;
@@ -40,7 +35,7 @@ export class BundleManager implements IManager {
     }
 
     /** 获取包内版本清单 */
-    public get localManifest(): LocalManifest {
+    public get localManifest(): RawVersionManifest {
         return this._localManifest;
     }
 
@@ -50,19 +45,26 @@ export class BundleManager implements IManager {
     }
 
     /**
-     * 更新成功后保存最新远端 manifest 到本地文件 (仅原生平台)
-     * 浏览器平台由 HTTP 缓存兜底, 不需要手动缓存
-     * 下次启动时 loadLocalManifest 优先读取这里保存的版本, 实现增量热更基线
+     * 更新成功后保存最新远端 manifest
+     * 原生平台写入文件 + localStorage 记录版本号; 浏览器仅 localStorage 记录版本号
+     * 下次启动时 loadLocalManifest 对比版本号取最大, 实现增量热更基线
      */
-    public saveRemoteManifest(manifest: LocalManifest): void {
-        if (!sys.isNative) return; // 浏览器自带缓存
+    public saveRemoteManifest(manifest: RawVersionManifest): void {
         try {
-            const path = this.getRemoteManifestPath(manifest.version);
-            const json = JSON.stringify(manifest);
-            const jsb = (globalThis as any).jsb;
-            if (jsb && jsb.fileUtils) {
-                jsb.fileUtils.writeStringToFile(json, path);
-                Log.info(`[BundleManager] Saved remote manifest to file, version: ${manifest.version}, path: ${path}`);
+            // 版本号始终存 localStorage (浏览器+原生)
+            sys.localStorage.setItem(BundleManager.REMOTE_VERSION_KEY, manifest.v);
+
+            // 原生平台额外写文件 (浏览器靠 HTTP 缓存)
+            if (sys.isNative) {
+                const path = this.getRemoteManifestPath(manifest.v);
+                const json = JSON.stringify(manifest);
+                const jsb = (globalThis as any).jsb;
+                if (jsb && jsb.fileUtils) {
+                    jsb.fileUtils.writeStringToFile(json, path);
+                    Log.info(`[BundleManager] Saved remote manifest to file, version: ${manifest.v}, path: ${path}`);
+                }
+            } else {
+                Log.info(`[BundleManager] Saved remote manifest version to localStorage: ${manifest.v}`);
             }
         } catch (e: any) {
             Log.error(`[BundleManager] Failed to save remote manifest: ${e?.message}`);
@@ -70,37 +72,68 @@ export class BundleManager implements IManager {
     }
 
     /**
-     * 读取已保存的最新远端 manifest (上次更新后的基线)
-     * 浏览器返回 null (由 HTTP 缓存兜底), 原生扫描本地文件找最新版本
+     * 读取已保存的最新远端 manifest
+     * 先读 localStorage 中的版本号, 与包内版本号对比取最大
+     * 原生平台从文件读取 manifest 内容; 浏览器通过 HTTP 拉取 {version}.bytes
      */
-    private loadSavedRemoteManifest(): LocalManifest {
-        if (!sys.isNative) return null; // 浏览器自带缓存
-        try {
-            const jsb = (globalThis as any).jsb;
-            if (!jsb || !jsb.fileUtils) return null;
-            const writablePath = jsb.fileUtils.getWritablePath();
-            const files = jsb.fileUtils.listFiles ? jsb.fileUtils.listFiles(writablePath) : [];
-            let latestVersion = -1;
-            let latestPath = "";
-            for (const file of files) {
-                const name = file.split('/').pop() || file;
-                if (name.startsWith(BundleManager.REMOTE_MANIFEST_PREFIX)) {
-                    const ver = Number(name.substring(BundleManager.REMOTE_MANIFEST_PREFIX.length, name.length - 5));
-                    if (!isNaN(ver) && ver > latestVersion) {
-                        latestVersion = ver;
-                        latestPath = file;
-                    }
-                }
+    private async loadSavedRemoteManifest(builtinVersion: number): Promise<RawVersionManifest> {
+        const savedVersionStr = sys.localStorage.getItem(BundleManager.REMOTE_VERSION_KEY);
+        if (!savedVersionStr) return null;
+        const savedVersion = Number(savedVersionStr);
+        if (isNaN(savedVersion) || savedVersion <= builtinVersion) return null;
+
+        Log.info(`[BundleManager] Saved remote version ${savedVersion} > builtin version ${builtinVersion}, loading saved manifest`);
+
+        // 原生平台从文件读取 manifest 内容
+        if (sys.isNative) {
+            try {
+                const jsb = (globalThis as any).jsb;
+                if (!jsb || !jsb.fileUtils) return null;
+                const path = this.getRemoteManifestPath(String(savedVersion));
+                if (!jsb.fileUtils.isFileExist(path)) return null;
+                const json = jsb.fileUtils.getStringFromFile(path);
+                if (!json) return null;
+                return JSON.parse(json) as RawVersionManifest;
+            } catch (e: any) {
+                Log.error(`[BundleManager] Failed to load saved remote manifest: ${e?.message}`);
+                return null;
             }
-            if (!latestPath) return null;
-            const json = jsb.fileUtils.getStringFromFile(latestPath);
-            if (!json) return null;
-            Log.info(`[BundleManager] Found saved remote manifest, version: ${latestVersion}, path: ${latestPath}`);
-            return JSON.parse(json) as LocalManifest;
-        } catch (e: any) {
-            Log.error(`[BundleManager] Failed to load saved remote manifest: ${e?.message}`);
         }
+
+        // 浏览器平台: 通过 HTTP 拉取 {urlPrefix}/{version}.bytes
+        // urlPrefix 在 loadLocalManifest 中从包内 manifest 已设置
+        if (!!this._remoteURLPrefix) {
+            try {
+                const url = `${this._remoteURLPrefix}/${savedVersion}.bytes`;
+                const text = await this.fetchRemoteText(url);
+                if (!text) return null;
+                const manifest = JSON.parse(text) as RawVersionManifest;
+                Log.info(`[BundleManager] Loaded saved remote manifest from ${url}, version: ${manifest.v}`);
+                return manifest;
+            } catch (e: any) {
+                Log.error(`[BundleManager] Failed to fetch saved remote manifest: ${e?.message}`);
+                return null;
+            }
+        }
+
         return null;
+    }
+
+    /**
+     * 通过 HTTP 拉取远端文本
+     */
+    private fetchRemoteText(url: string): Promise<string> {
+        return new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.timeout = 15000;
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4) {
+                    resolve(xhr.status >= 200 && xhr.status < 400 ? xhr.responseText : null);
+                }
+            };
+            xhr.send();
+        });
     }
 
     /** 获取本地缓存的远端 manifest 文件路径 (原生平台, 带版本号) */
@@ -114,41 +147,48 @@ export class BundleManager implements IManager {
 
     /**
      * 异步加载版本清单
-     * 在 Entry 初始化阶段调用, 作为热更新对比基线
-     * 优先读取 localStorage 中保存的最新远端 manifest (上次更新后的基线), 没有则读取包内 version.manifest.json
+     * 从 cc.settings (settings.json 的 assets._hotUpdate) 读取内置 manifest
+     * 然后与 localStorage 中保存的最新远端版本号对比, 取版本号最大的
      */
     public async loadLocalManifest(): Promise<void> {
-        // 优先从 localStorage 读取上次更新后保存的最新远端 manifest
-        const savedManifest = this.loadSavedRemoteManifest();
-        if (savedManifest) {
-            this._localManifest = savedManifest;
-            this.fillRemoteBundleInfos();
-            Log.info(`[BundleManager] Loaded saved remote manifest, version: ${savedManifest.version}, channel: ${savedManifest.channel}, platform: ${savedManifest.platform}`);
-            return;
+        // 从 cc.settings 读取内置 manifest (直接用 RawVersionManifest, 无需转换)
+        let builtinManifest: RawVersionManifest = null;
+        const raw = settings.querySettings<RawVersionManifest>('assets', '_hotUpdate');
+        if (raw) {
+            builtinManifest = raw;
         }
 
-        // 否则读取包内 version.manifest.json
-        const text = await this.fetchLocalText("version.manifest.json");
-        if (text) {
-            try {
-                const raw = JSON.parse(text);
-                const channel = raw.c || "default";
-                const platform = raw.p || "webgl";
-                const server = raw.s || "";
-                const bundles: Record<string, BundleVersionInfo> = {};
-                for (const name in raw.b) {
-                    const [hash, builtin] = raw.b[name];
-                    bundles[name] = { name, hash, builtin };
-                }
-                this._localManifest = { version: raw.v, channel, platform, server, bundles };
-                this.fillRemoteBundleInfos();
-                Log.info(`[BundleManager] Local manifest loaded, version: ${this._localManifest.version}, channel: ${channel}, platform: ${platform}, server: ${server}`);
-            } catch (e: any) {
-                Log.error(`[BundleManager] Failed to parse local manifest: ${e?.message}`);
-            }
-        } else {
-            Log.warning("[BundleManager] No local manifest found.");
+        // 设置远程 URL 前缀: {server}/{channel}_{platform}/
+        // - server: 从 cc.settings 读 assets.server (Cocos 内置字段)
+        // - channel: 从 cc.settings 读 assets._channel (构建时写入)
+        // - platform: UpdateConfig.getPlatformName()
+        if (builtinManifest) {
+            this.updateRemoteURLPrefix();
         }
+
+        const builtinVersion = builtinManifest ? Number(builtinManifest.v) : 0;
+
+        // 对比 localStorage 中保存的版本号, 取最大的
+        const savedManifest = await this.loadSavedRemoteManifest(builtinVersion);
+        this._localManifest = savedManifest || builtinManifest;
+
+        if (this._localManifest) {
+            this.fillRemoteBundleInfos();
+            this.updateRemoteURLPrefix();
+            Log.info(`[BundleManager] Manifest loaded, version: ${this._localManifest.v}, source: ${savedManifest ? "remote-cache" : "builtin"}`);
+        } else {
+            Log.warning("[BundleManager] No manifest found.");
+        }
+    }
+
+    /**
+     * 从 cc.settings 读取 server/channel/platform, 拼接并设置远程 URL 前缀
+     */
+    private updateRemoteURLPrefix(): void {
+        const server = settings.querySettings<string>('assets', 'server') || "";
+        const channel = settings.querySettings<string>('assets', '_channel') || "default";
+        const platform = UpdateSetting.getPlatformName();
+        this.setRemoteURLPrefix(`${server}/${channel}_${platform}`);
     }
 
     /**
@@ -157,46 +197,12 @@ export class BundleManager implements IManager {
     private fillRemoteBundleInfos(): void {
         if (!this._localManifest) return;
         this._remoteBundleInfos.clear();
-        for (const name in this._localManifest.bundles) {
-            const info = this._localManifest.bundles[name];
-            if (!info.builtin) {
-                this._remoteBundleInfos.set(name, info.hash);
+        for (const name in this._localManifest.b) {
+            const [hash, builtin] = this._localManifest.b[name];
+            if (!builtin) {
+                this._remoteBundleInfos.set(name, hash);
             }
         }
-    }
-
-    /**
-     * 读取包内本地文件文本
-     */
-    private fetchLocalText(filename: string): Promise<string> {
-        return new Promise((resolve) => {
-            if (sys.isNative) {
-                const jsb = (globalThis as any).jsb;
-                const fileUtils = jsb?.fileUtils;
-                if (fileUtils) {
-                    const resourceRoot = fileUtils.getDefaultResourceRootPath();
-                    const filePath = resourceRoot + filename;
-                    if (fileUtils.isFileExist(filePath)) {
-                        resolve(fileUtils.getStringFromFile(filePath));
-                    } else {
-                        resolve(null);
-                    }
-                } else {
-                    resolve(null);
-                }
-            } else {
-                // 小游戏平台需要用其自身FileSystem API
-                const xhr = new XMLHttpRequest();
-                xhr.open("GET", filename, true);
-                xhr.timeout = 15000;
-                xhr.onreadystatechange = () => {
-                    if (xhr.readyState === 4) {
-                        resolve(xhr.status >= 200 && xhr.status < 400 ? xhr.responseText : null);
-                    }
-                };
-                xhr.send();
-            }
-        });
     }
 
     public destroy() {
@@ -214,10 +220,10 @@ export class BundleManager implements IManager {
     }
 
     /** 获取远程 bundle 信息 (URL 在此处拼接: {urlPrefix}/{hash}) */
-    public getRemoteBundleInfo(name: string): { url: string; hash: string } | null {
+    private getRemoteBundleUrl(name: string): string | null {
         const hash = this._remoteBundleInfos.get(name);
         if (hash == null) return null;
-        return { url: `${this._remoteURLPrefix}/${hash}`, hash };
+        return `${this._remoteURLPrefix}/${hash}`;
     }
 
     /** 检查指定 bundle 是否已加载到内存 */
@@ -228,12 +234,10 @@ export class BundleManager implements IManager {
     /**
      * 加载一个ab包
      * @param name ab包名
-     * @param url 远端地址 (可选，提供则从远程加载)
-     * @param version 版本hash (可选，用于缓存管理)
-     * @param onProgress 下载进度回调 (可选)
+     * @param onProgress 下载进度回调 (可选, 仅远程包有效)
      * @returns ab包或null
      */
-    public async loadBundle(name: string, url: string = null, version: string = null, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
+    public async loadBundle(name: string, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
         // 已缓存：直接返回并增加引用计数
         if (this._cacheBundle.has(name)) {
             const bundle = this._cacheBundle.get(name);
@@ -252,8 +256,14 @@ export class BundleManager implements IManager {
             return bundle;
         }
 
+        // 若该 bundle 在远程列表中, 自动用远程 URL; 否则用内置包名
+        let url: string = null;
+        if (this._remoteBundleInfos?.has(name)) {
+            url = this.getRemoteBundleUrl(name);
+        }
+
         // 发起加载，存入 pending map 以去重并发请求
-        const promise = this.loadBundleInternal(name, url, version, onProgress);
+        const promise = this.loadBundleInternal(name, url, onProgress);
         this._loadingBundles.set(name, promise);
         try {
             return await promise;
@@ -262,14 +272,11 @@ export class BundleManager implements IManager {
         }
     }
 
-    private async loadBundleInternal(name: string, url: string, version: string, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
+    private async loadBundleInternal(name: string, url: string, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
         let bundle: AssetManager.Bundle = null;
         try {
             bundle = await new Promise<AssetManager.Bundle>((resolve) => {
                 const options: Record<string, any> = {};
-                // 远程加载时 URL 已含 hash，不传 version 让 Cocos 以 URL 为缓存键
-                // 内容不变 → hash 不变 → URL 不变 → 缓存命中，不重新下载
-                if (version && !url) options.version = version;
                 if (onProgress) options.onFileProgress = onProgress;
 
                 const target = url || name;

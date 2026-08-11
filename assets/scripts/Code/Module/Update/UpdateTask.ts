@@ -2,7 +2,7 @@ import { game, sys } from "cc";
 import { UpdateRes } from "./UpdateRes";
 import { UpdateProcess } from "./UpdateProcess/UpdateProcess";
 import { Log } from "../../../Mono/Module/Log/Log";
-import { VersionManifest } from "../../../Mono/Module/Resource/VersionManifest";
+import { RawVersionManifest } from "../../../Mono/Module/Resource/VersionManifest";
 
 export class UpdateTask {
     public appVer: number = 1;
@@ -12,7 +12,7 @@ export class UpdateTask {
     public downloadingMaxNum = 10;
     public failedTryAgain = 2;
     public timeout = 8;
-    public remoteManifest: VersionManifest = null;
+    public remoteManifest: RawVersionManifest = null;
 
     public async init(
         downloadSizeCallback: (total: number, current: number) => void,

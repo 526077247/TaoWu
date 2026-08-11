@@ -1,12 +1,9 @@
 import { IManager } from "../../../Mono/Core/Manager/IManager";
-import { Log } from "../../../Mono/Module/Log/Log";
 import { CacheManager } from "../Player/CacheManager";
-import { UpdateListConfig, Resver, AppConfig, UpdateConfig } from "../../../Mono/Module/Resource/VersionManifest";
+import { UpdateListConfig, Resver, AppConfig, UpdateSetting } from "../../../Mono/Module/Resource/VersionManifest";
 import { ServerConfig, ServerConfigCategory } from "../Generate/Config/ServerConfig";
 import { Define } from "../../../Mono/Define";
-import { BundleManager } from "../../../Mono/Module/Resource/BundleManager";
 import { TimerManager } from "../../../Mono/Module/Timer/TimerManager";
-import { JsonHelper } from "../../../Mono/Helper/JsonHelper";
 
 /**
  * 服务器配置管理器 (参考 World 项目 ServerConfigManager)
@@ -56,16 +53,6 @@ export class ServerConfigManager implements IManager {
                 if (config.isPriority === 1) break;
             }
         }
-
-        // 用 curConfig 的 routerListUrl 设置 BundleManager 的远程 URL 前缀
-        // 格式: {routerListUrl}/{channel}_{platform}/
-        const localManifest = BundleManager.instance?.localManifest;
-        if (localManifest) {
-            const baseURL = this.getUpdateListUrl();
-            const prefix = `${baseURL}/${localManifest.channel}_${localManifest.platform}`;
-            BundleManager.instance.setRemoteURLPrefix(prefix);
-            Log.info(`[ServerConfigManager] Remote URL prefix: ${prefix}`);
-        }
     }
 
     /** 获取当前服务器配置 */
@@ -107,7 +94,7 @@ export class ServerConfigManager implements IManager {
      * 参考 World ServerConfigManager.GetUpdateListCdnUrl
      */
     public getUpdateListCdnUrl(): string {
-        return `${this.getUpdateListUrl()}/update_${UpdateConfig.getPlatformName()}.list?timestamp=${TimerManager.instance.getTimeNow()}`;
+        return `${this.getUpdateListUrl()}/update_${UpdateSetting.getPlatformName()}.list?timestamp=${TimerManager.instance.getTimeNow()}`;
     }
 
     // === 更新列表 ===

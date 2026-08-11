@@ -266,7 +266,7 @@ const generateVersionManifest = (options, result) => {
     const version = pkgConfig.version || String(Date.now());
     const channel = pkgConfig.channel || 'default';
     // 从 settings.json 读取目标平台 + 服务器地址
-    const settingsPath = path.join(buildDir, "src", "settings.json");
+    const settingsPath = result.paths.settings;
     let platformName = path.basename(buildDir);
     let serverURL = "";
     if (fs.existsSync(settingsPath)) {
@@ -288,12 +288,13 @@ const generateVersionManifest = (options, result) => {
         }
         catch { }
     }
-    // 精简格式: {v:version, c:渠道名, p:平台名, s:服务器地址, b:{bundleName:[hash, builtin]}}
+    // 精简格式: {v:version, b:{bundleName:[hash, builtin]}}
+    // channel/platform/server 不写入 manifest:
+    // - channel 写入 settings.json 的 assets._channel
+    // - platform 运行时 UpdateConfig.getPlatformName()
+    // - server 运行时读 settings.json 的 assets.server (Cocos 内置)
     const manifest = {
         v: version,
-        c: channel,
-        p: platformName,
-        s: serverURL,
         b: {}
     };
     for (const [name, info] of allBundles) {
@@ -301,16 +302,28 @@ const generateVersionManifest = (options, result) => {
         manifest.b[name] = [hash, info.builtin];
         console.log(`[HotUpdate] Bundle: ${name}, hash: ${hash}, builtin: ${info.builtin}`);
     }
-    // 写入构建根目录 (随包发布)
-    const manifestPath = path.join(buildDir, "version.manifest.json");
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-    console.log(`[HotUpdate] ✅ Version manifest generated: ${manifestPath}`);
+    // 将 manifest + channel 写入 settings.json (运行时通过 cc.settings 读取)
+    if (fs.existsSync(settingsPath)) {
+        try {
+            const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+            if (!settings.assets)
+                settings.assets = {};
+            settings.assets._hotUpdate = manifest;
+            settings.assets._channel = channel;
+            fs.writeFileSync(settingsPath, JSON.stringify(settings));
+            console.log(`[HotUpdate] ✅ Manifest + channel written to settings.json`);
+        }
+        catch (e) {
+            console.error(`[HotUpdate] Failed to write to settings.json: ${e?.message}`);
+        }
+    }
     // 复制到 CDN 输出目录: {项目根}/Release/{渠道名}_{平台名}
     const projectRoot = path.resolve(buildDir, '..', '..');
     const cdnOutputDir = path.join(projectRoot, 'Release', `${channel}_${platformName}`);
     safeRmAndMkdir(cdnOutputDir);
-    fs.copyFileSync(manifestPath, path.join(cdnOutputDir, `${version}.bytes`));
-    // 同时写入 version.txt (只存版本号, 供运行时拼接 manifest URL)
+    // 写入 {version}.bytes 和 version.txt 到 CDN
+    const manifestJson = JSON.stringify(manifest);
+    fs.writeFileSync(path.join(cdnOutputDir, `${version}.bytes`), manifestJson);
     fs.writeFileSync(path.join(cdnOutputDir, "version.txt"), version);
     // 所有 bundle (内置+远程) 都按 hash 复制到 CDN
     for (const [name, info] of allBundles) {

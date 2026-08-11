@@ -1,18 +1,16 @@
-import { sys } from "cc";
+import { sys, settings } from "cc";
 import { UpdateRes } from "../UpdateRes";
 import { UpdateProcess } from "./UpdateProcess";
 import { UpdateTask } from "../UpdateTask";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ServerConfigManager } from "../ServerConfigManager";
 import { CacheManager } from "../../Player/CacheManager";
-import { BundleManager } from "../../../../Mono/Module/Resource/BundleManager";
 
 export class AppUpdateProcess extends UpdateProcess {
     public async process(task: UpdateTask): Promise<UpdateRes> {
         const appChannel = ServerConfigManager.instance.getCurConfig()?.name ?? "";
-        const localManifest = BundleManager.instance.localManifest;
-        const channel = localManifest?.channel || "default";
-        const channelAppUpdateList = ServerConfigManager.instance.getAppUpdateListByChannel(appChannel,  channel);
+        const channel = settings.querySettings<string>('assets', '_channel') || "default";
+        const channelAppUpdateList = ServerConfigManager.instance.getAppUpdateListByChannel(appChannel, channel);
 
         if (!channelAppUpdateList || !channelAppUpdateList.AppVer) {
             Log.info("[HotUpdate] CheckAppUpdate channel_app_update_list or app_ver is nil, so return");

@@ -52,21 +52,10 @@ export class ResourceManager implements IManager {
         return [vs[0] + "_"+ vs[1], res]
     }
 
-
-    public async loadBundleByAssetPath(bundleName: string): Promise<AssetManager.Bundle> {
-        // 优先使用远程信息 (热更后的版本)
-        const remoteInfo = BundleManager.instance.getRemoteBundleInfo(bundleName);
-        if (remoteInfo) {
-            return await BundleManager.instance.loadBundle(bundleName, remoteInfo.url, remoteInfo.hash);
-        }
-        // fallback: 内置 bundle
-        return await BundleManager.instance.loadBundle(bundleName);
-    }
-
     public async loadAsync<T extends Asset>(type: new (...args: any[]) => T, path: string): Promise<T> {
         this.loadingOpCount++;
         const [bundleNmae,assetName] = this.getBundleAndAssetName(path);
-        const bundle = await this.loadBundleByAssetPath(bundleNmae);
+        const bundle = await BundleManager.instance.loadBundle(bundleNmae);
         if(bundle == null) {
             this.loadingOpCount--;
             return null;
@@ -121,7 +110,7 @@ export class ResourceManager implements IManager {
     {
         this.loadingOpCount++;
         const [bundleNmae,assetName] = this.getBundleAndAssetName(path);
-        const bundle = await this.loadBundleByAssetPath(bundleNmae);
+        const bundle = await BundleManager.instance.loadBundle(bundleNmae);
         if(bundle == null) {
             this.loadingOpCount--;
             return null;

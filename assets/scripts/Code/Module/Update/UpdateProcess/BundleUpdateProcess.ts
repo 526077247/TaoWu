@@ -3,11 +3,10 @@ import { UpdateProcess } from "./UpdateProcess";
 import { UpdateTask } from "../UpdateTask";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { BundleManager } from "../../../../Mono/Module/Resource/BundleManager";
-import { UpdateConfig, VersionManifest, BundleVersionInfo } from "../../../../Mono/Module/Resource/VersionManifest";
+import { UpdateSetting, RawVersionManifest } from "../../../../Mono/Module/Resource/VersionManifest";
 
 export class BundleUpdateProcess extends UpdateProcess {
-    private remoteManifest: VersionManifest;
-    /** 是否在热更阶段缓存下载 ab 包 */
+    private remoteManifest: RawVersionManifest;
     private cacheDownload: boolean;
 
     constructor(cacheDownload: boolean = true) {
@@ -23,78 +22,60 @@ export class BundleUpdateProcess extends UpdateProcess {
         }
 
         const localManifest = BundleManager.instance.localManifest;
+        let needRestart = false;
 
         // 对比内置 hash 与远程 hash, 找出有变化的 bundle
-        const bundlesToUpdate: BundleVersionInfo[] = [];
-        let needRestart = false;
-        const bundles = this.remoteManifest.bundles;
+        const bundles = this.remoteManifest.b;
+        const localBundles = localManifest?.b || {};
         for (const name in bundles) {
-            const remoteBundle = bundles[name];
-            const localHash = localManifest?.bundles?.[name]?.hash;
+            const [remoteHash, builtin] = bundles[name];
+            const localHash = localBundles[name]?.[0];
 
-            if (remoteBundle.builtin && localHash === remoteBundle.hash) {
+            if (builtin && localHash === remoteHash) {
                 continue;
             }
 
             // 有变化: 注册远程信息
-            BundleManager.instance.setRemoteBundleInfo(name, remoteBundle.hash);
+            BundleManager.instance.setRemoteBundleInfo(name, remoteHash);
 
-            if (remoteBundle.builtin) {
-                Log.info(`[HotUpdate] Bundle "${name}" builtin but hash changed: ${localHash ?? "none"} → ${remoteBundle.hash}`);
+            if (builtin) {
+                Log.info(`[HotUpdate] Bundle "${name}" builtin but hash changed: ${localHash ?? "none"} → ${remoteHash}`);
                 needRestart = true;
             } else {
-                Log.info(`[HotUpdate] Bundle "${name}" remote, CDN: ${localHash ?? "none"} → ${remoteBundle.hash}`);
+                Log.info(`[HotUpdate] Bundle "${name}" remote, CDN: ${localHash ?? "none"} → ${remoteHash}`);
             }
 
-            // 已经加载到内存的 bundle 版本号变化也需要重启
             if (BundleManager.instance.hasBundle(name)) {
                 needRestart = true;
             }
-
-            bundlesToUpdate.push(remoteBundle);
         }
 
-        if (bundlesToUpdate.length === 0) {
-            Log.info("[HotUpdate] All bundles up to date.");
-            return UpdateRes.Over;
+        if (needRestart && !this.cacheDownload) {
+            return UpdateRes.Restart;
         }
 
-        // 需要缓存的场景: 下载有变化的 bundle
         if (this.cacheDownload) {
-            Log.info(`[HotUpdate] ${bundlesToUpdate.length} bundles to download.`);
-
+            Log.info("[HotUpdate] Caching remote bundles...");
             let allSuccess = true;
-
-            for (let i = 0; i < bundlesToUpdate.length; i++) {
-                const bundleInfo = bundlesToUpdate[i];
-                const remoteInfo = BundleManager.instance.getRemoteBundleInfo(bundleInfo.name);
-                if (!remoteInfo) {
-                    Log.error(`[HotUpdate] No remote info for bundle "${bundleInfo.name}"`);
-                    allSuccess = false;
-                    continue;
-                }
-
+            for (const name in bundles) {
+                const [remoteHash, builtin] = bundles[name];
+                const localHash = localBundles[name]?.[0];
+                if (builtin && localHash === remoteHash) continue;
                 try {
-                    await BundleManager.instance.loadBundle(
-                        bundleInfo.name,
-                        remoteInfo.url,
-                        remoteInfo.hash
-                    );
-                    Log.info(`[HotUpdate] Bundle "${bundleInfo.name}" downloaded.`);
+                    await BundleManager.instance.loadBundle(name);
+                    Log.info(`[HotUpdate] Bundle "${name}" downloaded.`);
                 } catch (e: any) {
-                    Log.error(`[HotUpdate] Failed to download bundle "${bundleInfo.name}":`, e);
+                    Log.error(`[HotUpdate] Failed to download bundle "${name}":`, e);
                     allSuccess = false;
                 }
             }
 
             if (allSuccess) {
                 Log.info("[HotUpdate] All bundles downloaded successfully.");
-                // 更新完成, 保存最新远端 manifest 到本地 (作为下次启动的热更基线)
                 this.saveLatestManifest();
             }
         }
 
-        // builtin 包或已加载的包版本号变化 → 需要重启
         if (needRestart) {
             return UpdateRes.Restart;
         }
@@ -108,13 +89,6 @@ export class BundleUpdateProcess extends UpdateProcess {
      */
     private saveLatestManifest(): void {
         if (!this.remoteManifest) return;
-        const localManifest = BundleManager.instance.localManifest;
-        BundleManager.instance.saveRemoteManifest({
-            version: this.remoteManifest.version,
-            channel: localManifest?.channel || "default",
-            platform: localManifest?.platform || UpdateConfig.getPlatformName(),
-            server: localManifest?.server || "",
-            bundles: this.remoteManifest.bundles
-        });
+        BundleManager.instance.saveRemoteManifest(this.remoteManifest);
     }
 }
