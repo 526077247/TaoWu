@@ -55,7 +55,7 @@ export class UpdateSetting {
         return "webgl";
     }
 
-    public static getManifestURL(baseURL: string, channel: string, platform: string, version: string): string {
+    public static getManifestURL(baseURL: string, channel: string, platform: string, version: number): string {
         return `${baseURL}/${channel}_${platform}/${version}.bytes`;
     }
 

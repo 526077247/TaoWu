@@ -1,6 +1,7 @@
 ﻿import { Define } from "../../Define"
 import { ILog } from "./ILog"
 import * as string from "../../Helper/StringHelper"
+import { ENABLE_LOG } from "cc/userland/macro";
 
 const TraceLevel = 1;
 const DebugLevel = 2;
@@ -33,6 +34,7 @@ export class Log {
     public static trace(message: string): void;
     public static trace(message: string, ...args: any[]): void;
     public static trace(message: string, ...args: any[]): void {
+        if (!ENABLE_LOG) return;
         if (!Log.checkLogLevel(TraceLevel) || !Log._logger) return;
 
         if (args.length > 0) {
@@ -46,6 +48,7 @@ export class Log {
     public static debug(message: string): void;
     public static debug(message: string, ...args: any[]): void;
     public static debug(message: string, ...args: any[]): void {
+        if (!ENABLE_LOG) return;
         if (!Log.checkLogLevel(DebugLevel) || !Log._logger) return;
 
         if (args.length > 0) {
@@ -59,6 +62,7 @@ export class Log {
     public static info(message: any): void;
     public static info(message: string, ...args: any[]): void;
     public static info(message: any, ...args: any[]): void {
+        if (!ENABLE_LOG) return;
         if (!Log.checkLogLevel(InfoLevel) || !Log._logger) return;
 
         if (typeof message !== 'string') {
@@ -73,6 +77,7 @@ export class Log {
     }
 
     public static traceInfo(message: string): void {
+        if (!ENABLE_LOG) return;
         if (!Log.checkLogLevel(InfoLevel) || !Log._logger) return;
 
         const stack = Log.getStackTrace();

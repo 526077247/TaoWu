@@ -264,27 +264,25 @@ const generateVersionManifest = (options, result) => {
     console.log(`[HotUpdate] Builtin bundles: ${[...allBundles.values()].filter(b => b.builtin).map(b => path.basename(b.dir)).join(', ')}`);
     console.log(`[HotUpdate] Remote bundles: ${[...allBundles.values()].filter(b => !b.builtin).map(b => path.basename(b.dir)).join(', ')}`);
     const version = pkgConfig.version || String(Date.now());
-    const channel = pkgConfig.channel || 'default';
+    // 小游戏平台 → 固定渠道名映射 (平台名统一为 webgl, 渠道名不可自定义)
+    const MINI_GAME_CHANNELS = {
+        'wechatgame': 'WeChat',
+        'bytedance-mini-game': 'DouYin',
+        'huawei-quick-game': 'Huawei',
+        'alipay-mini-game': 'Alipay',
+        'oppo-mini-game': 'OPPO',
+        'vivo-mini-game': 'Vivo',
+        'xiaomi-quick-game': 'Xiaomi',
+        'baidu-mini-game': 'Baidu',
+    };
     // 从 settings.json 读取目标平台 + 服务器地址
     const settingsPath = result.paths.settings;
     let platformName = path.basename(buildDir);
-    let serverURL = "";
+    let rawPlatform = "";
     if (fs.existsSync(settingsPath)) {
         try {
             const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-            const rawPlatform = settings?.engine?.platform || platformName;
-            if (rawPlatform.startsWith('web'))
-                platformName = 'webgl';
-            else if (rawPlatform === 'android')
-                platformName = 'android';
-            else if (rawPlatform === 'ios')
-                platformName = 'ios';
-            else
-                platformName = 'pc';
-            console.log(`[HotUpdate] Platform: ${rawPlatform} → ${platformName}`);
-            // 读取构建面板的"资源服务器地址"
-            serverURL = settings?.assets?.server || "";
-            console.log(`[HotUpdate] Server URL: ${serverURL}`);
+            rawPlatform = settings?.engine?.platform || platformName;
         }
         catch { }
     }
@@ -293,6 +291,27 @@ const generateVersionManifest = (options, result) => {
     // - channel 写入 settings.json 的 assets._channel
     // - platform 运行时 UpdateConfig.getPlatformName()
     // - server 运行时读 settings.json 的 assets.server (Cocos 内置)
+    // 小游戏平台: 固定渠道名 + 平台名统一为 webgl
+    let channel;
+    if (rawPlatform && MINI_GAME_CHANNELS[rawPlatform]) {
+        channel = MINI_GAME_CHANNELS[rawPlatform];
+        platformName = 'webgl';
+        console.log(`[HotUpdate] Mini-game detected: ${rawPlatform} → channel: ${channel}, platform: ${platformName}`);
+    }
+    else {
+        // 原生/Web 平台: 用户手动输入渠道名
+        channel = pkgConfig.channel || 'default';
+        if (rawPlatform === 'android')
+            platformName = 'android';
+        else if (rawPlatform === 'ios')
+            platformName = 'ios';
+        else if (rawPlatform === 'win' || rawPlatform === 'win32')
+            platformName = 'pc';
+        else
+            platformName = 'webgl';
+        console.log(`[HotUpdate] Platform: ${rawPlatform || platformName} → ${platformName}, channel: ${channel}`);
+    }
+    // 精简格式: {v:version, c:渠道名, p:平台名, s:服务器地址, b:{bundleName:[hash, builtin]}}
     const manifest = {
         v: version,
         b: {}

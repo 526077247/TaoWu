@@ -1,3 +1,13 @@
 {
-  "__version__": "1.0.12"
+  "__version__": "1.0.12",
+  "macroCustom": [
+    {
+      "key": "FORCE_UPDATE",
+      "value": false
+    },
+    {
+      "key": "ENABLE_LOG",
+      "value": true
+    }
+  ]
 }

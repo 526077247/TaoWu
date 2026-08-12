@@ -28,12 +28,17 @@ export class SetUpdateListProcess extends UpdateProcess {
 
             // 从 cc.settings 读取 channel (构建时写入, 不在 manifest 中)
             const channel = settings.querySettings<string>('assets', '_channel') || "default";
-
+            const maxAppResVer = ServerConfigManager.instance.findMaxUpdateResVerThisAppVer(channel, task.appVer);
             // Step 2: 通过 ServerConfigManager 查找当前渠道的最大资源版本号
-            const remoteVersion = ServerConfigManager.instance.findMaxResVer(channel);
+            let remoteVersion = ServerConfigManager.instance.findMaxUpdateResVer(channel, "", maxAppResVer);
             if (!remoteVersion) {
                 Log.warning("[HotUpdate] No remote version found, using built-in.");
                 return UpdateRes.Over;
+            }
+
+            if (!!maxAppResVer)
+            {
+                remoteVersion = maxAppResVer;
             }
 
             Log.info(`[HotUpdate] Remote version: ${remoteVersion}`);

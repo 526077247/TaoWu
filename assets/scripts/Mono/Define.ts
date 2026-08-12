@@ -1,10 +1,13 @@
 ﻿import { _decorator, screen, sys, view } from 'cc';
-import { EDITOR } from 'cc/env';
+import { DEBUG, EDITOR } from 'cc/env';
+import { FORCE_UPDATE } from 'cc/userland/macro';
 
 export class Define {
 
     private static readonly dWidth = 768;
     private static readonly dHeight = 1366;
+
+    public static isSH: boolean = false;
 
     public static readonly DesignScreenWidth =
         (EDITOR?view.getDesignResolutionSize().width > view.getDesignResolutionSize().height:screen.windowSize.width > screen.windowSize.height)
@@ -19,10 +22,13 @@ export class Define {
     public static readonly MinRepeatedTimerInterval: number = 100;
 
     public static get Debug(){
-        return EDITOR;
+        return DEBUG;
     }
 
     public static get ForceUpdate(){
+        if(FORCE_UPDATE){
+            return true;
+        }
         return false;
     }
 

@@ -4,6 +4,7 @@ import { UpdateListConfig, Resver, AppConfig, UpdateSetting } from "../../../Mon
 import { ServerConfig, ServerConfigCategory } from "../Generate/Config/ServerConfig";
 import { Define } from "../../../Mono/Define";
 import { TimerManager } from "../../../Mono/Module/Timer/TimerManager";
+import * as string from "../../../Mono/Helper/StringHelper";
 
 /**
  * 服务器配置管理器 (参考 World 项目 ServerConfigManager)
@@ -118,13 +119,10 @@ export class ServerConfigManager implements IManager {
      * @param appResVer 当前 App 版本对应的最大资源版本 (0 表示不限制)
      * @returns 最大资源版本号, null 表示无可用版本
      */
-    public findMaxResVer(resverChannel: string = "", appResVer: number = 0): string {
+    public findMaxUpdateResVer(channel: string, resverChannel: string = "", appResVer: number = 0): number {
         if (!this._updateList?.ResList) return null;
 
-        const configChannel = this._curConfig?.name ?? "";
-        if (!configChannel) return null;
-
-        const verMap = this._updateList.ResList[configChannel];
+        const verMap = this._updateList.ResList[channel];
         if (!verMap) return null;
 
         // 倒序排列版本号
@@ -145,10 +143,10 @@ export class ServerConfigManager implements IManager {
 
         // 如果当前 App 版本有最大资源版本限制, 且找到的版本超过限制, 则用限制版本
         if (appResVer > 0 && lastVer > appResVer && verMap[String(appResVer)]) {
-            return String(appResVer);
+            return appResVer;
         }
 
-        return String(lastVer);
+        return lastVer;
     }
 
     public getResVerInfo(channel: string, version: string): Resver {
@@ -167,12 +165,12 @@ export class ServerConfigManager implements IManager {
 
     // === App 版本查询 ===
 
-    public getAppUpdateListByChannel(channel: string, resverChannel: string): AppConfig {
+    public getAppUpdateListByChannel(channel: string): AppConfig {
         if (!this._updateList?.AppList) return null;
         const data = this._updateList.AppList[channel];
         if (!data) return null;
 
-        if (data.JumpChannel) {
+        if (!string.isNullOrEmpty(data.JumpChannel)) {
             const jumpData = this.resolveJumpChannel(data.JumpChannel);
             if (jumpData) {
                 return { AppUrl: data.AppUrl, AppVer: jumpData.AppVer, JumpChannel: data.JumpChannel };
@@ -185,18 +183,19 @@ export class ServerConfigManager implements IManager {
         if (!jumpChannel || !this._updateList?.AppList) return null;
         const jumpData = this._updateList.AppList[jumpChannel];
         if (!jumpData) return null;
-        if (jumpData.JumpChannel) {
+        if (!string.isNullOrEmpty(jumpData.JumpChannel)) {
             const deeper = this.resolveJumpChannel(jumpData.JumpChannel);
             if (deeper) return deeper;
         }
         return jumpData;
     }
 
+    /**找到可以更新的最大app版本号 */
     public findMaxUpdateAppVer(channel: string): number {
         if (!this._updateList?.AppList) return -1;
         let data = this._updateList.AppList[channel];
         if (!data) return -1;
-        if (data.JumpChannel && this._updateList.AppList[data.JumpChannel]) {
+        if (!string.isNullOrEmpty(data.JumpChannel) && this._updateList.AppList[data.JumpChannel]) {
             data = this._updateList.AppList[data.JumpChannel];
         }
         let lastVer = -1;
@@ -212,6 +211,20 @@ export class ServerConfigManager implements IManager {
             }
         }
         return lastVer;
+    }
+
+    public findMaxUpdateResVerThisAppVer(channel: string, appVer: number): number | null{
+        if (this._updateList?.AppList == null) return null;
+        let data = this._updateList.AppList[channel];
+        if (!data) return null;
+        if (!string.isNullOrEmpty(data.JumpChannel))
+            data = this._updateList.AppList[data.JumpChannel];
+        const res = data.AppVer[appVer.toString()];
+        if (!!res)
+        {
+            return res.MaxResVer;
+        }
+        return null;
     }
 
     // === 工具方法 ===

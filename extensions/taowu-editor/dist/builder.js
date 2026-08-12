@@ -31,11 +31,14 @@ exports.configs = {
                 }
             },
             channel: {
-                label: '渠道名',
-                description: '热更文件输出到 ./Release/打包模板名_渠道名 目录',
+                label: '渠道名 (仅原生平台生效)',
+                description: '小游戏平台渠道名固定 (DouYin/WeChat 等), 此项仅对原生平台生效',
                 default: 'default',
                 render: {
-                    ui: 'ui-input'
+                    ui: 'ui-input',
+                    attributes: {
+                        disabled: '{{platform !== "android" && platform !== "ios"}}'
+                    }
                 }
             }
         }
