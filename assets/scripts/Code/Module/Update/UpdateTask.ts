@@ -3,6 +3,10 @@ import { UpdateRes } from "./UpdateRes";
 import { UpdateProcess } from "./UpdateProcess/UpdateProcess";
 import { Log } from "../../../Mono/Module/Log/Log";
 import { RawVersionManifest } from "../../../Mono/Module/Resource/VersionManifest";
+import { UIManager } from "../UI/UIManager";
+import { UILayerNames } from "../UI/UILayerNames";
+import { UIMsgBoxWin, MsgBoxPara } from "../../Game/UI/UICommon/UIMsgBoxWin";
+import { UIBaseView } from "../UI/UIBaseView";
 
 export class UpdateTask {
     public appVer: number = 1;
@@ -61,4 +65,72 @@ export class UpdateTask {
             }
         }, 500);
     }
+
+    public fetchText(url: string): Promise<string> {
+        return new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.timeout = UpdateSetting.timeout;
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4) {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        resolve(xhr.responseText);
+                    } else {
+                        Log.warning(`[HotUpdate] HTTP ${xhr.status} for ${url}`);
+                        resolve(null);
+                    }
+                }
+            };
+            xhr.open("GET", url, true);
+            xhr.send();
+        });
+    }
+
+    // === MsgBox ===
+
+    private msgBoxPara: MsgBoxPara = new MsgBoxPara();
+
+    /**
+     * 显示提示窗 (参考 World UpdateTask.ShowMsgBoxView)
+     * @param content 内容
+     * @param confirmText 确认按钮文本
+     * @param cancelText 取消按钮文本
+     * @returns true=确认, false=取消
+     */
+    public async showMsgBoxView(content: string, confirmText: string, cancelText: string): Promise<boolean> {
+        return new Promise<boolean>(async (resolve) => {
+            this.msgBoxPara.content = content;
+            this.msgBoxPara.confirmText = confirmText;
+            this.msgBoxPara.cancelText = cancelText;
+            this.msgBoxPara.confirmCallback = (win: UIBaseView) => {
+                resolve(true);
+                UIManager.instance.closeBox(win);
+            };
+            this.msgBoxPara.cancelCallback = (win: UIBaseView) => {
+                resolve(false);
+                UIManager.instance.closeBox(win);
+            };
+            await UIManager.instance.openBox<UIMsgBoxWin, MsgBoxPara>(
+                UIMsgBoxWin, UIMsgBoxWin.PrefabPath,
+                this.msgBoxPara, null,null,null,UILayerNames.TipLayer
+            );
+        });
+    }
+}
+
+
+// === 更新配置 ===
+
+export class UpdateSetting {
+
+    public static getManifestURL(baseURL: string, channel: string, platform: string, version: number): string {
+        return `${baseURL}/${channel}_${platform}/${version}.bytes`;
+    }
+
+    public static getBundleURL(baseURL: string, channel: string, platform: string, hash: string): string {
+        return `${baseURL}/${channel}_${platform}/${hash}`;
+    }
+
+    public static readonly timeout: number = 15000;
+
+    public static readonly enabled: boolean = true;
 }

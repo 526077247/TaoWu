@@ -1,10 +1,12 @@
 import { IManager } from "../../../Mono/Core/Manager/IManager";
 import { CacheManager } from "../Player/CacheManager";
-import { UpdateListConfig, Resver, AppConfig, UpdateSetting } from "../../../Mono/Module/Resource/VersionManifest";
+import { UpdateListConfig, Resver, AppConfig } from "../../../Mono/Module/Resource/VersionManifest";
 import { ServerConfig, ServerConfigCategory } from "../Generate/Config/ServerConfig";
 import { Define } from "../../../Mono/Define";
 import { TimerManager } from "../../../Mono/Module/Timer/TimerManager";
 import * as string from "../../../Mono/Helper/StringHelper";
+import { UpdateSetting } from "./UpdateTask";
+import { BundleManager } from "../../../Mono/Module/Resource/BundleManager";
 
 /**
  * 服务器配置管理器 (参考 World 项目 ServerConfigManager)
@@ -95,7 +97,7 @@ export class ServerConfigManager implements IManager {
      * 参考 World ServerConfigManager.GetUpdateListCdnUrl
      */
     public getUpdateListCdnUrl(): string {
-        return `${this.getUpdateListUrl()}/update_${UpdateSetting.getPlatformName()}.list?timestamp=${TimerManager.instance.getTimeNow()}`;
+        return `${this.getUpdateListUrl()}/update_${BundleManager.getPlatformName()}.list?timestamp=${TimerManager.instance.getTimeNow()}`;
     }
 
     // === 更新列表 ===

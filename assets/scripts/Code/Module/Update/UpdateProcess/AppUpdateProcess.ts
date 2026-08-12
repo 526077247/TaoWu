@@ -8,9 +8,8 @@ import { CacheManager } from "../../Player/CacheManager";
 
 export class AppUpdateProcess extends UpdateProcess {
     public async process(task: UpdateTask): Promise<UpdateRes> {
-        const appChannel = ServerConfigManager.instance.getCurConfig()?.name ?? "";
-        const channel = settings.querySettings<string>('assets', '_channel') || "default";
-        const channelAppUpdateList = ServerConfigManager.instance.getAppUpdateListByChannel(appChannel, channel);
+        const appChannel = settings.querySettings<string>('assets', '_channel') || "default";
+        const channelAppUpdateList = ServerConfigManager.instance.getAppUpdateListByChannel(appChannel);
 
         if (!channelAppUpdateList || !channelAppUpdateList.AppVer) {
             Log.info("[HotUpdate] CheckAppUpdate channel_app_update_list or app_ver is nil, so return");
@@ -57,24 +56,23 @@ export class AppUpdateProcess extends UpdateProcess {
             return UpdateRes.Over;
         }
 
-        // TODO: 通过 UIManager 显示更新提示框 (等 UI 实现后补充)
-        // const cancelBtnText = forceUpdate ? "退出" : "进入游戏";
-        // const contentUpdate = forceUpdate ? "需要重新下载" : "有新版本可下载";
-        // const btnState = await task.showMsgBoxView(contentUpdate, "确认", cancelBtnText);
+        const cancelBtnText = forceUpdate ? "退出" : "进入游戏";
+        const contentUpdate = forceUpdate ? "需要重新下载" : "有新版本可下载";
+        const btnState = await task.showMsgBoxView(contentUpdate, "确认", cancelBtnText);
         // 暂时直接跳过
         Log.info(`[HotUpdate] App update available: ${appVer} → ${version}, url: ${appURL}, force: ${forceUpdate}`);
 
-        // if (btnState) {
-        //     if (sys.isNative) {
-        //         sys.openURL(appURL);
-        //     }
-        //     return await this.process(task); // 防止切到网页后回来进入游戏
-        // } else if (forceUpdate) {
-        //     // 强制更新但用户拒绝 → 退出
-        //     return UpdateRes.Quit;
-        // } else {
-        //     CacheManager.instance.setInt(checkKey, 1);
-        // }
+        if (btnState) {
+            if (sys.isNative) {
+                sys.openURL(appURL);
+            }
+            return await this.process(task); // 防止切到网页后回来进入游戏
+        } else if (forceUpdate) {
+            // 强制更新但用户拒绝 → 退出
+            return UpdateRes.Quit;
+        } else {
+            CacheManager.instance.setInt(checkKey, 1);
+        }
 
         return UpdateRes.Over;
     }

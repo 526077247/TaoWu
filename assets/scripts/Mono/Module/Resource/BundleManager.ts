@@ -2,7 +2,7 @@ import { _decorator, assetManager, AssetManager, sys, settings } from 'cc';
 import { IManager } from '../../Core/Manager/IManager';
 import { ObjectPool } from '../../Core/ObjectPool';
 import { Log } from '../Log/Log';
-import { RawVersionManifest, UpdateSetting } from './VersionManifest';
+import { RawVersionManifest } from './VersionManifest';
 
 export class BundleManager implements IManager {
     private static _instance: BundleManager;
@@ -19,8 +19,10 @@ export class BundleManager implements IManager {
     private _remoteBundleInfos: Map<string, string>;
     /** 远程 URL 前缀: {server}/{channel}_{platform}/ (由 ServerConfigManager init 后写入) */
     private _remoteURLPrefix: string = "";
-    /** 包内版本清单 */
+    /** 包内版本清单 (可能是远端缓存版本) */
     private _localManifest: RawVersionManifest = null;
+    /** 内置 manifest (始终从 cc.settings 读取) */
+    private _builtinManifest: RawVersionManifest = null;
     /** 本地缓存的远端 manifest 文件名前缀 (原生平台用文件存储, 带版本号) */
     private static readonly REMOTE_MANIFEST_PREFIX = "remote_manifest_";
     /** localStorage key: 已缓存的最新远端版本号 */
@@ -34,9 +36,14 @@ export class BundleManager implements IManager {
         this._remoteBundleInfos = new Map<string, string>();
     }
 
-    /** 获取包内版本清单 */
+    /** 获取包内版本清单 (可能是远端缓存版本) */
     public get localManifest(): RawVersionManifest {
         return this._localManifest;
+    }
+
+    /** 获取内置 manifest (始终从 cc.settings 读取, 不含远端缓存) */
+    public get builtinManifest(): RawVersionManifest {
+        return this._builtinManifest;
     }
 
     /** 设置远程 URL 前缀 (由 ServerConfigManager init 后调用) */
@@ -80,7 +87,10 @@ export class BundleManager implements IManager {
         const savedVersionStr = sys.localStorage.getItem(BundleManager.REMOTE_VERSION_KEY);
         if (!savedVersionStr) return null;
         const savedVersion = Number(savedVersionStr);
-        if (isNaN(savedVersion) || savedVersion <= builtinVersion) return null;
+        if (isNaN(savedVersion) || savedVersion < builtinVersion) {
+            sys.localStorage.setItem(BundleManager.REMOTE_VERSION_KEY, builtinVersion);
+            return null;
+        }
 
         Log.info(`[BundleManager] Saved remote version ${savedVersion} > builtin version ${builtinVersion}, loading saved manifest`);
 
@@ -145,35 +155,39 @@ export class BundleManager implements IManager {
         return "";
     }
 
+    /**获取本地版本号 */
+    public getSavedVersion(){
+        return sys.localStorage.getItem(BundleManager.REMOTE_VERSION_KEY);
+    }
+
     /**
      * 异步加载版本清单
      * 从 cc.settings (settings.json 的 assets._hotUpdate) 读取内置 manifest
      * 然后与 localStorage 中保存的最新远端版本号对比, 取版本号最大的
      */
     public async loadLocalManifest(): Promise<void> {
-        // 从 cc.settings 读取内置 manifest (直接用 RawVersionManifest, 无需转换)
-        let builtinManifest: RawVersionManifest = null;
+        // 从 cc.settings 读取内置 manifest
         const raw = settings.querySettings<RawVersionManifest>('assets', '_hotUpdate');
         if (raw) {
-            builtinManifest = raw;
+            this._builtinManifest = raw;
         }
 
         // 设置远程 URL 前缀: {server}/{channel}_{platform}/
         // - server: 从 cc.settings 读 assets.server (Cocos 内置字段)
         // - channel: 从 cc.settings 读 assets._channel (构建时写入)
         // - platform: UpdateConfig.getPlatformName()
-        if (builtinManifest) {
+        if (this._builtinManifest) {
             this.updateRemoteURLPrefix();
         }
 
-        const builtinVersion = builtinManifest ? Number(builtinManifest.v) : 0;
+        const builtinVersion = this._builtinManifest ? Number(this._builtinManifest.v) : 0;
 
         // 对比 localStorage 中保存的版本号, 取最大的
         const savedManifest = await this.loadSavedRemoteManifest(builtinVersion);
-        this._localManifest = savedManifest || builtinManifest;
+        this._localManifest = savedManifest || this._builtinManifest;
 
         if (this._localManifest) {
-            this.fillRemoteBundleInfos();
+            this.fillRemoteBundleInfos(this._builtinManifest);
             this.updateRemoteURLPrefix();
             Log.info(`[BundleManager] Manifest loaded, version: ${this._localManifest.v}, source: ${savedManifest ? "remote-cache" : "builtin"}`);
         } else {
@@ -187,20 +201,30 @@ export class BundleManager implements IManager {
     private updateRemoteURLPrefix(): void {
         const server = settings.querySettings<string>('assets', 'server') || "";
         const channel = settings.querySettings<string>('assets', '_channel') || "default";
-        const platform = UpdateSetting.getPlatformName();
+        const platform = BundleManager.getPlatformName();
         this.setRemoteURLPrefix(`${server}/${channel}_${platform}`);
     }
 
     /**
-     * 把本地清单中的非内置 bundle 写入 _remoteBundleInfos
+     * 把本地清单中的需要远程加载的 bundle 写入 _remoteBundleInfos
+     * - !builtin 的 bundle → 远程包, 注册
+     * - builtin=true 但 hash 与内置 manifest 不一致 → 内置包被热更了, 注册远程信息
+     * - builtin=true 且 hash 一致 → 用内置包, 不注册
      */
-    private fillRemoteBundleInfos(): void {
+    private fillRemoteBundleInfos(builtinManifest: RawVersionManifest): void {
         if (!this._localManifest) return;
         this._remoteBundleInfos.clear();
         for (const name in this._localManifest.b) {
             const [hash, builtin] = this._localManifest.b[name];
             if (!builtin) {
+                // 远程包: 始终注册
                 this._remoteBundleInfos.set(name, hash);
+            } else {
+                // 内置包: hash 与内置 manifest 不一致时注册 (热更后 builtin 包 hash 变了)
+                const builtinHash = builtinManifest?.b?.[name]?.[0];
+                if (builtinHash && builtinHash !== hash) {
+                    this._remoteBundleInfos.set(name, hash);
+                }
             }
         }
     }
@@ -369,6 +393,12 @@ export class BundleManager implements IManager {
         this._cacheBundleRefCount.clear();
     }
 
+    public static getPlatformName(): string {
+        if (sys.platform === sys.Platform.ANDROID) return "android";
+        if (sys.platform === sys.Platform.IOS) return "ios";
+        if (sys.platform === sys.Platform.WIN32) return "pc";
+        return "webgl";
+    }
 }
 
 

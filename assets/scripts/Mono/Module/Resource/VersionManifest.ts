@@ -44,26 +44,3 @@ export class UpdateListConfig {
     AppList: Record<string, AppConfig>;
 }
 
-// === 更新配置 ===
-
-export class UpdateSetting {
-
-    public static getPlatformName(): string {
-        if (sys.platform === sys.Platform.ANDROID) return "android";
-        if (sys.platform === sys.Platform.IOS) return "ios";
-        if (sys.platform === sys.Platform.WIN32) return "pc";
-        return "webgl";
-    }
-
-    public static getManifestURL(baseURL: string, channel: string, platform: string, version: number): string {
-        return `${baseURL}/${channel}_${platform}/${version}.bytes`;
-    }
-
-    public static getBundleURL(baseURL: string, channel: string, platform: string, hash: string): string {
-        return `${baseURL}/${channel}_${platform}/${hash}`;
-    }
-
-    public static readonly timeout: number = 15000;
-
-    public static readonly enabled: boolean = true;
-}
