@@ -1,9 +1,8 @@
 export * from '@cocos/creator-types/editor/packages/builder/@types/public';
 
 import { IPanelThis, IBuildTaskOption } from '@cocos/creator-types/editor/packages/builder/@types/public';
-import { Link, Checkbox } from '@editor/creator-ui-kit/dist/renderer';
 
-const PACKAGE_NAME = 'build-plugin-taowu';
+const PACKAGE_NAME = 'taowu-editor';
 export interface ITaskOptions extends IBuildTaskOption {
     packages: {
         [PACKAGE_NAME]: IOptions;
@@ -11,31 +10,15 @@ export interface ITaskOptions extends IBuildTaskOption {
 }
 
 export interface ICustomPanelThis extends IPanelThis {
-    options: ITaskOption;
+    options: ITaskOptions;
     errorMap: any;
     pkgName: string;
-    $: {
-        root: HTMLElement;
-        hideLink: Editor.UI.HTMLCustomElement<Checkbox>;
-        link: Editor.UI.HTMLCustomElement<Link>;
-    },
+    $: Record<string, any>;
 }
 
 export interface IOptions {
-    remoteAddress: string;
-    enterCocos: string;
-    selectTest: string;
-    objectTest: {
-        number: number;
-        string: string;
-        boolean: boolean
-    },
-    arrayTest: [number, string, boolean];
-    webTestOption: boolean;
-}
-
-export interface ITaskOptions extends IBuildTaskOption {
-    packages: {
-        ['cocos-build-template']: IOptions;
-    };
+    enableObfuscate: boolean;
+    generateManifest: boolean;
+    version: string;
+    channel: string;
 }

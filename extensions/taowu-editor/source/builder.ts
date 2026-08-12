@@ -3,45 +3,10 @@ import { BuildPlugin, IBuildTaskOption } from '../@types';
 
 // 必须导出一个 configs 对象
 export const configs: BuildPlugin.Configs = {
+    // 注意: 配置了自定义面板 panel 后, 不应再配置 options (避免构建面板双份渲染)
     '*': {
         hooks: './hooks',
-        options: {
-            enableObfuscate: {
-                label: '启用代码混淆',
-                description: '构建后对代码混淆',
-                default: true,
-                render: {
-                    ui: 'ui-checkbox'
-                }
-            },
-            generateManifest: {
-                label: '生成热更版本清单',
-                description: '构建后自动生成 version.manifest.json',
-                default: true,
-                render: {
-                    ui: 'ui-checkbox'
-                }
-            },
-            version: {
-                label: '版本号',
-                description: '热更版本号 (纯数字，打开构建面板时自动填入当前时间戳)',
-                default: String(Date.now()),
-                render: {
-                    ui: 'ui-input'
-                }
-            },
-            channel: {
-                label: '渠道名 (仅原生平台生效)',
-                description: '小游戏平台渠道名固定 (DouYin/WeChat 等), 此项仅对原生平台生效',
-                default: 'default',
-                render: {
-                    ui: 'ui-input',
-                    attributes: {
-                        disabled: '{{platform !== "android" && platform !== "ios"}}'
-                    }
-                }
-            }
-        }
+        panel: './panel',
     },
 };
 

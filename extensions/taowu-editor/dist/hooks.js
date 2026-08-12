@@ -44,7 +44,8 @@ const obfuscateMainJs = (options, result) => {
     if (!fs.existsSync(destDir)) {
         destDir = path.join(result.paths.dir, "assets", "main");
     }
-    const enableObfuscate = options.packages["taowu-editor"].enableObfuscate;
+    const pkgConfig = options.packages["taowu-editor"] || {};
+    const enableObfuscate = pkgConfig.enableObfuscate;
     if (!enableObfuscate) {
         console.log('[CodeObfuscate] 代码混淆未启用，跳过');
         return;
