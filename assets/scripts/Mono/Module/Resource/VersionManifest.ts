@@ -7,8 +7,8 @@ import { sys } from "cc";
  * {
  *   "v": "1723200000000",       // version
  *   "b": {                       // bundles
- *     "main": ["a1b2c3d4e5f6", true],   // [hash, builtin]
- *     "config": ["b2c3d4e5f6a1", false],
+ *     "main": ["a1b2c3d4e5f6", true, 102400],   // [hash, builtin, size(bytes)]
+ *     "config": ["b2c3d4e5f6a1", false, 51200],
  *   }
  * }
  * channel/platform/server 不在此结构中:
@@ -18,7 +18,7 @@ import { sys } from "cc";
  */
 export interface RawVersionManifest {
     v: string;
-    b: Record<string, [string, boolean]>;
+    b: Record<string, [string, boolean, number]>;
 }
 
 // === 更新列表数据结构 (参考 World 项目 PackageConfig.cs) ===

@@ -122,6 +122,21 @@ function calculateDirHash(dir: string): string {
     return hash.digest('hex').substring(0, 12);
 }
 
+function calculateDirSize(dir: string): number {
+    let totalSize = 0;
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+        const fullPath = path.join(dir, file);
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+            totalSize += calculateDirSize(fullPath);
+        } else {
+            totalSize += stat.size;
+        }
+    }
+    return totalSize;
+}
+
 function copyDir(src: string, dest: string): void {
     if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
@@ -290,13 +305,14 @@ const generateVersionManifest = (options: IBuildTaskOption, result: IBuildResult
     // 精简格式: {v:version, c:渠道名, p:平台名, s:服务器地址, b:{bundleName:[hash, builtin]}}
     const manifest: Record<string, any> = {
         v: version,
-        b: {} as Record<string, [string, boolean]>
+        b: {} as Record<string, [string, boolean, number]>
     };
 
     for (const [name, info] of allBundles) {
         const hash = calculateDirHash(info.dir);
-        manifest.b[name] = [hash, info.builtin];
-        console.log(`[HotUpdate] Bundle: ${name}, hash: ${hash}, builtin: ${info.builtin}`);
+        const size = calculateDirSize(info.dir);
+        manifest.b[name] = [hash, info.builtin, size];
+        console.log(`[HotUpdate] Bundle: ${name}, hash: ${hash}, builtin: ${info.builtin}, size: ${size}`);
     }
 
     // 将 manifest + channel 写入 settings.json (运行时通过 cc.settings 读取)

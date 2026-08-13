@@ -101,19 +101,59 @@ export class BundleUpdateProcess extends UpdateProcess {
         }
 
         if (this.cacheDownload) {
-            Log.info("[HotUpdate] Caching remote bundles...");
-            let allSuccess = true;
+            // 计算需要下载的总大小
+            let totalSize = 0;
+            const bundlesToDownload: string[] = [];
             for (const name in remoteBundles) {
                 const remoteHash = remoteBundles[name]?.[0];
                 const localHash = localBundles[name]?.[0];
                 if (localHash === remoteHash) continue;
+                const size = remoteBundles[name]?.[2] ?? 0;
+                totalSize += size;
+                bundlesToDownload.push(name);
+            }
+
+            if (bundlesToDownload.length === 0) {
+                Log.info("[HotUpdate] All bundles up to date.");
+                return UpdateRes.Over;
+            }
+
+            // 提示用户下载大小
+            const sizeMb = totalSize / (1024 * 1024);
+            const displayMb = sizeMb > 0 && sizeMb < 0.01 ? 0.01 : sizeMb;
+            Log.info(`[HotUpdate] Download size: ${displayMb.toFixed(2)} MB (${totalSize} bytes, ${bundlesToDownload.length} bundles)`);
+
+            const content = `需要下载 ${displayMb.toFixed(2)} MB 资源，是否继续？`;
+            const confirmed = await task.showMsgBoxView(content, "确认", this.forceUpdate ? "退出" : "跳过");
+            if (!confirmed) {
+                if (this.forceUpdate) {
+                    return UpdateRes.Quit;
+                }
+                return UpdateRes.Over;
+            }
+
+            // 设置下载进度初始值
+            task.setDownloadSize(totalSize, 0);
+
+            Log.info("[HotUpdate] Caching remote bundles...");
+            let allSuccess = true;
+            let downloadedSize = 0;
+            for (const name of bundlesToDownload) {
+                const bundleSize = remoteBundles[name]?.[2] ?? 0;
                 try {
-                    await BundleManager.instance.loadBundle(name);
+                    await BundleManager.instance.loadBundle(name, (finished, total) => {
+                        if (total > 0) {
+                            const current = downloadedSize + Math.floor(bundleSize * finished / total);
+                            task.setDownloadSize(totalSize, current);
+                        }
+                    });
                     Log.info(`[HotUpdate] Bundle "${name}" downloaded.`);
                 } catch (e: any) {
                     Log.error(`[HotUpdate] Failed to download bundle "${name}":`, e);
                     allSuccess = false;
                 }
+                downloadedSize += bundleSize;
+                task.setDownloadSize(totalSize, downloadedSize);
             }
 
             if (allSuccess) {
