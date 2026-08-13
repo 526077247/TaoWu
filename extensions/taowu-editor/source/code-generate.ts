@@ -113,7 +113,7 @@ export class CodeGenerate{
 import { Node } from "cc";
 import { IOnCreate } from "${points}Module/UI/IOnCreate";
 import { IOnEnable } from "${points}Module/UI/IOnEnable";
-import { UIBaseView } from "${points}Module/UI/UIBaseView";
+import { UIBaseView, uiView } from "${points}Module/UI/UIBaseView";
 `
                 let fields = ""
                 let onCreate = ""
@@ -206,6 +206,7 @@ import { LoopGridViewItem } from "${points}../ThirdParty/SuperScrollView/GridVie
                 let content = 
 `
 ${header}
+@uiView("${fileName}")
 export class ${fileName} extends UIBaseView implements IOnCreate, IOnEnable {
 
     public static readonly PrefabPath:string = "${Editor.Utils.Path.stripExt(prefabPath[1])}";

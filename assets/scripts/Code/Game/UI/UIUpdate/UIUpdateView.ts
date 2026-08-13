@@ -1,4 +1,4 @@
-import { UIBaseView } from "../../../Module/UI/UIBaseView";
+import { UIBaseView, uiView } from "../../../Module/UI/UIBaseView";
 import { IOnCreate } from "../../../Module/UI/IOnCreate";
 import { IOnEnable } from "../../../Module/UI/IOnEnable";
 import { UISlider } from "../../../Module/UIComponent/UISlider";
@@ -9,6 +9,7 @@ import { AppUpdateProcess } from "../../../Module/Update/UpdateProcess/AppUpdate
 import { BundleUpdateProcess } from "../../../Module/Update/UpdateProcess/BundleUpdateProcess";
 import { Log } from "../../../../Mono/Module/Log/Log";
 
+@uiView("UIUpdateView")
 export class UIUpdateView extends UIBaseView implements IOnCreate, IOnEnable<VoidFunction> {
 
     public static readonly PrefabPath: string = "ui/uiloading/prefabs/uiLoadingView";

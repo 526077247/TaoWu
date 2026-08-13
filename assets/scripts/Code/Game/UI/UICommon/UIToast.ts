@@ -7,10 +7,11 @@ import { UIMonoBehaviour } from "../../../Module/UIComponent/UIMonoBehaviour";
 import { UIText } from "../../../Module/UIComponent/UIText";
 import { TimerManager } from "../../../../Mono/Module/Timer/TimerManager";
 import { math } from "cc";
-import { UIBaseView } from "../../../Module/UI/UIBaseView";
+import { UIBaseView, uiView } from "../../../Module/UI/UIBaseView";
 import { UIManager } from "../../../Module/UI/UIManager";
 import { I18NManager } from "../../../Module/I18N/I18NManager";
 
+@uiView("UIToast")
 export class UIToast extends UIBaseView implements IOnCreate, IOnEnable<string|I18NKey, number|null>
 {
     public getConstructor(){

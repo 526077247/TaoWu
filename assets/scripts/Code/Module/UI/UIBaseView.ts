@@ -1,5 +1,6 @@
 ﻿import { UIBaseContainer }  from "./UIBaseContainer"
 import { UIManager } from "./UIManager";
+
 export abstract class UIBaseView extends UIBaseContainer {
 
     public get canBack(): boolean{
@@ -19,4 +20,11 @@ export abstract class UIBaseView extends UIBaseContainer {
     {
         return this.closeSelf();
     }
+}
+
+export function uiView(name: string) {
+    return function <T extends new () => UIBaseView>(target: T): T {
+        UIManager?.register(name, target);
+        return target;
+    };
 }
