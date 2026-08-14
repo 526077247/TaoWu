@@ -113,8 +113,13 @@ export class CodeGenerate{
 import { Node } from "cc";
 import { IOnCreate } from "${points}Module/UI/IOnCreate";
 import { IOnEnable } from "${points}Module/UI/IOnEnable";
-import { UIBaseView, uiView } from "${points}Module/UI/UIBaseView";
 `
+                const isView = fileName.endsWith("Win") || fileName.endsWith("View");
+                if (isView) {
+                    header += `import { UIBaseView, uiView } from "${points}Module/UI/UIBaseView";${line}`
+                } else {
+                    header += `import { UIBaseContainer } from "${points}Module/UI/UIBaseContainer";${line}`
+                }
                 let fields = ""
                 let onCreate = ""
                 let onEnable = ""
@@ -206,11 +211,10 @@ import { LoopGridViewItem } from "${points}../ThirdParty/SuperScrollView/GridVie
                 let content = 
 `
 ${header}
-@uiView("${fileName}")
-export class ${fileName} extends UIBaseView implements IOnCreate, IOnEnable {
+${isView ? `@uiView("${fileName}")` : ""}
+export class ${fileName} extends ${isView ? "UIBaseView" : "UIBaseContainer"} implements IOnCreate, IOnEnable {
 
-    public static readonly PrefabPath:string = "${Editor.Utils.Path.stripExt(prefabPath[1])}";
-
+${isView ? `    public static readonly PrefabPath:string = "${Editor.Utils.Path.stripExt(prefabPath[1])}";${line}` : ""}
     public getConstructor()
     {
         return ${fileName};

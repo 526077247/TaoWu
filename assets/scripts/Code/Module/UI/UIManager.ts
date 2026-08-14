@@ -1,4 +1,4 @@
-import { Camera, director, find, Node, _decorator, view, sys, Vec2, screen, ResolutionPolicy, Vec3, Layers } from 'cc';
+import { Camera, find, Node, _decorator, view, Vec2, Layers } from 'cc';
 import { IManager } from "../../../Mono/Core/Manager/IManager"
 import { ManagerProvider } from "../../../Mono/Core/Manager/ManagerProvider"
 import { LinkedList } from "../../../Mono/Core/Object/LinkedList"
@@ -8,7 +8,6 @@ import { TimerManager } from '../../../Mono/Module/Timer/TimerManager';
 import { CoroutineLockManager, CoroutineLock } from '../CoroutineLock/CoroutineLockManager';
 import { CoroutineLockType } from '../CoroutineLock/CoroutineLockType';
 import { IOnCreate } from './IOnCreate';
-import { IOnEnable } from './IOnEnable';
 import type { UIBaseView } from './UIBaseView';
 import { UILayer } from "./UILayer"
 import { UIWindow, UIWindowLoadingState } from './UIWindow';
@@ -117,6 +116,7 @@ export class UIManager implements IManager {
         this.windowStack = new Map<UILayerNames, LinkedList<new()=>void>>();
         this.boxes = new Map<UIBaseView, UIWindow>();
         this.initLayer();
+        view.on('canvas-resize', this.canvasResize, this);
         // Messager.Instance.AddListener<int, int>(0, MessageId.OnKeyInput, OnKeyInput);
     }
 
@@ -184,6 +184,26 @@ export class UIManager implements IManager {
     public getLayer(layer: UILayerNames): UILayer
     {
         return this.layers.get(layer);
+    }
+
+    public canvasResize(){
+        var safeArea = SystemInfoHelper.safeArea;
+        let width = SystemInfoHelper.screenWidth;
+        let height = SystemInfoHelper.screenHeight;
+        var flagx = width / Define.DesignScreenWidth;
+        var flagy = height / Define.DesignScreenHeight;
+
+        if(flagx>flagy){//更宽，适配高度
+            this.resolution = new Vec2(width/flagy, Define.DesignScreenHeight);
+        }else{
+            this.resolution = new Vec2(Define.DesignScreenWidth, height/flagx);
+        }
+
+        this.setWidthPadding(safeArea.xMin);
+        this.uiCamera.node.setPosition(this.resolution.x/2, this.resolution.y/2, 1000);
+        for (const element of this.layers) {
+            element[1].resetResolution(this.resolution)
+        }
     }
 
     public getUICamera(): Camera

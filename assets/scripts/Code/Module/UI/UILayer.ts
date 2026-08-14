@@ -1,6 +1,5 @@
 ﻿import { Camera, Canvas, Node, UITransform, Vec2, Vec3, view} from "cc";
 import { IManager } from "../../../Mono/Core/Manager/IManager"
-import { Define } from "../../../Mono/Define";
 import { UILayerNames } from "./UILayerNames";
 import { UILayerDefine } from "./UILayerDefine";
 
@@ -28,6 +27,12 @@ export class UILayer implements IManager<UILayerDefine, Node, Vec2, Camera>{
         this.canvas.cameraComponent = p4;
         this.rectTransform = this.node.getComponent<UITransform>(UITransform);
 
+        this.rectTransform.width = resolution.x;
+        this.rectTransform.height = resolution.y;
+    }
+
+    public resetResolution(resolution: Vec2){
+        this.node.position = new Vec3(resolution.x/2,resolution.y/2, this.node.position.z)
         this.rectTransform.width = resolution.x;
         this.rectTransform.height = resolution.y;
     }

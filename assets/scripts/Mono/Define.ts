@@ -9,12 +9,21 @@ export class Define {
 
     public static isSH: boolean = false;
 
-    public static readonly DesignScreenWidth =
-        (EDITOR?view.getDesignResolutionSize().width > view.getDesignResolutionSize().height:screen.windowSize.width > screen.windowSize.height)
-         ? Math.max(Define.dWidth, Define.dHeight) : Math.min(Define.dWidth, Define.dHeight);
-    public static readonly DesignScreenHeight =
-        (EDITOR?view.getDesignResolutionSize().width > view.getDesignResolutionSize().height:screen.windowSize.width > screen.windowSize.height)
-         ? Math.min(Define.dWidth, Define.dHeight) : Math.max(Define.dWidth, Define.dHeight);
+    public static get DesignScreenWidth() 
+    {
+        if(EDITOR){
+            return view.getDesignResolutionSize().width > view.getDesignResolutionSize().height?Math.max(Define.dWidth, Define.dHeight) : Math.min(Define.dWidth, Define.dHeight);
+        }
+        return screen.windowSize.width > screen.windowSize.height?Math.max(Define.dWidth, Define.dHeight) : Math.min(Define.dWidth, Define.dHeight);
+    }
+
+    public static get DesignScreenHeight() {
+        if(EDITOR){
+            return view.getDesignResolutionSize().width > view.getDesignResolutionSize().height?Math.min(Define.dWidth, Define.dHeight) : Math.max(Define.dWidth, Define.dHeight);
+        }
+        return screen.windowSize.width > screen.windowSize.height?Math.min(Define.dWidth, Define.dHeight) : Math.max(Define.dWidth, Define.dHeight);
+    }
+    
     public static LogLevel = 1;
 
     public static Process = 1;

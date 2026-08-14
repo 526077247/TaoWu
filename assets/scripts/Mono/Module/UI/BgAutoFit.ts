@@ -1,6 +1,7 @@
-import { _decorator, Component, screen, Sprite, SpriteFrame, Vec2, UITransform, Size} from 'cc';
+import { _decorator, Component, Sprite, SpriteFrame, UITransform, Size} from 'cc';
 import { Define } from '../../Define';
 import { EDITOR } from 'cc/env';
+import { SystemInfoHelper } from '../../Helper/SystemInfoHelper';
 const { ccclass, property, executeInEditMode, requireComponent } = _decorator;
 
 @ccclass('BgAutoFit')
@@ -29,8 +30,8 @@ export class BgAutoFit extends Component {
     size(){
         if (this.bgSprite == null) return;
         //屏幕缩放比
-        var screenH = screen.windowSize.height;
-        var screenW = screen.windowSize.width;
+        var screenH = SystemInfoHelper.screenHeight;
+        var screenW = SystemInfoHelper.screenWidth;
         if(EDITOR){
             screenH = Define.DesignScreenHeight;
             screenW = Define.DesignScreenWidth;

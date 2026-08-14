@@ -1,6 +1,7 @@
-import { _decorator, Component, screen, UITransform, Size, Rect, Vec2} from 'cc';
+import { _decorator, Component, UITransform, Size, Vec2} from 'cc';
 import { Define } from '../../Define';
 import { EDITOR } from 'cc/env';
+import { SystemInfoHelper } from '../../Helper/SystemInfoHelper';
 const { ccclass, property, executeInEditMode, requireComponent } = _decorator;
 
 @ccclass('BgAutoMax')
@@ -25,8 +26,8 @@ export class BgAutoMax extends Component {
 
     size(){
         //屏幕缩放比
-        var screenH = screen.windowSize.height;
-        var screenW = screen.windowSize.width;
+        var screenH = SystemInfoHelper.screenHeight;
+        var screenW = SystemInfoHelper.screenWidth;
         if(EDITOR){
             screenH = Define.DesignScreenHeight;
             screenW = Define.DesignScreenWidth;
