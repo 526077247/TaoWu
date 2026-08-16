@@ -3,6 +3,7 @@ import { IManager } from '../../Core/Manager/IManager';
 import { ObjectPool } from '../../Core/ObjectPool';
 import { Log } from '../Log/Log';
 import { RawVersionManifest } from './VersionManifest';
+import { PlatformUtils } from '../../Helper/PlatformUtils';
 
 export class BundleManager implements IManager {
     private static _instance: BundleManager;
@@ -88,7 +89,7 @@ export class BundleManager implements IManager {
         if (!savedVersionStr) return null;
         const savedVersion = Number(savedVersionStr);
         if (isNaN(savedVersion) || savedVersion < builtinVersion) {
-            sys.localStorage.setItem(BundleManager.REMOTE_VERSION_KEY, builtinVersion);
+            sys.localStorage.setItem(BundleManager.REMOTE_VERSION_KEY, String(builtinVersion));
             return null;
         }
 
@@ -156,7 +157,7 @@ export class BundleManager implements IManager {
     }
 
     /**获取本地版本号 */
-    public getSavedVersion(){
+    public getSavedVersion(): string{
         return sys.localStorage.getItem(BundleManager.REMOTE_VERSION_KEY);
     }
 
@@ -201,7 +202,7 @@ export class BundleManager implements IManager {
     private updateRemoteURLPrefix(): void {
         const server = settings.querySettings<string>('assets', 'server') || "";
         const channel = settings.querySettings<string>('assets', '_channel') || "default";
-        const platform = BundleManager.getPlatformName();
+        const platform = PlatformUtils.getPlatformName();
         this.setRemoteURLPrefix(`${server}/${channel}_${platform}`);
     }
 
@@ -391,13 +392,6 @@ export class BundleManager implements IManager {
         }
         this._cacheBundle.clear();
         this._cacheBundleRefCount.clear();
-    }
-
-    public static getPlatformName(): string {
-        if (sys.platform === sys.Platform.ANDROID) return "android";
-        if (sys.platform === sys.Platform.IOS) return "ios";
-        if (sys.platform === sys.Platform.WIN32) return "pc";
-        return "webgl";
     }
 }
 

@@ -4,7 +4,7 @@ import { UpdateSetting, UpdateTask } from "../UpdateTask";
 import {  UpdateListConfig, AppConfig, Resver } from "../../../../Mono/Module/Resource/VersionManifest";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ServerConfigManager } from "../ServerConfigManager";
-import { JsonHelper } from "../../../../Mono/Helper/JsonHelper";
+import { HttpManager } from "../../../../Mono/Module/Http/HttpManager";
 
 export class SetUpdateListProcess extends UpdateProcess {
     public async process(task: UpdateTask): Promise<UpdateRes> {
@@ -15,14 +15,11 @@ export class SetUpdateListProcess extends UpdateProcess {
 
         try {
             // Step 1: 拉取 CDN update_{platform}.list (URL 由 ServerConfigManager 决定)
-            const listText = await task.fetchText(ServerConfigManager.instance.getUpdateListCdnUrl());
-            if (!listText) {
+            const updateList = await HttpManager.instance.httpGetResult(UpdateListConfig, ServerConfigManager.instance.getUpdateListCdnUrl(), null, null);
+            if (!updateList) {
                 Log.warning("[HotUpdate] Failed to fetch update list, using built-in bundles.");
                 return UpdateRes.Over;
             }
-            JsonHelper.registerClass(AppConfig, 'AppConfig');
-            JsonHelper.registerClass(Resver, 'Resver');
-            const updateList = JsonHelper.fromJson(UpdateListConfig, listText);
             ServerConfigManager.instance.setUpdateList(updateList);
 
             return UpdateRes.Over;

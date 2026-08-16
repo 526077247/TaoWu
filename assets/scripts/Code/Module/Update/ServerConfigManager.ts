@@ -5,11 +5,10 @@ import { ServerConfig, ServerConfigCategory } from "../Generate/Config/ServerCon
 import { Define } from "../../../Mono/Define";
 import { TimerManager } from "../../../Mono/Module/Timer/TimerManager";
 import * as string from "../../../Mono/Helper/StringHelper";
-import { UpdateSetting } from "./UpdateTask";
-import { BundleManager } from "../../../Mono/Module/Resource/BundleManager";
+import { PlatformUtils } from "../../../Mono/Helper/PlatformUtils";
 
 /**
- * 服务器配置管理器 (参考 World 项目 ServerConfigManager)
+ * 服务器配置管理器
  * 负责管理当前服务器环境、更新列表、版本号查询、渠道/灰度判断
  */
 export class ServerConfigManager implements IManager {
@@ -40,7 +39,6 @@ export class ServerConfigManager implements IManager {
 
     /**
      * 初始化当前服务器配置
-     * 参考 World ServerConfigManager.Init
      * Debug 模式从 localStorage 读取上次选择的服务器, 否则取 IsPriority=1 的默认服务器
      */
     private initCurConfig(): void {
@@ -70,7 +68,6 @@ export class ServerConfigManager implements IManager {
 
     /**
      * 切换服务器环境
-     * 参考 World ServerConfigManager.ChangeEnv
      */
     public changeEnv(id: number): ServerConfig {
         const conf = ServerConfigCategory.instance.get(id);
@@ -85,7 +82,6 @@ export class ServerConfigManager implements IManager {
 
     /**
      * 获取更新列表的 CDN 地址
-     * 参考 World ServerConfigManager.GetUpdateListUrl
      * 使用 ServerConfig.routerListUrl 作为 CDN 根地址
      */
     public getUpdateListUrl(): string {
@@ -94,10 +90,9 @@ export class ServerConfigManager implements IManager {
 
     /**
      * 获取 update_{platform}.list 的完整 URL
-     * 参考 World ServerConfigManager.GetUpdateListCdnUrl
      */
     public getUpdateListCdnUrl(): string {
-        return `${this.getUpdateListUrl()}/update_${BundleManager.getPlatformName()}.list?timestamp=${TimerManager.instance.getTimeNow()}`;
+        return `${this.getUpdateListUrl()}/update_${PlatformUtils.getPlatformName()}.list?timestamp=${TimerManager.instance.getTimeNow()}`;
     }
 
     // === 更新列表 ===
@@ -116,7 +111,6 @@ export class ServerConfigManager implements IManager {
 
     /**
      * 找到可以更新的最大资源版本号
-     * 参考 World ServerConfigManager.FindMaxUpdateResVer
      * @param resverChannel 资源版本渠道 (用于 Resver.Channel 匹配)
      * @param appResVer 当前 App 版本对应的最大资源版本 (0 表示不限制)
      * @returns 最大资源版本号, null 表示无可用版本
@@ -151,16 +145,17 @@ export class ServerConfigManager implements IManager {
         return lastVer;
     }
 
-    public getResVerInfo(channel: string, version: string): Resver {
+    public getResVerInfo(channel: string, version: number): Resver {
         if (!this._updateList?.ResList) return null;
         const verMap = this._updateList.ResList[channel];
-        if (verMap && verMap[version]) {
-            return verMap[version];
+        if (verMap) {
+            const res = verMap[String(version)];
+            if(!!res) return res;
         }
         return null;
     }
 
-    public isForceUpdate(channel: string, version: string): boolean {
+    public isForceUpdate(channel: string, version: number): boolean {
         const resver = this.getResVerInfo(channel, version);
         return resver?.ForceUpdate === 1;
     }

@@ -50,10 +50,9 @@ export class Entry
             if (sys.isNative && (Define.Networked||Define.ForceUpdate)) {
                 await cm.loadAsync();
                 ManagerProvider.registerManager(ServerConfigManager);
-                // === 阶段 B: 热更新检查 (参考 World Entry → UIUpdateView) ===
+                // === 阶段 B: 热更新检查 ===
                 await UIManager.instance.openWindow<UIUpdateView, VoidFunction>(
-                    UIUpdateView, UIUpdateView.PrefabPath,
-                    Entry.startGame,null,null,null, UILayerNames.TopLayer
+                    UIUpdateView, UIUpdateView.PrefabPath, Entry.startGame
                 );
             } else {
                 // 编辑器中直接进入游戏

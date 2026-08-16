@@ -66,31 +66,12 @@ export class UpdateTask {
         }, 500);
     }
 
-    public fetchText(url: string): Promise<string> {
-        return new Promise((resolve) => {
-            const xhr = new XMLHttpRequest();
-            xhr.timeout = UpdateSetting.timeout;
-            xhr.onreadystatechange = () => {
-                if (xhr.readyState === 4) {
-                    if (xhr.status >= 200 && xhr.status < 400) {
-                        resolve(xhr.responseText);
-                    } else {
-                        Log.warning(`[HotUpdate] HTTP ${xhr.status} for ${url}`);
-                        resolve(null);
-                    }
-                }
-            };
-            xhr.open("GET", url, true);
-            xhr.send();
-        });
-    }
-
     // === MsgBox ===
 
     private msgBoxPara: MsgBoxPara = new MsgBoxPara();
 
     /**
-     * 显示提示窗 (参考 World UpdateTask.ShowMsgBoxView)
+     * 显示提示窗
      * @param content 内容
      * @param confirmText 确认按钮文本
      * @param cancelText 取消按钮文本

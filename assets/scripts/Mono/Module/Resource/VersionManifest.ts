@@ -1,7 +1,5 @@
 // === 版本清单数据结构 (Mono 层, 供 BundleManager 使用) ===
 
-import { sys } from "cc";
-
 /**
  * 精简版本清单格式 (内置 + 远端统一使用此结构):
  * {
@@ -16,12 +14,12 @@ import { sys } from "cc";
  * - platform: 运行时 UpdateConfig.getPlatformName()
  * - server: 运行时 settings.querySettings('assets','server') (Cocos 内置字段)
  */
-export interface RawVersionManifest {
+export class RawVersionManifest {
     v: string;
     b: Record<string, [string, boolean, number]>;
 }
 
-// === 更新列表数据结构 (参考 World 项目 PackageConfig.cs) ===
+// === 更新列表数据结构 ===
 
 /** 资源版本信息 */
 export class Resver {
