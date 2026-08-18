@@ -35,6 +35,7 @@ export class UIToast extends UIBaseView implements IOnCreate, IOnEnable<string|I
         }else{
             this.text.setI18NKey(content);
         }
+        this.text.forceUpdateRenderData();
         this.onEnableAsync(time);
     }
 

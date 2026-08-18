@@ -95,8 +95,8 @@ export class UIManager implements IManager {
     public resolution: Vec2
    
     private layers: Map<UILayerNames, UILayer>;//所有可用的层级
-    private windowStack: Map<UILayerNames, LinkedList<new()=>void>>;//窗口记录队列
-    private windows: Map<new()=>void, UIWindow>; //所有存活的窗体  {uiName:window}
+    private windowStack: Map<UILayerNames, LinkedList<new()=>any>>;//窗口记录队列
+    private windows: Map<new()=>any, UIWindow>; //所有存活的窗体  {uiName:window}
 
     private boxes: Map<UIBaseView, UIWindow> ; //所有存活的消息盒子  {instance:window}
     public get screenSizeFlag()
@@ -112,8 +112,8 @@ export class UIManager implements IManager {
         var safeArea = SystemInfoHelper.safeArea;
         this._widthPadding = safeArea.xMin;
         UIManager._instance = this;
-        this.windows = new Map<new()=>void, UIWindow>();
-        this.windowStack = new Map<UILayerNames, LinkedList<new()=>void>>();
+        this.windows = new Map<new()=>any, UIWindow>();
+        this.windowStack = new Map<UILayerNames, LinkedList<new()=>any>>();
         this.boxes = new Map<UIBaseView, UIWindow>();
         this.initLayer();
         view.on('canvas-resize', this.canvasResize, this);
@@ -164,7 +164,7 @@ export class UIManager implements IManager {
             this._gameObject.addChild(go);
             let newLayer: UILayer = ManagerProvider.registerManager<UILayer, UILayerDefine, Node, Vec2, Camera>(UILayer, layer, go, this.resolution, this.getUICamera(), UILayerNames[layer.name]);
             this.layers.set(layer.name,newLayer);
-            this.windowStack.set(layer.name,new LinkedList<new()=>void>());
+            this.windowStack.set(layer.name,new LinkedList<new()=>any>());
             Log.info("create layer "+UILayerNames[layer.name]);
         }
     }
@@ -217,7 +217,7 @@ export class UIManager implements IManager {
      * @param active 2打开且loading,1打开,-1关闭,0不做限制
      * @returns 
      */
-    public isWindowActive<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView, active:number = 0) {
+    public isWindowActive<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView | string, active:number = 0) {
         const uiName = this.getUIName(ui);
         let target = this.getWindow(uiName);
         if (target == null)
@@ -239,25 +239,13 @@ export class UIManager implements IManager {
     }
 
     /**
-     * 通过类型名获取UI窗口
-     * @param name 类型名（@uiView 装饰器注册的名称）
-     * @param active 2打开且loading,1打开，-1关闭,0不做限制
-     * @returns 
-     */
-    public getWindowByName(name: string, active: number = 0): UIWindow
-    {
-        const type = UIManager.getType(name);
-        if (!type) return null;
-        return this.getWindow(type, active);
-    }
-
-    /**
      * 获取UI窗口
-     * @param uiName 
+     * @param ui 
      * @param active 2打开且loading,1打开，-1关闭,0不做限制
      * @returns 
      */
-    public getWindow(uiName:new()=>void, active:number = 0):UIWindow{
+    public getWindow(ui:(new()=>any)|string, active:number = 0):UIWindow{
+        const uiName = this.getUIName(ui);
         const target = this.windows.get(uiName);
         if (!!target)
         {
@@ -276,15 +264,16 @@ export class UIManager implements IManager {
 
     /**
      * 获取UI窗口
-     * @param type 2打开且loading，1打开，-1关闭,0不做限制
-     * @param active 
+     * @param ui 
+     * @param active 2打开且loading，1打开，-1关闭,0不做限制
      * @returns 
      */
-    public getView<T extends UIBaseView>(type: new () => T,active:number = 0): T 
+    public getView<T extends UIBaseView>(ui: (new () => T)|string,active:number = 0): T 
     {
         if (this.windows != null)
         {
-            const target = this.windows.get(type);
+            const uiName = this.getUIName(ui);
+            const target = this.windows.get(uiName);
             if(!target)  return null;
             if (active == 0 || active * (target.active ? 1 : -1) > 0)
             {
@@ -335,7 +324,7 @@ export class UIManager implements IManager {
      * @returns 
      */
     public getLayerTopWindow(layer: UILayerNames): UIWindow {
-        var wins: LinkedList<new()=>void> = this.windowStack.get(layer);
+        var wins: LinkedList<new()=>any> = this.windowStack.get(layer);
         if (wins.size <= 0) return null;
         for (var node = wins.first; node != null; node = node.next)
         {
@@ -350,7 +339,7 @@ export class UIManager implements IManager {
 
     /**
      * 打开窗口
-     * @param type 窗口类型构造函数或类型名（@uiView注册的名称）
+     * @param ui 窗口类型构造函数或类型名（@uiView注册的名称）
      * @param path 预制体路径，为空时从类型的PrefabPath静态属性获取
      * @param p1 
      * @param p2 
@@ -360,22 +349,12 @@ export class UIManager implements IManager {
      * @returns 
      */
     public async openWindow<T extends UIBaseView & IOnCreate, P1 = void, P2 = void, P3 = void, P4 = void>
-        (type: string | (new () => T), path: string, p1?:P1, p2?:P2, p3?:P3, p4?:P4, layerName:UILayerNames = UILayerNames.NormalLayer): Promise<T> {
-        let ctor: new () => T;
-        if (typeof type === 'string') {
-            ctor = UIManager.getType(type) as new () => T;
-            if (!ctor) {
-                Log.error("UIManager openWindow 类型未注册: " + type);
-                return null;
-            }
-        } else {
-            ctor = type;
-        }
-        const uiName = this.getUIName(ctor);
+        (ui: string | (new () => T), path: string, p1?:P1, p2?:P2, p3?:P3, p4?:P4, layerName:UILayerNames = UILayerNames.NormalLayer): Promise<T> {
+        const uiName = this.getUIName(ui);
         var target = this.getWindow(uiName);
         if (target == null)
         {
-            target = this.initWindow<T>(ctor, path, layerName);
+            target = this.initWindow<T>(uiName, path, layerName);
             this.windows.set(uiName, target);
         }
         target.layer = layerName;
@@ -388,7 +367,7 @@ export class UIManager implements IManager {
      * 和OpenWindow区别:
      * 1.Window是单例，MsgBox支持多例
      * 2.MsgBox关闭后会立即销毁
-     * @param type 要打开的窗口
+     * @param ui 要打开的窗口
      * @param path 
      * @param p1 
      * @param p2 
@@ -399,8 +378,9 @@ export class UIManager implements IManager {
      * @returns 
      */
     public async openBox<T extends UIBaseView & IOnCreate, P1 = void, P2 = void, P3 = void, P4 = void>
-        (type: (new () => T), path:string, p1?:P1, p2?:P2, p3?:P3, p4?:P4, layerName:UILayerNames = UILayerNames.TipLayer, during:number = -1) {
-        var target = this.initWindow(type, path, layerName);
+        (ui: (new () => T)|string, path:string, p1?:P1, p2?:P2, p3?:P3, p4?:P4, layerName:UILayerNames = UILayerNames.TipLayer, during:number = -1) {
+        const uiName = this.getUIName(ui);
+        var target = this.initWindow(uiName, path, layerName);
         target.isBox = true;
         target.layer = layerName;
         var timeNow = TimerManager.instance.getTimeNow(); 
@@ -415,10 +395,10 @@ export class UIManager implements IManager {
 
     /**
      * 关闭窗体
-     * @param uiName 
+     * @param ui 
      * @returns 
      */
-    public async closeWindow<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView) {
+    public async closeWindow<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView | string) {
         var target = this.getWindow(this.getUIName(ui), 1);
         if (target == null) return;
         while (target.loadingState != UIWindowLoadingState.LoadOver)
@@ -487,8 +467,8 @@ export class UIManager implements IManager {
      * @param layer 
      * @param exceptUINames 
      */
-    public async closeWindowByLayer(layer: UILayerNames, ...exceptUINames: Array<new()=>void>) {
-        const dictUINames: Set<new()=>void> = new Set<new()=>void>()
+    public async closeWindowByLayer(layer: UILayerNames, ...exceptUINames: Array<new()=>any>) {
+        const dictUINames: Set<new()=>any> = new Set<new()=>any>()
     
         if (exceptUINames != null && exceptUINames.length > 0)
         {
@@ -515,7 +495,7 @@ export class UIManager implements IManager {
      * @param ui 
      * @param clear 现有缓存达到多少开始销毁，-1表示无限
      */
-    public async destroyWindow<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView , clear:number = -1){
+    public async destroyWindow<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView | string, clear:number = -1){
         const uiName = this.getUIName(ui);
         let target = this.getWindow(uiName);
         if (target != null)
@@ -557,8 +537,8 @@ export class UIManager implements IManager {
      * 销毁除指定窗口外所有窗口
      * @param typeNames 
      */
-    public async destroyWindowExceptNames(...typeNames: Array<new()=>void>){
-        const dictUINames: Set<new()=>void> = new Set<new()=>void>()
+    public async destroyWindowExceptNames(...typeNames: Array<new()=>any>){
+        const dictUINames: Set<new()=>any> = new Set<new()=>any>()
         if (typeNames != null)
         {
             for (let i = 0; i < typeNames.length; i++)
@@ -635,7 +615,7 @@ export class UIManager implements IManager {
      * @param ui 
      * @returns 
      */
-    public moveWindowToTop<T extends UIBaseView>(ui: new() => T)
+     public moveWindowToTop<T extends UIBaseView>(ui: (new() => T) | UIBaseView |string)
     {
         const uiName = this.getUIName(ui);
         var target = this.getWindow(uiName, 1);
@@ -656,20 +636,20 @@ export class UIManager implements IManager {
 
     /**
      * 初始化window
-     * @param type 
+     * @param ui 
      * @param name 
      * @param path 
      * @param layerName 
      * @returns 
      */
-    private initWindow<T extends UIBaseView>(type: new() => T, path: string, layerName: UILayerNames): UIWindow {
+    private initWindow<T extends UIBaseView>(ui: string | (new () => T), path: string, layerName: UILayerNames): UIWindow {
         const window: UIWindow = UIWindow.create();
-        window.name = this.getUIName(type);
+        window.name = this.getUIName(ui);
         window.active = false;
         window.layer = layerName;
         window.loadingState = UIWindowLoadingState.NotStart;
         window.prefabPath = path;
-        window.view = new type();
+        window.view = new window.name();
         return window;
     }
 
@@ -875,12 +855,18 @@ export class UIManager implements IManager {
         rectTrans.offsetMax = new Vec2(padding * rectTrans.anchorMax.x, top * (1 - rectTrans.anchorMin.y));
     }
 
-    private getUIName<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView){
+    private getUIName<T extends UIBaseView | void>(ui: (new () => T) | UIBaseView | string): new()=>any{
         if(ui instanceof Function){
             return ui;
-        }else{
+        } else if (typeof ui === 'string'){
+            const ctor = UIManager.getType(ui) as new () => T;
+            if (!ctor) {
+                Log.error("UIManager openWindow 类型未注册: " + ui);
+            }
+            return ctor;
+        } else{
             var window = ui as UIBaseView;
-            return window.getConstructor();
+            return window.getConstructor() as new()=>T;
         }       
     }
 

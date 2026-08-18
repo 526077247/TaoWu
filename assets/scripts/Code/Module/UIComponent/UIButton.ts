@@ -30,7 +30,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
             ImageLoaderManager.instance?.releaseImage(this.spritePath);
             this.spritePath = null;
         }
-        this.getTransform().contentSize.set(this.size);
+        if (!!this.image && !!this.size) this.getTransform().contentSize.set(this.size);
     }
 
     private activatingComponent()

@@ -137,6 +137,11 @@ export class UIText extends UIBaseContainer implements II18N {
         else if (this.text2 != null)
             this.text2.fontColor.fromHEX(color)
     }
+    
+    public forceUpdateRenderData(){
+        this.activatingComponent();
+        if (this.text != null) this.text.updateRenderData(true);
+    }
 
     public lastNum: number = 0;
     public tween: Tween
