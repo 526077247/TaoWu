@@ -212,3 +212,10 @@ export class JsonHelper {
         return result;
     }
 }
+
+export function JsonType(name?: string) {
+    return function <T extends new (...args: any[]) => any>(target: T): T {
+        JsonHelper?.registerClass(target, name);
+        return target;
+    };
+}

@@ -1,7 +1,8 @@
-import { JsonHelper } from "../../../../Mono/Helper/JsonHelper";
+import { JsonHelper, JsonType } from "../../../../Mono/Helper/JsonHelper";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ConfigManager } from "../../Config/ConfigManager";
 
+@JsonType("ServerConfig")
 export class ServerConfig {
 	/** Id*/
 	public id: number;
@@ -18,14 +19,13 @@ export class ServerConfig {
 
 }
 
+@JsonType("ServerConfigCategory")
 export class ServerConfigCategory{
 
     private static _instance: ServerConfigCategory;
 
     public static get instance(): ServerConfigCategory {
         if (!this._instance) {
-            JsonHelper.registerClass(ServerConfig,"ServerConfig");
-            JsonHelper.registerClass(ServerConfigCategory,"ServerConfigCategory");
             this._instance = ConfigManager.instance.get(ServerConfigCategory,"ServerConfigCategory");
         }
         return this._instance;

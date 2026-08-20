@@ -1,7 +1,7 @@
 import { IOnCreate } from "../../../Module/UI/IOnCreate";
 import { IOnDisable } from "../../../Module/UI/IOnDisable";
 import { IOnEnable } from "../../../Module/UI/IOnEnable";
-import { UIBaseView, uiView } from "../../../Module/UI/UIBaseView";
+import { UIBaseView, UIView } from "../../../Module/UI/UIBaseView";
 import { UIButton } from "../../../Module/UIComponent/UIButton";
 import { UIText } from "../../../Module/UIComponent/UIText";
 
@@ -14,7 +14,7 @@ export class MsgBoxPara
     public confirmCallback:(win:UIBaseView)=> void;
 }
 
-@uiView("UIMsgBoxWin")
+@UIView("UIMsgBoxWin")
 export class UIMsgBoxWin extends UIBaseView implements IOnCreate,IOnEnable<MsgBoxPara>,IOnDisable
 {
     public getConstructor(){

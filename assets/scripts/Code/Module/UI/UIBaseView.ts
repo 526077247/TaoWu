@@ -22,7 +22,7 @@ export abstract class UIBaseView extends UIBaseContainer {
     }
 }
 
-export function uiView(name: string) {
+export function UIView(name: string) {
     return function <T extends new () => UIBaseView>(target: T): T {
         UIManager?.register(name, target);
         return target;

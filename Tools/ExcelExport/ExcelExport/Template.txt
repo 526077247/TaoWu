@@ -1,19 +1,19 @@
-﻿import { JsonHelper } from "../../../../Mono/Helper/JsonHelper";
+﻿import { JsonHelper, JsonType } from "../../../../Mono/Helper/JsonHelper";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ConfigManager } from "../../Config/ConfigManager";
 
+@JsonType("(ConfigName)")
 export class (ConfigName) {
 (Fields)
 }
 
+@JsonType("(ConfigName)Category")
 export class (ConfigName)Category{
 
     private static _instance: (ConfigName)Category;
 
     public static get instance(): (ConfigName)Category {
         if (!this._instance) {
-            JsonHelper.registerClass((ConfigName),"(ConfigName)");
-            JsonHelper.registerClass((ConfigName)Category,"(ConfigName)Category");
             this._instance = ConfigManager.instance.get((ConfigName)Category,"(ConfigName)Category");
         }
         return this._instance;

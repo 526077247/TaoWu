@@ -154,7 +154,7 @@ import { IOnEnable } from "${points}Module/UI/IOnEnable";
 `;
                 const isView = fileName.endsWith("Win") || fileName.endsWith("View");
                 if (isView) {
-                    header += `import { UIBaseView, uiView } from "${points}Module/UI/UIBaseView";${line}`;
+                    header += `import { UIBaseView, UIView } from "${points}Module/UI/UIBaseView";${line}`;
                 }
                 else {
                     header += `import { UIBaseContainer } from "${points}Module/UI/UIBaseContainer";${line}`;
@@ -254,7 +254,7 @@ import { LoopGridViewItem } from "${points}../ThirdParty/SuperScrollView/GridVie
                 }
                 let content = `
 ${header}
-${isView ? `@uiView("${fileName}")` : ""}
+${isView ? `@UIView("${fileName}")` : ""}
 export class ${fileName} extends ${isView ? "UIBaseView" : "UIBaseContainer"} implements IOnCreate, IOnEnable {
 
 ${isView ? `    public static readonly PrefabPath:string = "${Editor.Utils.Path.stripExt(prefabPath[1])}";${line}` : ""}

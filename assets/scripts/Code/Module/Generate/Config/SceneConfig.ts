@@ -1,7 +1,8 @@
-import { JsonHelper } from "../../../../Mono/Helper/JsonHelper";
+import { JsonHelper, JsonType } from "../../../../Mono/Helper/JsonHelper";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ConfigManager } from "../../Config/ConfigManager";
 
+@JsonType("SceneConfig")
 export class SceneConfig {
 	/** Id*/
 	public id: number;
@@ -14,14 +15,13 @@ export class SceneConfig {
 
 }
 
+@JsonType("SceneConfigCategory")
 export class SceneConfigCategory{
 
     private static _instance: SceneConfigCategory;
 
     public static get instance(): SceneConfigCategory {
         if (!this._instance) {
-            JsonHelper.registerClass(SceneConfig,"SceneConfig");
-            JsonHelper.registerClass(SceneConfigCategory,"SceneConfigCategory");
             this._instance = ConfigManager.instance.get(SceneConfigCategory,"SceneConfigCategory");
         }
         return this._instance;
