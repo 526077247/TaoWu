@@ -48,7 +48,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
         {
             ImageLoaderManager.instance?.releaseOnlineImage(this.cacheUrl);
         }
-        this.getTransform().contentSize.set(this.size);
+        if(this.size) this.getTransform().contentSize.set(this.size);
     }
 
     private activatingComponent()

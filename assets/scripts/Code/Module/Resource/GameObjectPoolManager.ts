@@ -623,7 +623,7 @@ export class GameObjectPoolManager implements IManager {
         for (let i = 0; i < trans.children.length; i++)
         {
             var child = trans.children[i];
-            if (child.name.indexOf("Input Caret") >= 0)
+            if (child.name.indexOf("Input Caret") >= 0 || child.name.indexOf("RICHTEXT_CHILD")>=0)
             {
                 totalChildCount --;
             }

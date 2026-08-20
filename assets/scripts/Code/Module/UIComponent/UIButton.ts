@@ -209,6 +209,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
     }
 
     public setBtnGray(isGray: boolean, includeText: boolean, affectInteractable = true){
+        this.activatingComponent();
         this.activatingImageComponent();
         if(this.image != null){
             this.image.grayscale = isGray;
