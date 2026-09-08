@@ -94,6 +94,22 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
         this.activatingComponent();
         this.button.interactable = flag;
     }
+
+    /**
+     * 设置按钮过渡动画类型
+     * @param transition 
+     * NONE = 0,不做任何过渡。
+     * COLOR = 1,颜色过渡。
+     * SPRITE = 2,精灵过渡。
+     * SCALE = 3,缩放过渡。
+     */
+    public setTransitionType(transition: 0|1|2|3)
+    {
+        this.activatingComponent();
+        if(this.button != null){
+            this.button.transition = transition;
+        }
+    }
     
     /**
      * 设置图片地址（注意尽量不要和SetOnlineSpritePath混用

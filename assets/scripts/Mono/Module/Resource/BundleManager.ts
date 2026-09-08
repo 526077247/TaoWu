@@ -297,7 +297,42 @@ export class BundleManager implements IManager {
         }
     }
 
-    private async loadBundleInternal(name: string, url: string, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
+    /**
+     * 预加载一个ab包（不增加引用计数）
+     * 加载成功后缓存在 _cacheBundle 中, 后续调用 loadBundle可直接命中缓存并 +1
+     * 未被使用(引用计数为0)时, 可通过 unloadUnusedBundle() 清理
+     * @param name ab包名
+     * @param onProgress 下载进度回调 (可选, 仅远程包有效)
+     * @returns ab包或null
+     */
+    public async preloadBundle(name: string, onProgress?: (finished: number, total: number) => void): Promise<AssetManager.Bundle> {
+        // 已缓存：直接返回，不增加引用计数
+        if (this._cacheBundle.has(name)) {
+            return this._cacheBundle.get(name);
+        }
+
+        // 正在加载中：等待已有请求完成 (load/preload 共用同一请求去重)
+        if (this._loadingBundles.has(name)) {
+            return await this._loadingBundles.get(name);
+        }
+
+        // 若该 bundle 在远程列表中, 自动用远程 URL; 否则用内置包名
+        let url: string = null;
+        if (this._remoteBundleInfos?.has(name)) {
+            url = this.getRemoteBundleUrl(name);
+        }
+
+        // 发起预加载 (addRef=false), 存入 pending map 以去重并发请求
+        const promise = this.loadBundleInternal(name, url, onProgress, false);
+        this._loadingBundles.set(name, promise);
+        try {
+            return await promise;
+        } finally {
+            this._loadingBundles.delete(name);
+        }
+    }
+
+    private async loadBundleInternal(name: string, url: string, onProgress?: (finished: number, total: number) => void, addRef: boolean = true): Promise<AssetManager.Bundle> {
         let bundle: AssetManager.Bundle = null;
         try {
             bundle = await new Promise<AssetManager.Bundle>((resolve) => {
@@ -312,7 +347,7 @@ export class BundleManager implements IManager {
                         return
                     }
                     this._cacheBundle.set(name, bundle);
-                    this._cacheBundleRefCount.set(bundle, 1);
+                    this._cacheBundleRefCount.set(bundle, addRef ? 1 : 0);
                     resolve(bundle);
                 });
             });
@@ -326,7 +361,7 @@ export class BundleManager implements IManager {
             const temp = ObjectPool.instance.fetch(Array<Promise<AssetManager.Bundle>>);
             for (let index = 0; index < bundle.deps.length; index++) {
                 const dep = bundle.deps[index];
-                temp.push(this.loadBundle(dep));
+                temp.push(addRef ? this.loadBundle(dep) : this.preloadBundle(dep));
             }
             await Promise.all(temp);
             temp.length = 0;

@@ -1,7 +1,5 @@
 import { _decorator, Component, Node, director, Prefab, instantiate } from 'cc';
 import { IManager } from '../../../Mono/Core/Manager/IManager';
-import { CoroutineLockManager,CoroutineLock } from '../CoroutineLock/CoroutineLockManager';
-import { CoroutineLockType } from '../CoroutineLock/CoroutineLockType';
 import { ResourceManager } from './ResourceManager';
 import * as string from "../../../Mono/Helper/StringHelper"
 import { LruCache } from '../../../Mono/Core/Object/LruCache';
@@ -46,6 +44,7 @@ export class GameObjectPoolManager implements IManager {
     private instPathCache: Map<Node, string>;// inst : prefab path 用于销毁和回收时反向找到inst对应的prefab TODO:这里有优化空间path太占内存
     private persistentPathCache: Set<string>;//需要持久化的资源
     private detailGoChildrenCount: Map<string, Map<string, number>> ;//记录go子控件具体数量信息
+    private pendingLoads: Map<string, Promise<void>> = new Map();
 
     public init() {
         GameObjectPoolManager._instance = this;
@@ -98,21 +97,25 @@ export class GameObjectPoolManager implements IManager {
      * @param instCount 初始实例化个数
      */
     public async preLoadGameObjectAsync(path: string, instCount: number): Promise<void> {
-        let coroutineLock: CoroutineLock = null;
-        try
-        {
-        	coroutineLock = await CoroutineLockManager.instance.wait(CoroutineLockType.Resources, string.getHash(path));
-        	if (!this.checkHasCached(path)){
-        		var go = await ResourceManager.instance.loadAsync<Prefab>(Prefab,path);
-        		if (go != null)
-        		{
-        			this.cacheAndInstGameObject(path, go, instCount);
-        		}
-        	}
+        const pending = this.pendingLoads.get(path);
+        if (pending) {
+            await pending;
+            return;
         }
-        finally
-        {
-        	coroutineLock?.dispose();
+
+        const loadTask = this.doPreLoadGameObject(path, instCount);
+        this.pendingLoads.set(path, loadTask);
+        try {
+            await loadTask;
+        } finally {
+            this.pendingLoads.delete(path);
+        }
+    }
+
+    private async doPreLoadGameObject(path: string, instCount: number): Promise<void> {
+        var go = await ResourceManager.instance.loadAsync<Prefab>(Prefab, path);
+        if (go != null) {
+            this.cacheAndInstGameObject(path, go, instCount);
         }
     }
 
@@ -417,7 +420,13 @@ export class GameObjectPoolManager implements IManager {
             cachedInst = [];
             this.instCache.set(path, cachedInst);
         }
-        for (let i = 0; i < instCount; i++)
+        const curCount = cachedInst.length;
+        const diffCount = instCount - curCount;
+        if (diffCount <= 0)
+        {
+            return;
+        }
+        for (let i = 0; i < diffCount; i++)
         {
             var inst = instantiate(go);
             inst.setParent(this.cacheTransRoot);
@@ -429,14 +438,15 @@ export class GameObjectPoolManager implements IManager {
             }
         }
 
+        let totalCount = instCount;
         if (!this.goInstCountCache.has(path))
         {
-            this.goInstCountCache.set(path, instCount);
+            this.goInstCountCache.set(path, totalCount);
         }
         else
         {
-            let len = this.goInstCountCache.get(path);
-            this.goInstCountCache.set(path, len + instCount);
+            totalCount = this.goInstCountCache.get(path) + diffCount;
+            this.goInstCountCache.set(path, totalCount);
         }
     }
 

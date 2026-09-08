@@ -206,7 +206,11 @@ export class SoundManager implements IManager {
     playMusic(path: string, token?: ETCancellationToken): bigint {
         if (!path) return 0n;
         
-        this.stopMusic();
+        if (this.curMusic != null && this.curMusic.path == path)
+        {
+            if (!this.curMusic.audioSource.playing) this.curMusic.audioSource.play();
+            return this.curMusic.id;
+        }
         
         const audioSource = this.getAudioSource();
         if (!audioSource) return 0n;
@@ -215,10 +219,11 @@ export class SoundManager implements IManager {
         audioSource.volume = this.musicVolume / 10;
         
         const item = SoundItem.create(path, false, audioSource, token);
-        this.curMusic = item;
         this.soundItems.set(item.id, item);
         
         this.loadAndPlay(item);
+        this.curMusic?.dispose();
+        this.curMusic = item;
         return item.id;
     }
 

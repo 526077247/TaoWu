@@ -218,15 +218,26 @@ class FileHelper {
                             };
                             await Editor.Message.request('asset-db', 'save-asset-meta', atlasmeta.uuid, JSON.stringify(atlasmeta));
                         }
-                        const discreteImagesPath = url + "/discreteImages/**";
-                        var discreteImages = await Editor.Message.request('asset-db', 'query-assets', { pattern: discreteImagesPath, ccType: 'cc.ImageAsset' });
-                        for (const discreteImage of discreteImages) {
-                            await this.setDiscreteImageMeta(discreteImage.uuid);
+                        const discreteImages = FileHelper.scanImages(path_1.default.join(itemPath, "discreteImages"));
+                        for (const discreteImagePath of discreteImages) {
+                            const discreteUuid = await Editor.Message.request('asset-db', 'query-uuid', discreteImagePath);
+                            if (discreteUuid != null) {
+                                await this.setDiscreteImageMeta(discreteUuid);
+                            }
                         }
-                        const atlasImagesPath = url + "/atlas/**";
-                        var atlasImages = await Editor.Message.request('asset-db', 'query-assets', { pattern: atlasImagesPath, ccType: 'cc.ImageAsset' });
-                        for (const atlasImage of atlasImages) {
-                            await this.setAtlasImageMeta(atlasImage.uuid);
+                        const atlasImages = FileHelper.scanImages(path_1.default.join(itemPath, "atlas"));
+                        for (const atlasImagePath of atlasImages) {
+                            const atlasUuid = await Editor.Message.request('asset-db', 'query-uuid', atlasImagePath);
+                            if (atlasUuid != null) {
+                                await this.setAtlasImageMeta(atlasUuid);
+                            }
+                        }
+                        const spineImages = FileHelper.scanImages(path_1.default.join(itemPath, "spine"));
+                        for (const spineImagePath of spineImages) {
+                            const spineUuid = await Editor.Message.request('asset-db', 'query-uuid', spineImagePath);
+                            if (spineUuid != null) {
+                                await this.setSpineImageMeta(spineUuid);
+                            }
                         }
                     }
                 }
@@ -244,14 +255,35 @@ class FileHelper {
     static async onAssetAddAsync(uuid) {
         if (uuid.indexOf('@') >= 0)
             return;
-        const url = await Editor.Message.request('asset-db', 'query-url', uuid);
-        if (url != null && url.indexOf('assetsPackage') >= 0) {
-            if (url.indexOf('discreteImages') >= 0) {
-                await this.setDiscreteImageMeta(uuid);
-            }
-            else if (url.indexOf('atlas') >= 0) {
-                await this.setAtlasImageMeta(uuid);
-            }
+        const imgPath = await Editor.Message.request('asset-db', 'query-path', uuid);
+        if (imgPath != null && Editor.Utils.Path.slash(imgPath).indexOf('assetsPackage') >= 0) {
+            await FileHelper.forceApplyImageMeta(imgPath);
+        }
+    }
+    static async forceApplyImageMeta(imgPath) {
+        const n = Editor.Utils.Path.slash(imgPath);
+        if (!/\.(png|jpg|jpeg|webp)$/i.test(n))
+            return;
+        let kind = null;
+        if (n.indexOf('/discreteImages/') >= 0)
+            kind = 'discrete';
+        else if (n.indexOf('/atlas/') >= 0)
+            kind = 'atlas';
+        else if (n.indexOf('/spine/') >= 0)
+            kind = 'spine';
+        if (kind == null)
+            return;
+        const uuid = await Editor.Message.request('asset-db', 'query-uuid', imgPath);
+        if (uuid == null)
+            return;
+        if (kind === 'discrete') {
+            await this.setDiscreteImageMeta(uuid);
+        }
+        else if (kind === 'atlas') {
+            await this.setAtlasImageMeta(uuid);
+        }
+        else {
+            await this.setSpineImageMeta(uuid);
         }
     }
     static async setDiscreteImageMeta(uuid) {
@@ -276,6 +308,10 @@ class FileHelper {
     static async setAtlasImageMeta(uuid) {
         var meta = await Editor.Message.request('asset-db', 'query-asset-meta', uuid);
         if (meta != null) {
+            meta.userData.compressSettings = {
+                "useCompressTexture": true,
+                "presetId": "91I12GucVJMaomwAqK5UYN"
+            };
             meta.userData.type = "sprite-frame";
             if (meta.subMetas != null && meta.userData.redirect) {
                 var vs = meta.userData.redirect.split('@');
@@ -287,6 +323,41 @@ class FileHelper {
             }
             await Editor.Message.request('asset-db', 'save-asset-meta', meta.uuid, JSON.stringify(meta));
         }
+    }
+    static async setSpineImageMeta(uuid) {
+        var meta = await Editor.Message.request('asset-db', 'query-asset-meta', uuid);
+        if (meta != null) {
+            meta.userData.compressSettings = {
+                "useCompressTexture": true,
+                "presetId": "91I12GucVJMaomwAqK5UYN"
+            };
+            meta.userData.type = "texture";
+            if (meta.subMetas != null && meta.userData.redirect) {
+                var vs = meta.userData.redirect.split('@');
+                if (vs.length == 2) {
+                    var ud = meta.subMetas[vs[1]].userData;
+                    ud.wrapModeS = "clamp-to-edge";
+                    ud.wrapModeT = "clamp-to-edge";
+                }
+            }
+            await Editor.Message.request('asset-db', 'save-asset-meta', meta.uuid, JSON.stringify(meta));
+        }
+    }
+    static scanImages(dir) {
+        if (dir == null || !fs.existsSync(dir))
+            return [];
+        const results = [];
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const ent of entries) {
+            const p = path_1.default.join(dir, ent.name);
+            if (ent.isDirectory()) {
+                results.push(...FileHelper.scanImages(p));
+            }
+            else if (/\.(png|jpg|jpeg|webp)$/i.test(ent.name)) {
+                results.push(p);
+            }
+        }
+        return results;
     }
 }
 exports.FileHelper = FileHelper;
