@@ -153,7 +153,7 @@ export class UIButton extends UIBaseContainer implements IOnDestroy {
                 this.setNativeSize();
             else if(setSizeType == SizeType.PreserveAspect)
                 this.setPreserveAspect();
-            else
+            else if(setSizeType == SizeType.Reset)
                 this.getTransform().contentSize = this.getTransform().contentSize.set(this.size);
         }
         if(!string.isNullOrEmpty(baseSpritePath))

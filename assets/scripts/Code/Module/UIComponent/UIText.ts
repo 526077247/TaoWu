@@ -127,15 +127,15 @@ export class UIText extends UIBaseContainer implements II18N {
                 this.text.color = color;
             else if (this.text2 != null)
                 this.text2.fontColor = color;
-            return;
+        }else{
+            if(string.isNullOrEmpty(color)) return;
+            this.activatingComponent();
+            if (this.text != null)
+                this.text.color.fromHEX(color)
+            else if (this.text2 != null)
+                this.text2.fontColor.fromHEX(color)
         }
-        if(string.isNullOrEmpty(color)) return;
-        this.activatingComponent();
-        this.text.color.fromHEX(color)
-        if (this.text != null)
-            this.text.color.fromHEX(color)
-        else if (this.text2 != null)
-            this.text2.fontColor.fromHEX(color)
+        this.forceUpdateRenderData();
     }
     
     public forceUpdateRenderData(){

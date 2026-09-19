@@ -9,6 +9,7 @@ export enum SizeType{
     None,
     NativeSize,
     PreserveAspect,
+    Reset,
 }
 export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<string> {
 
@@ -106,7 +107,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
                 this.setNativeSize();
             else if(setSizeType == SizeType.PreserveAspect)
                 this.setPreserveAspect();
-            else
+            else if(setSizeType == SizeType.Reset)
                 this.getTransform().contentSize = this.getTransform().contentSize.set(this.size);
         }
         if(!string.isNullOrEmpty(baseSpritePath))
@@ -226,6 +227,7 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
     public setFillRange(value: number)
     {
         this.activatingComponent();
+        if(this.image.spriteFrame == null) return;
         this.image.fillRange = value;
     }
 
