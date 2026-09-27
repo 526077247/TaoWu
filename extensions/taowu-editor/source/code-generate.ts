@@ -249,6 +249,105 @@ ${func}
         }
     }
 
+    /**
+     * 一键设置预制体图集
+     * 扫描 uiScriptPath 文件夹下所有预制体, 检测其节点和子节点上所有 cc.Sprite 组件,
+     * 如果其 SpriteFrame 图片所在目录下存在 atlas.pac, 则将 atlas.pac 赋值给 SpriteAtlas
+     */
+    public static async settingPrefabAtlas(){
+        const projectPath = Editor.Project.path;
+        const pkgPath = path.join(projectPath, "assets", "assetsPackage");
+        const prefabFiles: string[] = [];
+        for (let index = 0; index < CodeGenerate.uiScriptPath.length; index++) {
+            const dirPath = path.join(pkgPath, CodeGenerate.uiScriptPath[index].toLowerCase());
+            if(!fs.existsSync(dirPath)) continue;
+            CodeGenerate.scanPrefabs(dirPath, prefabFiles);
+        }
+        if(prefabFiles.length <= 0){
+            console.warn("[TaoWuEditor] 未找到UI预制体");
+            return;
+        }
+
+        // spriteFrame主uuid -> atlas.pac的uuid, 空字符串表示所在目录没有图集
+        const atlasCache = new Map<string,string>();
+        let setCount = 0;
+        let changedCount = 0;
+        for (let index = 0; index < prefabFiles.length; index++) {
+            const file = prefabFiles[index];
+            let raw = "";
+            let data: any[] = null;
+            try{
+                raw = fs.readFileSync(file, { encoding: "utf-8" });
+                data = JSON.parse(raw);
+            }catch(e){
+                console.error("[TaoWuEditor] 解析预制体失败: " + file);
+                continue;
+            }
+            if(!Array.isArray(data)) continue;
+            let changed = false;
+            for (let i = 0; i < data.length; i++) {
+                const obj = data[i];
+                if(obj?.__type__ != "cc.Sprite") continue;
+                const frameUuid = obj._spriteFrame?.__uuid__;
+                if(frameUuid == null || frameUuid == "") continue;
+                let atlasUuid = atlasCache.get(frameUuid);
+                if(atlasUuid == null){
+                    atlasUuid = await CodeGenerate.queryAtlasUuid(frameUuid);
+                    atlasCache.set(frameUuid, atlasUuid);
+                }
+                if(atlasUuid == null || atlasUuid == "") continue;
+                if(obj._atlas?.__uuid__ == atlasUuid) continue;
+                obj._atlas = {
+                    __uuid__: atlasUuid,
+                    __expectedType__: "cc.SpriteAtlas",
+                }
+                changed = true;
+                setCount++;
+            }
+            if(!changed) continue;
+            let content = JSON.stringify(data, null, 2);
+            // 保持预制体原有的换行符, 避免整文件diff
+            if(raw.indexOf("\r\n") >= 0){
+                content = content.replace(/\n/g, "\r\n");
+            }
+            fs.writeFileSync(file, content, { encoding: "utf-8" });
+            changedCount++;
+            const uuid = await Editor.Message.request('asset-db', 'query-uuid', file);
+            if(uuid != null){
+                await Editor.Message.request('asset-db', 'reimport-asset', uuid);
+            }
+        }
+        console.log(`[TaoWuEditor] 一键设置预制体图集完成, 预制体 ${prefabFiles.length} 个, 修改 ${changedCount} 个, 设置 ${setCount} 处`);
+    }
+
+    /**
+     * 递归收集目录下所有预制体
+     */
+    private static scanPrefabs(dir: string, result: string[]){
+        for (const item of fs.readdirSync(dir)) {
+            const itemPath = path.join(dir, item);
+            const stat = fs.statSync(itemPath);
+            if(stat.isDirectory()){
+                CodeGenerate.scanPrefabs(itemPath, result);
+            }else if(item.toLowerCase().endsWith(".prefab")){
+                result.push(itemPath);
+            }
+        }
+    }
+
+    /**
+     * 查询 SpriteFrame 图片所在目录的 atlas.pac 的uuid, 不存在时返回空字符串
+     */
+    private static async queryAtlasUuid(frameUuid: string){
+        const imagePath = await Editor.Message.request('asset-db', 'query-path', frameUuid.split("@")[0]);
+        if(imagePath == null || imagePath == "") return "";
+        const atlasPath = path.join(path.dirname(imagePath), "atlas.pac");
+        if(!fs.existsSync(atlasPath)) return "";
+        const atlasUuid = await Editor.Message.request('asset-db', 'query-uuid', atlasPath);
+        if(atlasUuid == null) return "";
+        return atlasUuid;
+    }
+
     public static async bindUINode(node: string){
         var root = await Editor.Message.request('scene', 'query-node', node);
         while(root.parent?.value != null){

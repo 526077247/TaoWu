@@ -4,6 +4,7 @@ exports.methods = void 0;
 exports.load = load;
 exports.unload = unload;
 const file_helper_1 = require("./file-helper");
+const code_generate_1 = require("./code-generate");
 /**
  * @en Registration method for the main process of Extension
  * @zh 为扩展的主进程的注册方法
@@ -20,6 +21,9 @@ exports.methods = {
     },
     setImagesFormat() {
         file_helper_1.FileHelper.setImagesFormat();
+    },
+    settingPrefabAtlas() {
+        code_generate_1.CodeGenerate.settingPrefabAtlas();
     },
     onAssetAdd(uuid) {
         file_helper_1.FileHelper.onAssetAdd(uuid);

@@ -1,4 +1,5 @@
 import { FileHelper } from "./file-helper";
+import { CodeGenerate } from "./code-generate";
 
 /**
  * @en Registration method for the main process of Extension
@@ -19,6 +20,10 @@ export const methods: { [key: string]: (...any: any) => any } = {
 
     setImagesFormat() {
         FileHelper.setImagesFormat();
+    },
+
+    settingPrefabAtlas() {
+        CodeGenerate.settingPrefabAtlas();
     },
 
     onAssetAdd(uuid){
