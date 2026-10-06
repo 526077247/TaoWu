@@ -25,6 +25,9 @@ exports.methods = {
     bindAllUINodes() {
         code_generate_1.CodeGenerate.bindAllUINodeByPrefab();
     },
+    settingPrefabAtlas() {
+        code_generate_1.CodeGenerate.settingPrefabAtlas();
+    },
     onAssetAdd(uuid) {
         file_helper_1.FileHelper.onAssetAdd(uuid);
     },

@@ -25,6 +25,9 @@ export const methods: { [key: string]: (...any: any) => any } = {
     bindAllUINodes() {
         CodeGenerate.bindAllUINodeByPrefab();
     },
+    settingPrefabAtlas() {
+        CodeGenerate.settingPrefabAtlas();
+    },
 
     onAssetAdd(uuid){
         FileHelper.onAssetAdd(uuid);

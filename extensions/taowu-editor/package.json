@@ -50,6 +50,11 @@
                 "message": "setImagesFormat"
             },
             {
+                "path": "Tools/工具/UI",
+                "label": "一键设置预制体图集",
+                "message": "settingPrefabAtlas"
+            },
+            {
                 "path": "Tools/帮助",
                 "label": "启动场景(Shift+B)",
                 "message": "changeInitScene"
@@ -69,6 +74,11 @@
             "bindAllUINodes": {
                 "methods": [
                     "bindAllUINodes"
+                ]
+            },
+            "settingPrefabAtlas": {
+                "methods": [
+                    "settingPrefabAtlas"
                 ]
             },
             "changeInitScene": {
