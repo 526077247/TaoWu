@@ -1,5 +1,5 @@
 import { _decorator, Component, Node } from 'cc';
-const { ccclass, property } = _decorator;
+const { ccclass, property, disallowMultiple } = _decorator;
 
 @ccclass('KeyValuePiar')
 class KeyValuePiar{
@@ -10,6 +10,7 @@ class KeyValuePiar{
 }
 
 @ccclass('ReferenceCollector')
+@disallowMultiple
 export class ReferenceCollector extends Component {
 
     @property({type: [KeyValuePiar]})

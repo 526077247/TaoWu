@@ -1,3 +1,4 @@
+import { CodeGenerate } from "./code-generate";
 import { FileHelper } from "./file-helper";
 
 /**
@@ -19,6 +20,10 @@ export const methods: { [key: string]: (...any: any) => any } = {
 
     setImagesFormat() {
         FileHelper.setImagesFormat();
+    },
+
+    bindAllUINodes() {
+        CodeGenerate.bindAllUINodeByPrefab();
     },
 
     onAssetAdd(uuid){

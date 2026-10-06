@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.methods = void 0;
 exports.load = load;
 exports.unload = unload;
+const code_generate_1 = require("./code-generate");
 const file_helper_1 = require("./file-helper");
 /**
  * @en Registration method for the main process of Extension
@@ -20,6 +21,9 @@ exports.methods = {
     },
     setImagesFormat() {
         file_helper_1.FileHelper.setImagesFormat();
+    },
+    bindAllUINodes() {
+        code_generate_1.CodeGenerate.bindAllUINodeByPrefab();
     },
     onAssetAdd(uuid) {
         file_helper_1.FileHelper.onAssetAdd(uuid);

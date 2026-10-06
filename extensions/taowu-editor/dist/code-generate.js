@@ -54,6 +54,7 @@ class CodeGenerate {
         ["cc.Sprite", "UIImage"],
         ["cc.Label", "UIText"],
         ["cc.RichText", "UIText"],
+        ["cc.Animation", "UIAnimation"],
     ]);
     static async getPath(node) {
         let path = node.name.value;
@@ -335,7 +336,7 @@ ${func}
         // 解析 TS 文件提取所有 addComponent 路径
         const ts = fs.readFileSync(script.file, { encoding: "utf-8" });
         // 1. 静态路径: this.addComponent(Type, "path") 或 this.addComponent(Type, `path`)
-        const staticRegex = /this\.addComponent\(\s*[\w.]+\s*,\s*['"`]([^'"`${]+)['"`]\s*\)/g;
+        const staticRegex = /this\.addComponent\s*(?:<[^>]*>)?\(\s*[\w.]+(?:<[^>]*>)?\s*,\s*['"`]([^'"`${]+)['"`]\s*\)/g;
         let match;
         while ((match = staticRegex.exec(ts)) !== null) {
             pathMap.set(match[1], null);
@@ -373,33 +374,41 @@ ${func}
                 }
             }
         }
+        // 重置已存在的 ReferenceCollector 组件（清掉旧绑定数据避免残留脏数据），没有则创建
+        const dump = await Editor.Message.request('scene', 'query-node', root.uuid);
+        const comps = dump?.__comps__ ?? [];
+        const compUuids = [];
+        for (let index = 0; index < comps.length; index++) {
+            if (comps[index]?.type == "ReferenceCollector") {
+                const compUuid = comps[index]?.value?.uuid?.value;
+                if (compUuid)
+                    compUuids.push(compUuid);
+            }
+        }
+        if (compUuids.length > 0) {
+            for (let index = 0; index < compUuids.length; index++) {
+                await Editor.Message.request('scene', 'remove-component', { uuid: compUuids[index] });
+            }
+        }
+        await Editor.Message.request('scene', 'create-component', {
+            uuid: root.uuid,
+            component: 'ReferenceCollector',
+        });
+        var pNode = await Editor.Message.request('scene', 'query-node-tree', root.uuid);
         let comp = null;
         let compIndex = -1;
-        for (let index = 0; index < root.components.length; index++) {
-            if (root.components[index].type == "ReferenceCollector") {
-                comp = root.components[index];
+        for (let index = 0; index < pNode.components.length; index++) {
+            if (pNode.components[index].type == "ReferenceCollector") {
+                comp = pNode.components[index];
                 compIndex = index;
                 break;
             }
         }
         if (!comp) {
-            const res = Editor.Message.request('scene', 'create-component', {
-                uuid: root.uuid,
-                component: 'ReferenceCollector'
-            });
-            if (!res) {
-                console.error("create-component fail!");
-                return;
-            }
-            var pNode = await Editor.Message.request('scene', 'query-node-tree', root.uuid);
-            for (let index = 0; index < pNode.components.length; index++) {
-                if (pNode.components[index].type == "ReferenceCollector") {
-                    comp = pNode.components[index];
-                    compIndex = index;
-                    break;
-                }
-            }
+            console.error("ReferenceCollector 创建失败!");
+            return;
         }
+        await Editor.Message.request('scene', 'save-scene');
         let foundCount = 0;
         for (const kv of pathMap) {
             const path = kv[0];
@@ -466,6 +475,45 @@ ${func}
             jj++;
         }
         await Editor.Message.request('scene', 'save-scene');
+    }
+    /**
+     * 一键绑定所有 UI 预制体（CodeGenerate.uiPath 目录下）的 ReferenceCollector 节点
+     */
+    static async bindAllUINodeByPrefab() {
+        const assets = await Editor.Message.request('asset-db', 'query-assets', { ccType: 'cc.Prefab' });
+        if (assets == null || assets.length <= 0) {
+            console.error("[TaoWuEditor] 未查询到Prefab资源");
+            return 0;
+        }
+        const prefabs = assets.filter((asset) => {
+            const p = Editor.Utils.Path.slash(asset.path ?? '').toLowerCase();
+            if (p.indexOf("/assetspackage/") < 0)
+                return false;
+            const sub = p.split("/assetspackage/")[1]?.split("/")[0];
+            if (sub == null || sub.length <= 0)
+                return false;
+            for (let index = 0; index < CodeGenerate.uiPath.length; index++) {
+                const ui = CodeGenerate.uiPath[index].toLowerCase();
+                if (sub == ui)
+                    return true;
+            }
+            return false;
+        });
+        console.log(`[TaoWuEditor] 一键绑定UI节点, 共找到 ${prefabs.length} 个预制体`);
+        let count = 0;
+        for (const prefab of prefabs) {
+            try {
+                console.log(`[TaoWuEditor] 绑定: ${prefab.path}`);
+                await Editor.Message.request('asset-db', 'open-asset', prefab.uuid);
+                await CodeGenerate.bindUINodeByPrefab();
+                count++;
+            }
+            catch (e) {
+                console.error(`[TaoWuEditor] 绑定失败: ${prefab.path}, ${e?.message ?? e}`);
+            }
+        }
+        console.log(`[TaoWuEditor] 一键绑定UI节点完成, 成功 ${count}/${prefabs.length}`);
+        return count;
     }
 }
 exports.CodeGenerate = CodeGenerate;

@@ -52,8 +52,12 @@ class FileHelper {
         const UnitFolderNames = ["animations", "edit", "materials", "models", "textures", "prefabs"];
         const UIFolderNames = ["animations", "atlas", "discreteImages", "prefabs"];
         var names = ArtFolderNames;
-        if (url.indexOf("ui/") >= 0 || url.indexOf("uihall/") >= 0 || url.indexOf("uigame/") >= 0) {
-            names = UIFolderNames;
+        for (let index = 0; index < this.uiPath.length; index++) {
+            const element = this.uiPath[index];
+            if (url.indexOf(element + "/") >= 0) {
+                names = UIFolderNames;
+                break;
+            }
         }
         if (url.indexOf("unit/") >= 0) {
             names = UnitFolderNames;

@@ -10,7 +10,7 @@
         "build": "tsc",
         "watch": "tsc -w"
     },
-    "description": "",
+    "description": "TaoWu框架编辑器扩展",
     "main": "./dist/main.js",
     "devDependencies": {
         "@cocos/creator-types": "^3.8.5",
@@ -41,6 +41,11 @@
             },
             {
                 "path": "Tools/工具/UI",
+                "label": "一键绑定UI节点",
+                "message": "bindAllUINodes"
+            },
+            {
+                "path": "Tools/工具/UI",
                 "label": "批量设置图片格式",
                 "message": "setImagesFormat"
             },
@@ -59,6 +64,11 @@
             "setImagesFormat": {
                 "methods": [
                     "setImagesFormat"
+                ]
+            },
+            "bindAllUINodes": {
+                "methods": [
+                    "bindAllUINodes"
                 ]
             },
             "changeInitScene": {
