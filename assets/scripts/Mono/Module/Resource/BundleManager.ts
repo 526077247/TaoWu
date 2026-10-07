@@ -18,7 +18,7 @@ export class BundleManager implements IManager {
     private _loadingBundles: Map<string, Promise<AssetManager.Bundle>>;
     /** 远程 bundle 信息 (name → hash) */
     private _remoteBundleInfos: Map<string, string>;
-    /** 远程 URL 前缀: {server}/{channel}_{platform}/ (由 ServerConfigManager init 后写入) */
+    /** 远程 URL 前缀: {server}/{channel}_{platform}/ */
     private _remoteURLPrefix: string = "";
     /** 包内版本清单 (可能是远端缓存版本) */
     private _localManifest: RawVersionManifest = null;
@@ -50,6 +50,7 @@ export class BundleManager implements IManager {
     /** 设置远程 URL 前缀 (由 ServerConfigManager init 后调用) */
     public setRemoteURLPrefix(prefix: string): void {
         this._remoteURLPrefix = prefix;
+        Log.info(`[BundleManager] setRemoteURLPrefix: ${prefix}`);
     }
 
     /**
@@ -200,7 +201,7 @@ export class BundleManager implements IManager {
      * 从 cc.settings 读取 server/channel/platform, 拼接并设置远程 URL 前缀
      */
     private updateRemoteURLPrefix(): void {
-        const server = settings.querySettings<string>('assets', 'server') || "";
+        const server = (settings.querySettings<string>('assets', 'server') || "").replace(/\/+$/, '');
         const channel = settings.querySettings<string>('assets', '_channel') || "default";
         const platform = PlatformUtils.getPlatformName();
         this.setRemoteURLPrefix(`${server}/${channel}_${platform}`);
@@ -254,6 +255,39 @@ export class BundleManager implements IManager {
     /** 检查指定 bundle 是否已加载到内存 */
     public hasBundle(name: string): boolean {
         return this._cacheBundle?.has(name) ?? false;
+    }
+
+    /**
+     * 删除 bundle-scripts 后, 远程包的脚本桩不再存在于包内, 引擎在加载其资源时仍会
+     * instantiate virtual:///prerequisite-imports/{包名}。运行时按包名重新注册这两个模块,
+     * 等价于原先空桩脚本的内容, 让引擎能找到编译期已剔除的模块。
+     */
+    private registerBundlePreload(name: string): void {
+        const System = (globalThis as any).System;
+        if (!System || !name) return;
+        // 与空桩一致: chunks:///_virtual/{name} 注册为一个空模块
+        try {
+            System.register(`chunks:///_virtual/${name}`, [], (function () { return { execute: function () {} }; }));
+        } catch (e: any) {
+            Log.warning(`[BundleManager] register virtual failed: ${name}, ${e?.message}`);
+        }
+        // 映射: virtual:///prerequisite-imports/{name} -> chunks:///_virtual/{name}
+        try {
+            System.register(`virtual:///prerequisite-imports/${name}`, [`chunks:///_virtual/${name}`], function (_export: any, _context: any) {
+                return {
+                    setters: [function (_m: any) {
+                        const _exportObj: any = {};
+                        for (const _key in _m) {
+                            if (_key !== "default" && _key !== "__esModule") _exportObj[_key] = _m[_key];
+                        }
+                        _export(_exportObj);
+                    }],
+                    execute: function () {}
+                };
+            });
+        } catch (e: any) {
+            Log.warning(`[BundleManager] register prerequisite failed: ${name}, ${e?.message}`);
+        }
     }
 
     /**
@@ -333,6 +367,10 @@ export class BundleManager implements IManager {
     }
 
     private async loadBundleInternal(name: string, url: string, onProgress?: (finished: number, total: number) => void, addRef: boolean = true): Promise<AssetManager.Bundle> {
+        // 远程包: 脚本桩已从包内剔除, 先按包名注册虚拟模块, 避免引擎找 prerequisite-imports 报错
+        if (url) {
+            this.registerBundlePreload(name);
+        }
         let bundle: AssetManager.Bundle = null;
         try {
             bundle = await new Promise<AssetManager.Bundle>((resolve) => {

@@ -1,4 +1,4 @@
-import { math, Size, Sprite, SpriteFrame } from "cc";
+import { math, Size, Sprite, SpriteFrame, Tween, tween } from "cc";
 import { Log } from "../../../Mono/Module/Log/Log";
 import { IOnCreate } from "../UI/IOnCreate";
 import { IOnDestroy } from "../UI/IOnDestroy";
@@ -224,11 +224,26 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
         this.isSetSprite = true;
     }
 
-    public setFillRange(value: number)
+    private _fillRangeTween: Tween<Sprite>;
+
+    public setFillRange(value: number, during: number = 0)
     {
         this.activatingComponent();
-        if(this.image.spriteFrame == null) return;
-        this.image.fillRange = value;
+        if (during > 0)
+        {
+            this._fillRangeTween?.stop();
+            this._fillRangeTween = tween(this.image)
+                .to(during, { fillRange: value })
+                .start()
+                .call(()=>{
+                    this.image.fillRange = value;
+                });
+        }
+        else
+        {
+            if(this.image.spriteFrame == null) return;
+            this.image.fillRange = value;
+        }
     }
 
     public async setImageGray(isGray: boolean)
