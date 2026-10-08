@@ -94,7 +94,7 @@ namespace TaoWu
                     I18NConfig config = new I18NConfig();
                     config.id = id;
                     config.key = key;
-                    config.value = worksheet.Cells[row, col].Text.Trim().Replace("\n", "\\n");
+                    config.value = worksheet.Cells[row, col].Text.Trim();
                     string fieldName = worksheet.Cells[4, col].Text.Trim();
                     if (!list.ContainsKey(fieldName))
                     {
@@ -130,7 +130,13 @@ namespace TaoWu
                     ProtoWriter.WriteStringField(rowMs, 3, config.value);
                     ProtoWriter.WriteBytesField(ms, 1, rowMs.ToArray());
                 }
-                File.WriteAllBytes(path, ms.ToArray());
+                byte[] payload = ms.ToArray();
+                if (payload.Length == 0)
+                {
+                    // 0 字节文件会被抖音上传链路丢弃，写未注册字段 field14 占位，解码端 skipField 跳过
+                    payload = new byte[] { 0x72, 0x00 };
+                }
+                File.WriteAllBytes(path, payload);
                 sb.AppendLine($"    {item.Key} = {index},");
                 index++;
             }

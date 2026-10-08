@@ -721,7 +721,14 @@ namespace TaoWu
             }
 
             string path = Path.Combine(dir, $"{protoName}Category.bin");
-            File.WriteAllBytes(path, ms.ToArray());
+            byte[] payload = ms.ToArray();
+            if (payload.Length == 0)
+            {
+                // 0 字节文件在抖音上传/分发链路会被丢弃（真机 readFile no such file），
+                // 写入未注册字段 field14 varint 0 占位，ProtoHelper.decodeMessage 未知字段走 skipField，解码结果与空消息等价
+                payload = new byte[] { 0x72, 0x00 };
+            }
+            File.WriteAllBytes(path, payload);
         }
 
         static List<HeadInfo> ProtoFields(Dictionary<string, HeadInfo> classField, ConfigType configType)
