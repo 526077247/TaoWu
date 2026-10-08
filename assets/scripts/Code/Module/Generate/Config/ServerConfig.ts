@@ -1,25 +1,31 @@
-import { JsonHelper, JsonType } from "../../../../Mono/Helper/JsonHelper";
+import { ProtoHelper, ProtoType, ProtoMember } from "../../../../Mono/Helper/ProtoHelper";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ConfigManager } from "../../Config/ConfigManager";
 
-@JsonType("ServerConfig")
+@ProtoType("ServerConfig")
 export class ServerConfig {
 	/** Id*/
-	public id: number;
+	@ProtoMember(1, "double")
+	public id: number = 0;
 	/** 标记*/
-	public name: string;
+	@ProtoMember(2, "string")
+	public name: string = "";
 	/** realm服地址*/
-	public realmIp: string;
+	@ProtoMember(3, "string")
+	public realmIp: string = "";
 	/** 路由cdn地址*/
-	public routerListUrl: string;
+	@ProtoMember(4, "string")
+	public routerListUrl: string = "";
 	/** 服务器类型*/
-	public envId: number;
+	@ProtoMember(5, "double")
+	public envId: number = 0;
 	/** 是否默认值*/
-	public isPriority: number;
+	@ProtoMember(6, "double")
+	public isPriority: number = 0;
 
 }
 
-@JsonType("ServerConfigCategory")
+@ProtoType("ServerConfigCategory")
 export class ServerConfigCategory{
 
     private static _instance: ServerConfigCategory;
@@ -31,9 +37,10 @@ export class ServerConfigCategory{
         return this._instance;
     }
 
-    private dict = new Map<number, ServerConfig>();
-
+    @ProtoMember(1, [ServerConfig])
     private list:ServerConfig[] = [];
+
+    private dict = new Map<number, ServerConfig>();
 
     public endInit()
     {

@@ -1,4 +1,4 @@
 export interface IConfigLoader{
-    getAllConfigBytes(output: Map<string, string>): Promise<void>;
-    getOneConfigBytes(configName: string): Promise<string>;
+    getAllConfigBytes(output: Map<string, ArrayBuffer>): Promise<void>;
+    getOneConfigBytes(configName: string): Promise<ArrayBuffer>;
 }

@@ -119,7 +119,7 @@ namespace TaoWu
 
             return package;
         }
-       
+
         public static void Export(bool isCheck = false)
         {
             IsCheck = isCheck;
@@ -145,6 +145,24 @@ namespace TaoWu
                 if (Directory.Exists(clientProtoDir))
                 {
                     Directory.Delete(clientProtoDir, true);
+                }
+
+                // clientProtoDir 是带 {0} 占位符的模板，上面的 Exists 检查恒为 false，此处显式按格式化路径清理，
+                // 避免旧 .json/.bytes 残留（客户端配置是扁平目录，由导出程序全量生成）。
+                string cProtoDir = string.Format(clientProtoDir, ".");
+                if (Directory.Exists(cProtoDir))
+                {
+                    Directory.Delete(cProtoDir, true);
+                }
+
+                // 中间 json 目录同样必须清理，否则已删除/改名的表残留旧文件，会污染 proto 全局合并与 server 输出。
+                foreach (string ct in new[] { "c", "s" })
+                {
+                    string jdir = string.Format(jsonDir, ct, "");
+                    if (Directory.Exists(jdir))
+                    {
+                        Directory.Delete(jdir, true);
+                    }
                 }
                 List<string> configList = new List<string>();
                 foreach (string path in ExportHelper.FindFile(excelDir))
@@ -220,17 +238,17 @@ namespace TaoWu
                         ExportClass(kv.Key, kv.Value.HeadInfos, ConfigType.c);
                     }
                 }
-                // foreach (string path in ExportHelper.FindFile(excelDir))
-                // {
-                //     ExportExcel(path);
-                // }
+                //foreach (string path in ExportHelper.FindFile(excelDir))
+                //{
+                //    ExportExcel(path);
+                //}
 
                 // 多线程导出
                 List<Task> tasks = new List<Task>();
                 foreach (string path in ExportHelper.FindFile(excelDir))
                 {
-                   Task task = Task.Run(() => ExportExcel(path));
-                   tasks.Add(task);
+                    Task task = Task.Run(() => ExportExcel(path));
+                    tasks.Add(task);
                 }
                 Task.WaitAll(tasks.ToArray());
                 Console.WriteLine("ExcelExporter 成功");
@@ -409,7 +427,7 @@ namespace TaoWu
             if (cs.Contains("c"))
             {
                 ExportExcelJson(p, fileNameWithoutCS, table, ConfigType.c, relativePath);
-                MoveJson2Project(ConfigType.c, protoName, relativePath);
+                ExportExcelProto(ConfigType.c, protoName, relativePath, table);
             }
 
             if (cs.Contains("s"))
@@ -456,7 +474,7 @@ namespace TaoWu
         }
 
 
-#region 导出class
+        #region 导出class
 
         static void ExportExcelClass(ExcelPackage p, string name, Table table)
         {
@@ -521,7 +539,9 @@ namespace TaoWu
                 string fieldDesc = worksheet.Cells[row + 1, col].Text.Trim();
                 string fieldType = worksheet.Cells[row + 3, col].Text.Trim();
 
-                table.HeadInfos[fieldName] = new HeadInfo(fieldCS, fieldDesc,char.ToLower(fieldName[0]) + fieldName.Substring(1), fieldType, ++table.Index);
+                // 不支持 proto 导出的字段（AttrConfig/二维数组/小数）不参与编号，保证 proto 字段编号连续
+                int fieldIndex = IsProtoFieldSupported(fieldType) ? ++table.Index : 0;
+                table.HeadInfos[fieldName] = new HeadInfo(fieldCS, fieldDesc, char.ToLower(fieldName[0]) + fieldName.Substring(1), fieldType, fieldIndex);
             }
         }
 
@@ -555,18 +575,26 @@ namespace TaoWu
                 {
                     continue;
                 }
-                sb.Append($"\t/** {headInfo.FieldDesc.Replace("\n", " * \n\t\t")}*/\n");
+
+                // 不可 proto 导出的字段（AttrConfig 等）不进类
+                if (headInfo.FieldIndex <= 0)
+                {
+                    continue;
+                }
+
                 string fieldType = headInfo.FieldType;
-                sb.Append($"\tpublic {headInfo.FieldName}: {ConvertTypeName(fieldType)};\n");
+                sb.Append($"\t/** {headInfo.FieldDesc.Replace("\n", " * \n\t\t")}*/\n");
+                sb.Append($"\t@ProtoMember({headInfo.FieldIndex}, {ProtoMemberArgOf(fieldType)})\n");
+                sb.Append($"\tpublic {headInfo.FieldName}: {TsTypeOf(fieldType)}{DefaultTsValueOf(fieldType)}\n");
             }
 
             string content = template.Replace("(ConfigName)", protoName).Replace(("(Fields)"), sb.ToString());
             sw.Write(content);
         }
 
-#endregion
+        #endregion
 
-#region 导出json
+        #region 导出json
 
 
         static void ExportExcelJson(ExcelPackage p, string name, Table table, ConfigType configType, string relativeDir)
@@ -603,6 +631,10 @@ namespace TaoWu
             string dir = GetProtoDir(configType, relativeDir);
             if (!Directory.Exists(dir))
             {
+                if (!Directory.Exists(Directory.GetParent(dir).FullName))
+                {
+                    return;
+                }
                 Directory.CreateDirectory(dir);
             }
 
@@ -644,6 +676,245 @@ namespace TaoWu
             string jsonOutput = JsonMapper.ToJson(root);
             File.WriteAllText(path, jsonOutput);
         }
+
+        #region 导出protobuf
+
+        static void ExportExcelProto(ConfigType configType, string protoName, string relativeDir, Table table)
+        {
+            string dir = GetProtoDir(configType, relativeDir);
+            if (!Directory.Exists(dir))
+            {
+                if (!Directory.Exists(Directory.GetParent(dir).FullName))
+                {
+                    return;
+                }
+                Directory.CreateDirectory(dir);
+            }
+
+            List<HeadInfo> fields = ProtoFields(table.HeadInfos, configType);
+
+            // 客户端配置输出是扁平目录（GetProtoDir 忽略 relativeDir），同名表可能散落在多个子目录，
+            // 需跨目录合并（与 ExportClass 聚合所有 sheet 的 HeadInfos 保持一致），避免 last-wins 丢行。
+            string baseDir = string.Format(jsonDir, configType.ToString(), "");
+            List<string> jsonPaths = Directory.GetFiles(baseDir, "*.txt", SearchOption.AllDirectories)
+                .Where(f => { string n = Path.GetFileName(f); return n == $"{protoName}.txt" || (n.StartsWith($"{protoName}_") && n.EndsWith(".txt")); })
+                .ToList();
+
+            jsonPaths.Sort((a, b) => string.Compare(a, b, StringComparison.OrdinalIgnoreCase));
+            jsonPaths.Reverse();
+
+            using MemoryStream ms = new MemoryStream();
+            foreach (string jsonPath in jsonPaths)
+            {
+                if (!File.Exists(jsonPath)) continue;
+
+                string jsonContent = File.ReadAllText(jsonPath);
+                JsonData data = JsonMapper.ToObject(jsonContent);
+                JsonData list = data["list"];
+                if (list == null || !list.IsArray) continue;
+
+                foreach (JsonData item in list)
+                {
+                    byte[] row = EncodeRow(item, fields);
+                    ProtoWriter.WriteBytesField(ms, 1, row);
+                }
+            }
+
+            string path = Path.Combine(dir, $"{protoName}Category.bin");
+            File.WriteAllBytes(path, ms.ToArray());
+        }
+
+        static List<HeadInfo> ProtoFields(Dictionary<string, HeadInfo> classField, ConfigType configType)
+        {
+            List<HeadInfo> list = new List<HeadInfo>();
+            foreach ((string _, HeadInfo headInfo) in classField)
+            {
+                if (headInfo == null) continue;
+                if (headInfo.FieldType == "json") continue;
+                if (!headInfo.FieldAttribute.Contains(configType.ToString())) continue;
+                if (headInfo.FieldIndex <= 0) continue;
+                list.Add(headInfo);
+            }
+            list.Sort((a, b) => a.FieldIndex.CompareTo(b.FieldIndex));
+            return list;
+        }
+
+        static byte[] EncodeRow(JsonData item, List<HeadInfo> fields)
+        {
+            using MemoryStream ms = new MemoryStream();
+            foreach (HeadInfo headInfo in fields)
+            {
+                // 多 sheet 列可能不一致，缺失字段跳过
+                if (!((System.Collections.IDictionary)item).Contains(headInfo.FieldName))
+                {
+                    continue;
+                }
+                JsonData v = item[headInfo.FieldName];
+                if (v == null) continue;
+                // 多 sheet 列类型可能不一致（如 LevelConfig.params2 有的 sheet 是 int、有的是 int[]），
+                // 值类型与 HeadInfo 声明不符时跳过该字段，避免编码崩溃。
+                if (headInfo.FieldType.EndsWith("[]") && !v.IsArray) continue;
+                switch (headInfo.FieldType)
+                {
+                    // 数值统一按 double 编码：旧 json 管道客户端拿到的就是 number(double)，
+                    // 且存在声明 int 列实际填小数（如 0.02/0.005）的情况，按 int 编码会丢精度/丢数据。
+                    case "int":
+                    case "int32":
+                    case "uint":
+                    case "int64":
+                    case "long":
+                    case "float":
+                    case "double":
+                        ProtoWriter.WriteDoubleField(ms, headInfo.FieldIndex, ToDouble(v));
+                        break;
+                    case "string":
+                        ProtoWriter.WriteStringField(ms, headInfo.FieldIndex, ToStringValue(v));
+                        break;
+                    case "int[]":
+                    case "int32[]":
+                    case "uint[]":
+                    case "long[]":
+                    case "float[]":
+                    case "double[]":
+                        WritePackedDouble(ms, headInfo.FieldIndex, v);
+                        break;
+                    case "string[]":
+                        foreach (JsonData elem in v)
+                        {
+                            ProtoWriter.WriteStringField(ms, headInfo.FieldIndex, ToStringValue(elem));
+                        }
+                        break;
+                    default:
+                        throw new Exception($"不支持 proto 导出的类型: {headInfo.FieldType}");
+                }
+            }
+            return ms.ToArray();
+        }
+
+        static void WritePackedDouble(Stream ms, int field, JsonData arr)
+        {
+            using MemoryStream inner = new MemoryStream();
+            foreach (JsonData elem in arr)
+            {
+                byte[] bytes = BitConverter.GetBytes(BitConverter.DoubleToInt64Bits(ToDouble(elem)));
+                if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
+                inner.Write(bytes, 0, bytes.Length);
+            }
+            ProtoWriter.WriteBytesField(ms, field, inner.ToArray());
+        }
+
+        static double ToDouble(JsonData d)
+        {
+            if (d.IsInt) return ((IJsonWrapper)d).GetInt();
+            if (d.IsLong) return ((IJsonWrapper)d).GetLong();
+            if (d.IsDouble) return ((IJsonWrapper)d).GetDouble();
+            return 0.0;
+        }
+
+        static string ToStringValue(JsonData d)
+        {
+            if (d.IsString) return ((IJsonWrapper)d).GetString();
+            if (d.IsInt) return ((IJsonWrapper)d).GetInt().ToString();
+            if (d.IsLong) return ((IJsonWrapper)d).GetLong().ToString();
+            if (d.IsDouble) return ((IJsonWrapper)d).GetDouble().ToString();
+            return "";
+        }
+
+        /// <summary>该字段类型是否参与 proto 导出（AttrConfig/二维数组/小数暂不支持）</summary>
+        static bool IsProtoFieldSupported(string fieldType)
+        {
+            switch (fieldType)
+            {
+                case "AttrConfig":
+                case "decimal":
+                case "decimal[]":
+                    return false;
+            }
+            if (fieldType.EndsWith("[][]"))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>@ProtoMember 的类型参数（TS 字面量），数值统一为 double（与旧 json 的 number 一致）</summary>
+        static string ProtoMemberArgOf(string fieldType)
+        {
+            switch (fieldType)
+            {
+                case "int":
+                case "int32":
+                case "uint":
+                case "int64":
+                case "long":
+                case "float":
+                case "double":
+                    return "\"double\"";
+                case "string":
+                    return "\"string\"";
+                case "int[]":
+                case "int32[]":
+                case "uint[]":
+                case "long[]":
+                case "float[]":
+                case "double[]":
+                    return "[\"double\"]";
+                case "string[]":
+                    return "[\"string\"]";
+                default:
+                    throw new Exception($"不支持 proto 导出的类型: {fieldType}");
+            }
+        }
+
+        static string TsTypeOf(string fieldType)
+        {
+            switch (fieldType)
+            {
+                case "int":
+                case "uint":
+                case "int32":
+                case "int64":
+                case "long":
+                case "float":
+                case "double":
+                    return "number";
+                case "string":
+                    return "string";
+                case "int[]":
+                case "uint[]":
+                case "int32[]":
+                case "long[]":
+                case "float[]":
+                case "double[]":
+                    return "number[]";
+                case "string[]":
+                    return "string[]";
+                default:
+                    throw new Exception($"不支持 proto 导出的类型: {fieldType}");
+            }
+        }
+
+        static string DefaultTsValueOf(string fieldType)
+        {
+            switch (fieldType)
+            {
+                case "string":
+                    return " = \"\";";
+                case "string[]":
+                    return " = [];";
+                case "int[]":
+                case "uint[]":
+                case "int32[]":
+                case "long[]":
+                case "float[]":
+                case "double[]":
+                    return " = [];";
+                default:
+                    return " = 0;";
+            }
+        }
+
+        #endregion
 
         static void ExportSheetJson(ExcelWorksheet worksheet, string name,
                 Dictionary<string, HeadInfo> classField, ConfigType configType, StringBuilder sb)
@@ -797,6 +1068,6 @@ namespace TaoWu
                     return type;
             }
         }
-#endregion
+        #endregion
     }
 }

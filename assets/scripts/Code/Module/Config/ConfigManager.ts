@@ -1,5 +1,5 @@
 import { IManager } from "../../../Mono/Core/Manager/IManager";
-import { JsonHelper } from "../../../Mono/Helper/JsonHelper";
+import { ProtoHelper } from "../../../Mono/Helper/ProtoHelper";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ConfigLoader } from "./ConfigLoader";
 import { IConfigLoader } from "./IConfigLoader";
@@ -12,8 +12,8 @@ export class ConfigManager implements IManager{
     }
 
     private configLoader: IConfigLoader
-    private rawConfigBytes: Map<string, any> = new Map<string, any>();
-    private configCache: Map<any, object> = new Map<any, object>();
+    private rawConfigBytes: Map<string, ArrayBuffer> = new Map<string, ArrayBuffer>();
+    private configCache: Map<any, any> = new Map<any, any>();
 
     public init() {
         ConfigManager._instance = this;
@@ -41,9 +41,9 @@ export class ConfigManager implements IManager{
         {
             name = type.name;
         }
-        const jObj = this.rawConfigBytes.get(name);
-        const category = JsonHelper.deserialize(type, jObj);
-        category.endInit()
+        const bytes = this.rawConfigBytes.get(name);
+        const category = ProtoHelper.fromBytes(type, bytes) as any;
+        category?.endInit()
         this.configCache.set(type, category);
         return category as T;
     }
@@ -52,10 +52,10 @@ export class ConfigManager implements IManager{
     {
         if (string.isNullOrEmpty(name))
             name = type.name;
-        const jObj = await this.configLoader.getOneConfigBytes(name);
+        const bytes = await this.configLoader.getOneConfigBytes(name);
 
-        const category = JsonHelper.deserialize(type, jObj);
-        category.endInit()
+        const category = ProtoHelper.fromBytes(type, bytes) as any;
+        category?.endInit()
         if(cache)
             this.configCache.set(type, category);
 

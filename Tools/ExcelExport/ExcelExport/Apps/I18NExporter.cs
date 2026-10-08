@@ -33,7 +33,7 @@ namespace TaoWu
                     cs = ss[1];
                 }
 
-                if (cs!="i")
+                if (cs != "i")
                 {
                     continue;
                 }
@@ -46,11 +46,11 @@ namespace TaoWu
                 str.AppendLine("{");
                 foreach (var item in i18nconfig)
                 {
-                    foreach (var item2 in item.Value.GetAllList()) 
+                    foreach (var item2 in item.Value.GetAllList())
                     {
                         str.AppendLine($"    {item2.key} = {item2.id},");
                     }
-                   
+
                     break;
                 }
                 str.AppendLine("}");
@@ -58,7 +58,7 @@ namespace TaoWu
             }
             Console.WriteLine("I18NExporter 成功");
         }
-        
+
         static void ExportExcelI18N(ExcelPackage p, Dictionary<string, I18NConfigCategory> list)
         {
             foreach (ExcelWorksheet worksheet in p.Workbook.Worksheets)
@@ -67,7 +67,7 @@ namespace TaoWu
                 {
                     continue;
                 }
-                if(worksheet.Dimension==null||worksheet.Dimension.End==null) continue;
+                if (worksheet.Dimension == null || worksheet.Dimension.End == null) continue;
                 ExportSheetI18N(worksheet, list);
             }
         }
@@ -94,17 +94,17 @@ namespace TaoWu
                     I18NConfig config = new I18NConfig();
                     config.id = id;
                     config.key = key;
-                    config.value = worksheet.Cells[row, col].Text.Trim().Replace("\n","\\n");
+                    config.value = worksheet.Cells[row, col].Text.Trim().Replace("\n", "\\n");
                     string fieldName = worksheet.Cells[4, col].Text.Trim();
                     if (!list.ContainsKey(fieldName))
                     {
-                        list.Add(fieldName,new I18NConfigCategory());
+                        list.Add(fieldName, new I18NConfigCategory());
                     }
                     list[fieldName].GetAllList().Add(config);
                 }
             }
         }
-        
+
         // 根据生成的类，把json转成protobuf
         private static void ExportI18NExcelProtobuf(Dictionary<string, I18NConfigCategory> list, string relativeDir)
         {
@@ -117,12 +117,20 @@ namespace TaoWu
             sb.AppendLine("export enum LangType");
             sb.AppendLine("{");
             int index = 0;
-            
+
             foreach (var item in list)
             {
-                string path = Path.Combine(dir, $"{item.Key}.json");
-                var jstr = JsonMapper.ToJson(item.Value);
-                File.WriteAllText(path, jstr);
+                string path = Path.Combine(dir, $"{item.Key}.bin");
+                using MemoryStream ms = new MemoryStream();
+                foreach (I18NConfig config in item.Value.GetAllList())
+                {
+                    using MemoryStream rowMs = new MemoryStream();
+                    // 只写 id 编号 1 和 value 编号 3，跳过 key 编号 2，与 I18NConfig.ts 装饰器编号对应
+                    ProtoWriter.WriteInt32Field(rowMs, 1, config.id);
+                    ProtoWriter.WriteStringField(rowMs, 3, config.value);
+                    ProtoWriter.WriteBytesField(ms, 1, rowMs.ToArray());
+                }
+                File.WriteAllBytes(path, ms.ToArray());
                 sb.AppendLine($"    {item.Key} = {index},");
                 index++;
             }

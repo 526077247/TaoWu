@@ -1,21 +1,25 @@
-import { JsonHelper, JsonType } from "../../../../Mono/Helper/JsonHelper";
+import { ProtoHelper, ProtoType, ProtoMember } from "../../../../Mono/Helper/ProtoHelper";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ConfigManager } from "../../Config/ConfigManager";
 
-@JsonType("SceneConfig")
+@ProtoType("SceneConfig")
 export class SceneConfig {
 	/** Id*/
-	public id: number;
+	@ProtoMember(1, "double")
+	public id: number = 0;
 	/** 名字*/
-	public name: string;
+	@ProtoMember(2, "string")
+	public name: string = "";
 	/** 描述*/
-	public desc: string;
+	@ProtoMember(3, "string")
+	public desc: string = "";
 	/** 场景路径*/
-	public perfab: string;
+	@ProtoMember(4, "string")
+	public perfab: string = "";
 
 }
 
-@JsonType("SceneConfigCategory")
+@ProtoType("SceneConfigCategory")
 export class SceneConfigCategory{
 
     private static _instance: SceneConfigCategory;
@@ -27,9 +31,10 @@ export class SceneConfigCategory{
         return this._instance;
     }
 
-    private dict = new Map<number, SceneConfig>();
-
+    @ProtoMember(1, [SceneConfig])
     private list:SceneConfig[] = [];
+
+    private dict = new Map<number, SceneConfig>();
 
     public endInit()
     {

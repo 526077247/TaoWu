@@ -1,13 +1,13 @@
-﻿import { JsonHelper, JsonType } from "../../../../Mono/Helper/JsonHelper";
+﻿import { ProtoHelper, ProtoType, ProtoMember } from "../../../../Mono/Helper/ProtoHelper";
 import { Log } from "../../../../Mono/Module/Log/Log";
 import { ConfigManager } from "../../Config/ConfigManager";
 
-@JsonType("(ConfigName)")
+@ProtoType("(ConfigName)")
 export class (ConfigName) {
 (Fields)
 }
 
-@JsonType("(ConfigName)Category")
+@ProtoType("(ConfigName)Category")
 export class (ConfigName)Category{
 
     private static _instance: (ConfigName)Category;
@@ -19,9 +19,10 @@ export class (ConfigName)Category{
         return this._instance;
     }
 
-    private dict = new Map<number, (ConfigName)>();
-
+    @ProtoMember(1, [(ConfigName)])
     private list:(ConfigName)[] = [];
+
+    private dict = new Map<number, (ConfigName)>();
 
     public endInit()
     {
