@@ -5,23 +5,23 @@ import { ConfigManager } from "../../Config/ConfigManager";
 @ProtoType("ServerConfig")
 export class ServerConfig {
 	/** Id*/
-	@ProtoMember(1, "double")
-	public id: number = 0;
+	@ProtoMember(1, "int32")
+	public id: number = 0
 	/** 标记*/
 	@ProtoMember(2, "string")
-	public name: string = "";
+	public name: string
 	/** realm服地址*/
 	@ProtoMember(3, "string")
-	public realmIp: string = "";
+	public realmIp: string
 	/** 路由cdn地址*/
 	@ProtoMember(4, "string")
-	public routerListUrl: string = "";
+	public routerListUrl: string
 	/** 服务器类型*/
-	@ProtoMember(5, "double")
-	public envId: number = 0;
+	@ProtoMember(5, "int32")
+	public envId: number = 0
 	/** 是否默认值*/
-	@ProtoMember(6, "double")
-	public isPriority: number = 0;
+	@ProtoMember(6, "int32")
+	public isPriority: number = 0
 
 }
 

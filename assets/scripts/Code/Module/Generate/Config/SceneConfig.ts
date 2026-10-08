@@ -5,17 +5,17 @@ import { ConfigManager } from "../../Config/ConfigManager";
 @ProtoType("SceneConfig")
 export class SceneConfig {
 	/** Id*/
-	@ProtoMember(1, "double")
-	public id: number = 0;
+	@ProtoMember(1, "int32")
+	public id: number = 0
 	/** 名字*/
 	@ProtoMember(2, "string")
-	public name: string = "";
+	public name: string
 	/** 描述*/
 	@ProtoMember(3, "string")
-	public desc: string = "";
+	public desc: string
 	/** 场景路径*/
 	@ProtoMember(4, "string")
-	public perfab: string = "";
+	public perfab: string
 
 }
 
