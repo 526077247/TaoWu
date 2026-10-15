@@ -4,7 +4,8 @@ export type ProtoScalarType =
     | "fixed32" | "fixed64" | "sfixed32" | "sfixed64"
     | "float" | "double"
     | "bool" | "enum"
-    | "string" | "bytes";
+    | "string" | "bytes"
+    | "bigint";
 
 export type ProtoFieldType = ProtoScalarType | (new () => any) | ProtoFieldType[];
 
@@ -18,8 +19,8 @@ interface FieldMeta {
 const VARINT_TYPES = new Set<string>(["int32", "uint32", "int64", "uint64", "sint32", "sint64", "bool", "enum"]);
 const FIXED64_TYPES = new Set<string>(["fixed64", "sfixed64", "double"]);
 const FIXED32_TYPES = new Set<string>(["fixed32", "sfixed32", "float"]);
-const NUMERIC_TYPES = new Set<string>(["int32", "uint32", "int64", "uint64", "sint32", "sint64", "fixed32", "fixed64", "sfixed32", "sfixed64", "float", "double", "enum"]);
-const BIGINT_DEFAULT_TYPES = new Set<string>(["int64", "uint64", "fixed64", "sfixed64"]);
+const NUMERIC_TYPES = new Set<string>(["int32", "uint32", "int64", "uint64", "sint32", "sint64", "fixed32", "fixed64", "sfixed32", "sfixed64", "float", "double", "enum", "bigint"]);
+const BIGINT_DEFAULT_TYPES = new Set<string>(["int64", "uint64", "fixed64", "sfixed64", "bigint"]);
 
 function wireTypeOf(type: ProtoFieldType): number {
     if (typeof type !== "string") return 2;
@@ -31,6 +32,16 @@ function wireTypeOf(type: ProtoFieldType): number {
 
 function zigzagDecode(value: bigint): bigint {
     return (value >> 1n) ^ -(value & 1n);
+}
+
+function bytesToBigInt(bytes: Uint8Array): bigint {
+    const len = bytes.length;
+    if (len === 0) return 0n;
+    let v = 0n;
+    for (let i = len - 1; i >= 0; i--) {
+        v = (v << 8n) | BigInt(bytes[i]);
+    }
+    return BigInt.asIntN(len * 8, v);
 }
 
 function utf8Decode(bytes: Uint8Array): string {
@@ -427,7 +438,8 @@ export class ProtoHelper {
         if (typeof type !== "string") {
             const sub = reader.readSub();
             const fields = this.collectFields(type as Function);
-            const obj: any = {};
+            // 用注册类实例承载字段，保证未出现在二进制中的字段保留类默认值（与旧 JsonHelper 行为一致）
+            const obj = new (type as new () => any)();
             if (fields == null) {
                 console.warn(`ProtoHelper: 嵌套类 ${(type as new () => any).name} 未注册 @ProtoMember，内容已丢弃`);
                 sub.pos = sub.end;
@@ -469,6 +481,25 @@ export class ProtoHelper {
                 return reader.readLenString();
             case "bytes":
                 return reader.readLenBytes();
+            case "bigint": {
+                // protobuf-net BigIntegerSurrogate：外层为成员字段(wire2)，内层为 surrogate 消息 field1=Data(LE 补码)
+                const sub = reader.readSub();
+                let data: Uint8Array = null;
+                while (sub.pos < sub.end) {
+                    const tag = sub.readVarint();
+                    const id = Number(tag >> 3n);
+                    const wire = Number(tag & 7n);
+                    if (id === 1 && wire === 2) {
+                        data = sub.readLenBytes();
+                    } else {
+                        if (id === 1) {
+                            console.warn(`ProtoHelper: bigint surrogate 字段1 期望 wire type 2，实际 ${wire}，已跳过`);
+                        }
+                        sub.skipField(wire, id);
+                    }
+                }
+                return data == null ? 0n : bytesToBigInt(data);
+            }
             default:
                 throw new Error(`ProtoHelper: 未知字段类型 ${type}`);
         }

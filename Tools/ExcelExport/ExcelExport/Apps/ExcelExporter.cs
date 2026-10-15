@@ -1,5 +1,7 @@
 ﻿#define NOT_SERVER //导服务端配置开关
 using OfficeOpenXml;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -788,6 +790,8 @@ namespace TaoWu
                         return value;
                     }
                 case "string":
+                case "bigint":
+                case "BigInteger":
                     return $"\"{value}\"";
                 default:
                     throw new Exception($"不支持此类型: {type}");
@@ -806,6 +810,8 @@ namespace TaoWu
                     return "number";
                 case "int64":
                 case "long":
+                case "bigint":
+                case "BigInteger":
                     return "bigint";
                 case "double[]":
                 case "uint[]":
@@ -940,6 +946,28 @@ namespace TaoWu
                     case "string":
                         ProtoWriter.WriteStringField(ms, headInfo.FieldIndex, ToStringValue(v));
                         break;
+                    case "bigint":
+                    case "BigInteger":
+                        {
+                            // protobuf-net BigIntegerSurrogate 布局：外层成员字段内嵌 surrogate 消息（field1 = Data，LE 补码）
+                            //[ProtoContract]
+                            //public class BigIntegerSurrogate
+                            //{
+                            //    [ProtoMember(1, OverwriteList = true)]
+                            //    public byte[] Data { get; set; }
+
+                            //    public static implicit operator BigInteger(BigIntegerSurrogate surrogate)
+                            //        => new BigInteger(surrogate.Data);
+
+                            //    public static implicit operator BigIntegerSurrogate(BigInteger value)
+                            //        => new BigIntegerSurrogate { Data = value.ToByteArray() };
+                            //}
+                            BigInteger bi = ToBigInteger(v, headInfo, ctx);
+                            using MemoryStream inner = new MemoryStream();
+                            ProtoWriter.WriteBytesField(inner, 1, bi.ToByteArray());
+                            ProtoWriter.WriteBytesField(ms, headInfo.FieldIndex, inner.ToArray());
+                            break;
+                        }
                     case "int[]":
                     case "int32[]":
                         ProtoWriter.WritePackedInt32(ms, headInfo.FieldIndex, ToArray(v, headInfo, ctx, ToInt32));
@@ -1054,6 +1082,42 @@ namespace TaoWu
             return (long)v;
         }
 
+        static BigInteger ToBigInteger(JsonData d, HeadInfo headInfo, string ctx)
+        {
+            // 中间 JSON 中 BigInteger 以字符串承载（唯一不丢精度的形式），空值对齐 int 的空→0 行为
+            if (d.IsString)
+            {
+                string s = ((IJsonWrapper)d).GetString()?.Trim() ?? "";
+                if (s.Length == 0)
+                {
+                    return BigInteger.Zero;
+                }
+                if (BigInteger.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out BigInteger result))
+                {
+                    return result;
+                }
+                throw new Exception($"导表类型错误: {ctx}，字段 {headInfo.FieldName} 声明 {headInfo.FieldType}，但值 \"{s}\" 不是整数，请修改 Excel 后重新导表");
+            }
+            if (d.IsInt)
+            {
+                return new BigInteger(((IJsonWrapper)d).GetInt());
+            }
+            if (d.IsLong)
+            {
+                return new BigInteger(((IJsonWrapper)d).GetLong());
+            }
+            if (d.IsDouble)
+            {
+                double v = ToIntegral(d, headInfo, ctx);
+                if (v < long.MinValue || v > long.MaxValue)
+                {
+                    throw new Exception($"导表类型错误: {ctx}，字段 {headInfo.FieldName} 值 {v} 超出范围，请修改 Excel 后重新导表");
+                }
+                return new BigInteger((long)v);
+            }
+            throw new Exception($"导表类型错误: {ctx}，字段 {headInfo.FieldName} 声明 {headInfo.FieldType}，但值不是数字或字符串，请修改 Excel 后重新导表");
+        }
+
         static string ToStringValue(JsonData d)
         {
             if (d.IsString) return ((IJsonWrapper)d).GetString();
@@ -1082,6 +1146,9 @@ namespace TaoWu
                     return "\"double\"";
                 case "string":
                     return "\"string\"";
+                case "bigint":
+                case "BigInteger":
+                    return "\"bigint\"";
                 case "int[]":
                 case "int32[]":
                     return "[\"int32\"]";
@@ -1119,6 +1186,8 @@ namespace TaoWu
                     return " = 0";
                 case "int64":
                 case "long":
+                case "bigint":
+                case "BigInteger":
                     return " = 0n";
                 default:
                     return "";

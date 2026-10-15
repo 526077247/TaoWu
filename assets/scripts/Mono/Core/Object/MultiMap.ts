@@ -1,4 +1,4 @@
-﻿export class MultiMap<T extends string | number | bigint, K> implements Iterable<[T, K]> {
+﻿export class MultiMap<T extends string | number | bigint, K> implements Iterable<[T, K[]]> {
     private _map = new Map<T, K[]>();
     private _keys: T[] = [];
     private comparator: (a: T, b: T) => number;
@@ -110,14 +110,12 @@
     }
 
     // 添加迭代器方法，支持 for...of 循环
-    // 返回格式：[key, value] 的元组
-    public *[Symbol.iterator](): IterableIterator<[T, K]> {
+    // 返回格式：[key, values] 的元组
+    public *[Symbol.iterator](): IterableIterator<[T, K[]]> {
         for (const key of this._keys) {
             const values = this._map.get(key);
             if (values) {
-                for (const value of values) {
-                    yield [key, value];
-                }
+                yield [key, values];
             }
         }
     }
@@ -138,14 +136,14 @@
     }
 
     // 返回键值对的迭代器（与默认迭代器相同）
-    public *entries(): IterableIterator<[T, K]> {
+    public *entries(): IterableIterator<[T, K[]]> {
         yield* this;
     }
 
     // 对每个键值对执行回调
-    public forEach(callback: (value: K, key: T, map: MultiMap<T, K>) => void): void {
-        for (const [key, value] of this) {
-            callback(value, key, this);
+    public forEach(callback: (values: K[], key: T, map: MultiMap<T, K>) => void): void {
+        for (const [key, values] of this) {
+            callback(values, key, this);
         }
     }
 }

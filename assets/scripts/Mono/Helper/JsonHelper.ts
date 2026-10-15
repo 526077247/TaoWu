@@ -30,6 +30,22 @@ export class JsonHelper {
         return ignoreSet ? ignoreSet.has(propName) : false;
     }
     /**
+     * BigInt 是否在安全 number 范围内
+     * @param value BigInt 值
+     */
+    private static isSafeNumberRange(value: bigint): boolean {
+        return value >= BigInt(Number.MIN_SAFE_INTEGER) && value <= BigInt(Number.MAX_SAFE_INTEGER);
+    }
+
+    /**
+     * 序列化 BigInt：安全范围内转 number，否则转字符串
+     * @param value BigInt 值
+     */
+    private static serializeBigInt(value: bigint): any {
+        return this.isSafeNumberRange(value) ? Number(value) : value.toString();
+    }
+
+    /**
      * 序列化对象为 JSON 字符串
      * @param obj 要序列化的对象
      * @param pretty 是否格式化输出
@@ -37,10 +53,13 @@ export class JsonHelper {
      */
     public static toJson(obj: any, pretty: boolean = false): string {
         const serialized = this.serialize(obj);
-        
+        // 兜底：序列化过程中遗漏的 BigInt，安全范围内转 number，否则转字符串
+        const replacer = (_key: string, value: any) =>
+            typeof value === 'bigint' ? this.serializeBigInt(value) : value;
+
         return !!pretty 
-            ? JSON.stringify(serialized, null, 2)
-            : JSON.stringify(serialized);
+            ? JSON.stringify(serialized, replacer, 2)
+            : JSON.stringify(serialized, replacer);
     }
     
     /**
@@ -50,6 +69,10 @@ export class JsonHelper {
      * @returns 序列化后的对象
      */
     public static serialize(obj: any, path: string = ''): any {
+        // 处理 BigInt（typeof 为 'bigint'，JSON.stringify 无法序列化）
+        if (typeof obj === 'bigint') {
+            return this.serializeBigInt(obj);
+        }
         // 处理原始类型
         if (obj === null || typeof obj !== 'object') {
             return obj;
@@ -172,7 +195,7 @@ export class JsonHelper {
                     ])
                 );
             }
-            
+
             // 处理 Set
             if (typeNmae === 'Set') {
                 return new Set(

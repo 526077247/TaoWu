@@ -186,7 +186,7 @@ export abstract class UIBaseContainer {
         this.length--;
         if (this.length <= 0)
         {
-            if (this.parent != null && !!this.path)
+            if (this.parent != null && this.path != null)
                 this.parent.innerRemoveComponent(this, this.path);
             else
                 Log.info("Close window here, type name: " + this.getConstructor().name);

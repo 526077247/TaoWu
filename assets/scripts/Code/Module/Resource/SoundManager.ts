@@ -4,11 +4,11 @@ import { IManager } from '../../../Mono/Core/Manager/IManager';
 import { IdGenerater } from '../../../Mono/Core/Object/IdGenerater';
 import { ETCancellationToken } from '../../../ThirdParty/ETTask/ETCancellationToken';
 import { ObjectPool } from '../../../Mono/Core/ObjectPool';
-import { CoroutineLockManager } from '../CoroutineLock/CoroutineLockManager';
 import { CacheManager } from '../Player/CacheManager';
 import { CacheKeys } from '../Const/CacheKeys';
 import { TimerManager } from '../../../Mono/Module/Timer/TimerManager';
 import { Log } from '../../../Mono/Module/Log/Log';
+import { HttpManager } from '../../../Mono/Module/Http/HttpManager';
 import * as string from '../../../Mono/Helper/StringHelper'
 
 class SoundItem {
@@ -69,16 +69,17 @@ class SoundItem {
 
     private async getOnlineClip(url: string, retryCount: number = 3): Promise<AudioClip> {
         if (!url) return null;
-        
-        const lockKey = `sound_${url}`;
-        // const lock = await CoroutineLockManager.instance.wait(lockKey);
-        
-        // try {
-        //     // 伪代码 - 实际需使用Cocos网络模块
-        //     return await HttpManager.Instance.downloadAudio(url, retryCount, this.token);
-        // } finally {
-        //     lock.release();
-        // }
+
+        let clip: AudioClip = null;
+        for (let i = 0; i < retryCount; i++) {
+            clip = await HttpManager.instance.httpGetSoundOnline(url);
+            if (!!clip) break;
+        }
+        if (!clip) {
+            Log.error("网络无资源 " + url);
+            return null;
+        }
+        return clip;
     }
 
 

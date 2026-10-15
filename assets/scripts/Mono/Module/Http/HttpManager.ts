@@ -1,4 +1,4 @@
-import { assetManager, ImageAsset, native, sys, Texture2D } from "cc";
+import { assetManager, AudioClip, ImageAsset, Texture2D } from "cc";
 import { ETTask } from "../../../ThirdParty/ETTask/ETTask";
 import { Log } from "../Log/Log";
 import * as string from "../../Helper/StringHelper"
@@ -36,17 +36,32 @@ export class HttpManager
         return builder.toString();
     }
 
-    public async httpGetImageOnline(url: string, local: boolean): Promise<Texture2D>
+    private getExtFromUrl(url: string, defaultExt: string): string
     {
-        //本地是否存在图片
-        if (local)
-        {
-            url = "file://" + this.localFile(url);
-        }
+        const cleanUrl = url.split('?')[0].split('#')[0];
+        const match = cleanUrl.match(/\.([a-zA-Z0-9]{2,5})$/);
+        return match ? `.${match[1].toLowerCase()}` : defaultExt;
+    }
 
-        const vs = url.split("/");
+    public async httpGetImageOnline(url: string): Promise<Texture2D>
+    {
+        const timeout = 5000;
         const ettask:ETTask<ImageAsset> = ETTask.create<ImageAsset>(true);
-        assetManager.loadRemote<ImageAsset>(url, vs[vs.length-1].indexOf(".")>=0 ? null: { ext: '.png' }, (err: Error | null, asset: ImageAsset) => {
+        let completed = false;
+        const timer = setTimeout(() => {
+            if (completed) return;
+            completed = true;
+            Log.error("loadRemote timeout: " + url);
+            ettask.setResult(null);
+        }, timeout);
+        assetManager.loadRemote<ImageAsset>(url, { 
+            ext: this.getExtFromUrl(url, '.png'),
+            cacheAsset: true, 
+            cacheEnabled: true
+        }, (err: Error | null, asset: ImageAsset) => {
+            if (completed) return;
+            completed = true;
+            clearTimeout(timer);
             if (err) {
                 Log.error(err)
             }
@@ -62,17 +77,34 @@ export class HttpManager
         return null
     }
 
-    public localFile(url: string, dir: string = "downloadimage", extend: string = ".png") : string
+    public async httpGetSoundOnline(url: string): Promise<AudioClip>
     {
-        const md5URLString: string = string.getHashString(url.trim());
-        let path = dir;
-        if (sys.isNative) {
-            path = `${native.fileUtils.getWritablePath()}/${dir}`;
-        }
-        // this.checkDirAndCreateWhenNeeded(path);
-        let savePath: string = path + `/${md5URLString}` + extend;
-        //Log.Info("=======savePath:" + savePath);
-        return savePath;
+        if (string.isNullOrEmpty(url)) return null;
+
+        const timeout = 5000;
+        const ettask:ETTask<AudioClip> = ETTask.create<AudioClip>(true);
+        let completed = false;
+        const timer = setTimeout(() => {
+            if (completed) return;
+            completed = true;
+            Log.error("loadRemote timeout: " + url);
+            ettask.setResult(null);
+        }, timeout);
+        assetManager.loadRemote<AudioClip>(url, {
+            ext: this.getExtFromUrl(url, '.mp3'),
+            audioLoadMode: AudioClip.AudioType.WEB_AUDIO,
+            cacheAsset: true,
+            cacheEnabled: true
+        }, (err: Error | null, asset: AudioClip) => {
+            if (completed) return;
+            completed = true;
+            clearTimeout(timer);
+            if (err) {
+                Log.error(err)
+            }
+            ettask.setResult(asset);
+        });
+        return await ettask;
     }
 
     public async httpGetResult<T>(type: new (...args:any[]) => T, url: string, headers: Record<string,string>, param: Record<string,string>, timeout:number = DEFAULT_TIMEOUT):Promise<T>{

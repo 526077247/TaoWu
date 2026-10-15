@@ -10,8 +10,7 @@ import { I18NKey } from "../Const/I18NKey";
 import { II18N } from "./II18N";
 import * as string from "../../../Mono/Helper/StringHelper"
 import { ConfigManager } from "../Config/ConfigManager";
-import { I18NConfig, I18NConfigCategory } from "./I18NConfigCategory";
-import { JsonHelper } from "../../../Mono/Helper/JsonHelper";
+import { I18NConfigCategory } from "./I18NConfigCategory";
 export class I18NManager implements IManager {
 
     private static _instance: I18NManager;
@@ -28,7 +27,6 @@ export class I18NManager implements IManager {
     }
 
     private _i18nTextKeyDic: Map<number, string>
-    private _addFonts: boolean
 
     public init() {
         I18NManager._instance = this;
@@ -57,8 +55,6 @@ export class I18NManager implements IManager {
 
     private async initAsync()
     {
-        JsonHelper.registerClass(I18NConfigCategory,'I18NConfigCategory');
-        JsonHelper.registerClass(I18NConfig,'I18NConfig');
         var res = await ConfigManager.instance.loadOneConfig(I18NConfigCategory,LangType[this.curLangType]);
 
         for (let i = 0; i <res.getAllList().length; i++)

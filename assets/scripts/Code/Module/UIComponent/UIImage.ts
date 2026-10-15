@@ -165,6 +165,12 @@ export class UIImage extends UIBaseContainer implements IOnDestroy, IOnCreate<st
                 return;
             }
             this.setSprite(sprite);
+            if(setSizeType == SizeType.NativeSize)
+                this.setNativeSize();
+            else if(setSizeType == SizeType.PreserveAspect)
+                this.setPreserveAspect();
+            else if(setSizeType == SizeType.Reset)
+                this.getTransform().contentSize = this.getTransform().contentSize.set(this.size);
             if (!string.isNullOrEmpty(this.cacheUrl))
             {
                 ImageLoaderManager.instance.releaseOnlineImage(this.cacheUrl);

@@ -1,4 +1,4 @@
-import { native, SpriteFrame, Texture2D } from "cc";
+import { SpriteFrame, Texture2D } from "cc";
 import { IManager } from "../../../Mono/Core/Manager/IManager";
 import { LruCache } from "../../../Mono/Core/Object/LruCache";
 import { ResourceManager } from "./ResourceManager";
@@ -254,13 +254,10 @@ export class ImageLoaderManager implements IManager{
     }
 
     private async doLoadOnlineTexture(url: string, tryCount: number): Promise<SpriteValue> {
-        let texture = await HttpManager.instance.httpGetImageOnline(url, true);
-        if (this.isDestroyed) return null;
-        if (!texture) {
-            for (let i = 0; i < tryCount; i++) {
-                texture = await HttpManager.instance.httpGetImageOnline(url, false);
-                if (texture) break;
-            }
+        let texture = null;
+        for (let i = 0; i < tryCount; i++) {
+            texture = await HttpManager.instance.httpGetImageOnline(url);
+            if (!!texture) break;
         }
         if (!texture) {
             Log.error("网络无资源 " + url);
@@ -272,21 +269,6 @@ export class ImageLoaderManager implements IManager{
         data.refCount = 1;
         this.cacheOnlineImage.set(url, data);
 
-        try
-        {
-            const pixelData = this.convertToUint8Array(texture.image.data);
-            if(!!pixelData){
-                native.saveImageData(pixelData, texture.width, texture.height, HttpManager.instance.localFile(url)).then(()=>{
-                    Log.info("Save image data success");
-                }).catch(()=>{
-                    Log.info("Fail to save image data");
-                });
-            }
-        }
-        catch(ex: any)
-        {
-            Log.error(ex);
-        }
         return data;
     }
 
@@ -330,22 +312,5 @@ export class ImageLoaderManager implements IManager{
                 this.cacheOnlineImage.delete(temp[index]);
             }
         }
-    }
-
-    private convertToUint8Array(data: any): Uint8Array {
-        if (data instanceof ArrayBuffer) {
-            return new Uint8Array(data);
-        }
-        
-        if (ArrayBuffer.isView(data)) {
-            return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-        }
-        
-        if (data instanceof Uint8Array) {
-            return data;
-        }
-        
-        Log.error('无法识别的图片数据类型:', typeof data);
-        return new Uint8Array(0);
     }
 }
