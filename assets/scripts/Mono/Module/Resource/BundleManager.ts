@@ -425,12 +425,12 @@ export class BundleManager implements IManager {
                 this._cacheBundleRefCount.delete(bundle);
                 bundle.releaseAll();
                 assetManager.removeBundle(bundle);
-            }
-            for (let index = 0; index < deps.length; index++) {
-                const name = deps[index];
-                if(this._cacheBundle.has(name)) {
-                    const cacheBundle = this._cacheBundle.get(name);
-                    this.releaseBundle(cacheBundle, clear);
+                for (let index = 0; index < deps.length; index++) {
+                    const name = deps[index];
+                    if(this._cacheBundle.has(name)) {
+                        const cacheBundle = this._cacheBundle.get(name);
+                        this.releaseBundle(cacheBundle, clear);
+                    }
                 }
             }
         }

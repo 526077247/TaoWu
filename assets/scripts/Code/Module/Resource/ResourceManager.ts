@@ -85,10 +85,10 @@ export class ResourceManager implements IManager {
 
     public releaseAsset(pooledGo: Asset){
         if (this.assetMap.has(pooledGo)){
-            var bundle = this.assetMap.get(pooledGo);
-            BundleManager.instance.releaseBundle(bundle,true);
             pooledGo.decRef();
+            var bundle = this.assetMap.get(pooledGo);
             this.assetMap.delete(pooledGo);
+            BundleManager.instance.releaseBundle(bundle,true);
         }
     }
 
