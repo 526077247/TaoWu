@@ -84,7 +84,7 @@ export class LoopListViewItem2 extends Component {
         const pos = this.node.position;
         
         if (this.parentListView.arrangeType === ListItemArrangeType.TopToBottom) {
-            return pos.y - this.uiTransform.height * this.uiTransform.anchorY;
+            return pos.y + this.uiTransform.height * (1 - this.uiTransform.anchorY);
         } else if (this.parentListView.arrangeType === ListItemArrangeType.BottomToTop) {
             return pos.y + this.uiTransform.height * (1 - this.uiTransform.anchorY);
         }
@@ -96,9 +96,9 @@ export class LoopListViewItem2 extends Component {
         const pos = this.node.position;
         
         if (this.parentListView.arrangeType === ListItemArrangeType.TopToBottom) {
-            return pos.y - this.uiTransform.height * (1 - this.uiTransform.anchorY);
+            return pos.y - this.uiTransform.height * this.uiTransform.anchorY;
         } else if (this.parentListView.arrangeType === ListItemArrangeType.BottomToTop) {
-            return pos.y + this.uiTransform.height * this.uiTransform.anchorY;
+            return pos.y - this.uiTransform.height * this.uiTransform.anchorY;
         }
         return 0;
     }

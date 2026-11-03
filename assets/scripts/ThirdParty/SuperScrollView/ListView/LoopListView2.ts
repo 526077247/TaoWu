@@ -117,6 +117,8 @@ export class LoopListView2 extends Component {
     private lastSnapCheckPos: Vec3 = new Vec3();
     private mListViewInited: boolean = false;
     private listUpdateCheckFrameCount: number = 0;
+    /** 最近一次可见窗的首项索引：可见窗被清空后用它兜底重建，避免整窗退回第 0 项 */
+    private mLastShownFirstIndex: number = 0;
 
     public onBeginDragAction: (event: EventTouch) => void = null;
     public onDragingAction: (event: EventTouch) => void = null;
@@ -299,6 +301,14 @@ export class LoopListView2 extends Component {
 
         this.clearListView();
         this.initItemPool();
+
+        // 未测量项的默认行高必须取预制体实测值。
+        const resolvedItemSize = this.resolveDefaultItemSize(initParam);
+        if (resolvedItemSize > 0 && resolvedItemSize !== this.itemDefaultWithPaddingSize) {
+            this.itemDefaultWithPaddingSize = resolvedItemSize;
+            this.itemPosMgr = new ItemPosMgr(this.itemDefaultWithPaddingSize);
+        }
+
         this.onGetItemByIndex = onGetItemByIndex;
 
         if (this.mListViewInited) {
@@ -327,6 +337,26 @@ export class LoopListView2 extends Component {
         this.needCheckNextMaxItem = true;
         this.needCheckNextMinItem = true;
         this.updateContentSize();
+    }
+
+    /**
+     * 取“尚未测量过的 item”的默认尺寸（item 尺寸 + padding）。
+     * ItemPosMgr 用它估算全表总高：估小了会让 content 尺寸、滚动边界、item 绝对坐标一起失真
+     * （数据量大时误差可达数十万像素），所以优先用预制体实测值，而不是写死的 20。
+     */
+    private resolveDefaultItemSize(initParam: LoopListViewInitParam): number {
+        for (const data of this.mItemPrefabDataList) {
+            if (!data || !data.mItemPrefab) continue;
+            if (!(data.mItemPrefab instanceof Node)) continue;   // 只认场景里的节点模板，跳过 Prefab 资源
+            const rtf = (data.mItemPrefab as Node).getComponent(UITransform);
+            if (!rtf) continue;
+            const size = (this.mIsVertList ? rtf.height : rtf.width) + (data.mPadding || 0);
+            if (size > 0) return size;
+        }
+        if (initParam && initParam.itemDefaultWithPaddingSize > 0) {
+            return initParam.itemDefaultWithPaddingSize;
+        }
+        return this.itemDefaultWithPaddingSize > 0 ? this.itemDefaultWithPaddingSize : 20;
     }
 
     // 设置滚动条监听
@@ -594,19 +624,35 @@ export class LoopListView2 extends Component {
         }
         
         let pos: Vec3 = new Vec3();
-        const containerPos = this.mContainerTrans.node.getPosition();
-        
+        const containerPos = this.mContainerTrans.node.getPosition().clone();
+
+        // 垂直列表按 itemPosMgr 的绝对坐标一次定位到位：
+        //   item.localY = -itemPos（BottomToTop 取正），content.y = itemPos - offset（BottomToTop 取反）
+        // 原来用“当前 content.y”当基准、只摆 item 不摆 content，真正的定位靠
+        // updateAllShownItemsPos() 里几万像素的补偿事后兜底 —— 那一瞬间 content.y 会被推到合法区间之外。
+        const itemPos = this.mSupportScrollBar ? this.getItemPos(itemIndex) : 0;
+
         switch (this.arrangeType) {
             case ListItemArrangeType.TopToBottom:
-                const topPosY = Math.max(containerPos.y, 0);
-                pos.set(0, -topPosY - offset, 0);
+                if (this.mSupportScrollBar) {
+                    pos.set(0, -itemPos, 0);
+                    containerPos.y = itemPos - offset;
+                } else {
+                    // 无限列表（没有 itemPos 记录）沿用原来的相对定位
+                    pos.set(0, -Math.max(containerPos.y, 0) - offset, 0);
+                }
                 break;
                 
             case ListItemArrangeType.BottomToTop:
-                const bottomPosY = Math.min(containerPos.y, 0);
-                pos.set(0, -bottomPosY + offset, 0);
+                if (this.mSupportScrollBar) {
+                    pos.set(0, itemPos, 0);
+                    containerPos.y = -itemPos + offset;
+                } else {
+                    pos.set(0, -Math.min(containerPos.y, 0) + offset, 0);
+                }
                 break;
-                
+
+            // 水平排列在本工程中未被使用，保持原逻辑不动，避免影响未知用法
             case ListItemArrangeType.LeftToRight:
                 const leftPosX = Math.min(containerPos.x, 0);
                 pos.set(-leftPosX + offset, 0, 0);
@@ -632,6 +678,11 @@ export class LoopListView2 extends Component {
         }
         
         newItem.node.setPosition(pos);
+
+        // 先摆好 content，再让 updateListView 按世界坐标补齐邻居项
+        if (this.mIsVertList) {
+            this.mContainerTrans.node.setPosition(containerPos);
+        }
         
         if (this.mSupportScrollBar) {
             const rect = newItem.uiTransform;
@@ -643,6 +694,7 @@ export class LoopListView2 extends Component {
         }
         
         this.mItemList.push(newItem);
+        this.mLastShownFirstIndex = itemIndex;
         this.updateContentSize();
         this.updateListView(viewPortSize + 100, viewPortSize + 100, viewPortSize, viewPortSize);
         this.adjustPanelPos();
@@ -955,6 +1007,10 @@ export class LoopListView2 extends Component {
         }
 
         this.updateSnapMove();
+        // 记录当前可见窗首索引：供“空窗重建”兜底使用（见 updateForVertList）
+        if (this.mItemList.length > 0) {
+            this.mLastShownFirstIndex = this.mItemList[0].itemIndex;
+        }
         this.updateListView(
             this.distanceForRecycle0,
             this.distanceForRecycle1,
@@ -1029,9 +1085,16 @@ export class LoopListView2 extends Component {
         if (this.arrangeType === ListItemArrangeType.TopToBottom) {
             const itemListCount = this.mItemList.length;
             if (itemListCount === 0) {
+                // content.y 先夹回 ScrollView 的合法滚动区间，再按位置反查索引；
+                // 反查失败（content 位置异常）时退回“上一次可见窗首索引”，
+                // 不再像原来那样一律 curY=0 → index=0（那正是“突变到第 0 个数据”的最后一环）。
+                const maxY = Math.max(0, this.getContentPanelSize() - this.viewPortHeight);
                 let curY = this.mContainerTrans.node.position.y;
-                if (curY < 0) {
-                    curY = 0;
+                const clampedY = Math.min(Math.max(curY, 0), maxY);
+                if (clampedY !== curY) {
+                    curY = clampedY;
+                    const p = this.mContainerTrans.node.position;
+                    this.mContainerTrans.node.setPosition(p.x, curY, p.z);
                 }
     
                 let index = 0;
@@ -1040,11 +1103,19 @@ export class LoopListView2 extends Component {
                 if (this.mSupportScrollBar) {
                     const res = this.getPlusItemIndexAndPosAtGivenPos(curY);
                     if (!res) {
-                        return false;
+                        // 坐标反查不到项：用最近一次的窗口首索引兜底，避免整窗回到第 0 项
+                        // （列表项数变少时把它夹到合法范围内，防止反复取不到项而卡住）
+                        const fallbackIndex = Math.min(this.mLastShownFirstIndex, this.mItemTotalCount - 1);
+                        if (fallbackIndex > 0) {
+                            index = fallbackIndex;
+                            pos = -this.getItemPos(index);
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        index = res.index;
+                        pos = -res.itemPos;
                     }
-                    index = res.index;
-                    pos = res.itemPos;
-                    pos = -pos;
                 }
     
                 const newItem = this.getNewItemByIndex(index);
@@ -1173,9 +1244,15 @@ export class LoopListView2 extends Component {
             }
         } else { // BottomToTop 排列
             if (this.mItemList.length === 0) {
+                // 同 TopToBottom：先把 content.y 夹回合法滚动区间，
+                // 反查失败时退回上次可见窗首索引，不再一律回到第 0 项。
+                const maxOffset = Math.max(0, this.getContentPanelSize() - this.viewPortHeight);
                 let curY = this.mContainerTrans.node.position.y;
-                if (curY > 0) {
-                    curY = 0;
+                const clampedY = Math.max(-maxOffset, Math.min(curY, 0));
+                if (clampedY !== curY) {
+                    curY = clampedY;
+                    const p = this.mContainerTrans.node.position;
+                    this.mContainerTrans.node.setPosition(p.x, curY, p.z);
                 }
                 
                 let index = 0;
@@ -1184,10 +1261,17 @@ export class LoopListView2 extends Component {
                 if (this.mSupportScrollBar) {
                     const res = this.getPlusItemIndexAndPosAtGivenPos(-curY);
                     if (!res) {
-                        return false;
+                        const fallbackIndex = Math.min(this.mLastShownFirstIndex, this.mItemTotalCount - 1);
+                        if (fallbackIndex > 0) {
+                            index = fallbackIndex;
+                            pos = this.getItemPos(index);
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        index = res.index;
+                        pos = res.itemPos;
                     }
-                    index = res.index;
-                    pos = res.itemPos;
                 }
                 
                 const newItem = this.getNewItemByIndex(index);
@@ -1688,6 +1772,11 @@ export class LoopListView2 extends Component {
             }
             
             if (d !== 0) {
+                // 正常情况下 d 应接近 0（已测量项的 itemPos 与真实布局一致）。
+                // 偏差超过一屏说明 itemPosMgr 与布局严重不同步，大多是未测量项的默认行高估错，留个告警便于定位。
+                if (Math.abs(d) > this.viewPortSize) {
+                    console.warn(`[LoopListView2] 位置补偿异常 d=${d.toFixed(1)} firstIndex=${this.mItemList[0].itemIndex} total=${this.getContentPanelSize().toFixed(0)}`);
+                }
                 const p = this.mContainerTrans.node.position;
                 this.mContainerTrans.node.setPosition(p.x, p.y - d, p.z);
             }

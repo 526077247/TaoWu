@@ -835,7 +835,7 @@ export class UIManager implements IManager {
                 for (let node = layer.first; null != node; node = node.next)
                 {
                     var target = this.getWindow(node.value);
-                    if (!!((target.view as any).isOnWidthPaddingChange))
+                    if (!!((target?.view as any)?.isOnWidthPaddingChange))
                         this.onWidthPaddingChange(target.view);
                 }
             }

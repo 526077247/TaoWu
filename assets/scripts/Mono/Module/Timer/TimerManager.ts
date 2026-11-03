@@ -154,7 +154,11 @@ export class TimerManager implements IManager,IUpdate {
                 }
                 let obj = timerAction.object;
                 this.remove(timerAction.id);
-                timer.call(obj);
+                try {
+                    timer.call(obj);
+                } catch (e: any) {
+                    Log.error(e);
+                }
                 break;
             }
             case TimerClass.OnceWaitTimer: {
@@ -173,7 +177,11 @@ export class TimerManager implements IManager,IUpdate {
                     Log.error(`not found timer action: ${type}`);
                     return;
                 }
-                timer.call(timerAction.object);
+                try {
+                    timer.call(timerAction.object);
+                } catch (e: any) {
+                    Log.error(e);
+                }
                 break;
             }
         }
