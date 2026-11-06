@@ -33,3 +33,6 @@ node_modules/
 /Excel/Json
 /FileServer
 /Release
+/profiles/v2/packages/cocos-service.json
+/profiles/v2/packages/reference-image.json
+/profiles/v2/packages/scene.json
