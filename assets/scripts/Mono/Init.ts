@@ -9,6 +9,7 @@ import { ConsoleLog } from './Module/Log/ConsoleLog';
 import { BundleManager } from './Module/Resource/BundleManager';
 
 macro.CLEANUP_IMAGE_CACHE = false;
+macro.ENABLE_MULTI_TOUCH = false;
 DynamicAtlasManager.instance.enabled = true;
 DynamicAtlasManager.instance.maxFrameSize = 512;
 
