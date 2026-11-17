@@ -134,30 +134,13 @@ namespace TaoWu
                 template = File.ReadAllText("Template.txt");
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-                if (Directory.Exists(ClientClassDir))
-                {
-                    Directory.Delete(ClientClassDir, true);
-                }
-#if !NOT_SERVER
-                if (Directory.Exists(ServerClassDir))
-                {
-                    Directory.Delete(ServerClassDir, true);
-                }
-#endif
-                if (Directory.Exists(clientProtoDir))
-                {
-                    Directory.Delete(clientProtoDir, true);
-                }
-
-                // clientProtoDir 是带 {0} 占位符的模板，上面的 Exists 检查恒为 false，此处显式按格式化路径清理，
-                // 避免旧 .json/.bytes 残留（客户端配置是扁平目录，由导出程序全量生成）。
+                // 不再整目录删除 class / proto 输出目录：*.meta 里存着 Cocos 的资源 uuid，
+                // 连目录一起删会让编辑器重新导入时分配新 uuid，已保存的 prefab / scene / 代码引用全部断开。
+                // 改为扫完表之后，按"本次会生成的文件名"清掉过期产物，其余原样覆盖（见 CleanStaleOutputs）。
                 string cProtoDir = string.Format(clientProtoDir, ".");
-                if (Directory.Exists(cProtoDir))
-                {
-                    Directory.Delete(cProtoDir, true);
-                }
 
-                // 中间 json 目录同样必须清理，否则已删除/改名的表残留旧文件，会污染 proto 全局合并与 server 输出。
+                // 中间 json 目录仍必须清空，否则已删除/改名的表残留旧文件，会污染 proto 全局合并与 server 输出。
+                // 这里是 Excel/Json 下的纯中间产物（不进 assets，无 .meta），整目录删除是安全的。
                 foreach (string ct in new[] { "c", "s" })
                 {
                     string jdir = string.Format(jsonDir, ct, "");
@@ -245,15 +228,103 @@ namespace TaoWu
                 //    ExportExcel(path);
                 //}
 
-                // 多线程导出
-                List<Task> tasks = new List<Task>();
+                // 清理过期产物：只删"本次不会再生成"的 .ts / xxxCategory.bin，其余文件原样覆盖，.meta 一律不动。
+                HashSet<string> expectedClass = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                HashSet<string> expectedProto = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var kv in tables)
+                {
+                    if (kv.Value.C)
+                    {
+                        expectedClass.Add($"{kv.Key}.ts");
+                        expectedProto.Add($"{kv.Key}Category.bin");
+                    }
+#if !NOT_SERVER
+                    if (kv.Value.S)
+                    {
+                        expectedClass.Add($"{kv.Key}.ts");
+                    }
+#endif
+                }
+                CleanStaleOutputs(ClientClassDir, "*.ts", expectedClass);
+#if !NOT_SERVER
+                CleanStaleOutputs(ServerClassDir, "*.ts", expectedClass);
+#endif
+                CleanStaleOutputs(cProtoDir, "*Category.bin", expectedProto);
+
+                // 导出拆成两阶段：
+                //   阶段一 并行，只把每个分表写成 Excel/Json/{c,s}/**/{name}.txt（不碰 bin、不碰服务端产物）；
+                //   阶段二 串行，按 protoName 合并，每个 protoName 只跑一次。
+                // 阶段一并行是安全的：各分表写各自的 json 路径，不共享输出文件；package 与输出目录都在并行前预热/预建。
+                // 阶段二必须在所有 json 落盘之后，否则扫描不到同组其它分表会丢行；同名分表（如多个 ItemConfig_*.xlsx）
+                // 也只在这里合并一次，不再像原来那样让每个分表都把全量合并重算一遍。
+                List<ExportJob> jobs = new List<ExportJob>();
                 foreach (string path in ExportHelper.FindFile(excelDir))
                 {
-                    Task task = Task.Run(() => ExportExcel(path));
-                    tasks.Add(task);
+                    ExportJob job = BuildJob(path);
+                    if (job == null) continue;
+                    // 预热 package 缓存：packages 是普通 Dictionary，不是线程安全的；EPPlus 打开文件本身也应串行。
+                    GetPackage(Path.GetFullPath(job.Path));
+                    // 预建输出目录，免得并行阶段多个线程同时 CreateDirectory
+                    if (job.HasC) EnsureJsonDir(ConfigType.c, job.RelativeDir);
+                    if (job.HasS) EnsureJsonDir(ConfigType.s, job.RelativeDir);
+                    jobs.Add(job);
                 }
-                Task.WaitAll(tasks.ToArray());
-                Console.WriteLine("ExcelExporter 成功");
+
+                List<string> jobErrors = new List<string>();
+                Parallel.ForEach(jobs, job =>
+                {
+                    try
+                    {
+                        ExportExcelJsonOnly(job);
+                    }
+                    catch (Exception ex)
+                    {
+                        lock (jobErrors)
+                        {
+                            jobErrors.Add($"{Path.GetFileName(job.Path)}: {ex.Message}");
+                        }
+                    }
+                });
+                foreach (string err in jobErrors)
+                {
+                    Console.WriteLine("导出中间 json 失败 " + err);
+                }
+
+                // 阶段二：按 protoName 串行合并（合并顺序由 jsonPaths 排序决定，与阶段一的完成顺序无关）
+                List<string> protoNames = new List<string>();
+                HashSet<string> seenProto = new HashSet<string>();
+                HashSet<string> protoC = new HashSet<string>();
+                foreach (ExportJob job in jobs)
+                {
+                    if (seenProto.Add(job.ProtoName)) protoNames.Add(job.ProtoName);
+                    if (job.HasC) protoC.Add(job.ProtoName);
+                }
+                foreach (string protoName in protoNames)
+                {
+                    if (protoC.Contains(protoName))
+                    {
+                        MergeProto(ConfigType.c, protoName);
+                    }
+                }
+#if !NOT_SERVER
+                // 服务端输出按 relativeDir 分目录，不做扁平合并，沿用"每个分表各写一次"的旧语义，
+                // 但改到阶段二执行，确保所有中间 json 已经落盘。
+                foreach (ExportJob job in jobs)
+                {
+                    if (job.HasS)
+                    {
+                        MoveJson2Project(ConfigType.s, job.ProtoName, job.RelativeDir);
+                    }
+                }
+#endif
+                if (jobErrors.Count == 0)
+                {
+                    Console.WriteLine("ExcelExporter 成功");
+                }
+                else
+                {
+                    Console.WriteLine($"ExcelExporter 失败 {jobErrors.Count} 个分表（见上方日志），其余表已导出");
+                }
             }
             catch (Exception e)
             {
@@ -270,7 +341,7 @@ namespace TaoWu
                 packages.Clear();
             }
         }
-        public static void ExportTarget(string target)
+        public static bool ExportTarget(string target)
         {
             string fullAbsolute = Path.GetFullPath(target);
 
@@ -281,53 +352,55 @@ namespace TaoWu
                 template = File.ReadAllText("Template.txt");
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
+                bool ignoreCase = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                StringComparison pathCompare = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+                // 1. 先定位目标文件，并解析出它的导出任务。找不到就明确报错，
+                //    不再像原来那样什么都没导也打印"成功"（路径写法不对时会被误当成已导出）。
+                ExportJob targetJob = null;
                 foreach (string path in ExportHelper.FindFile(excelDir))
                 {
-                    string fullRelative = Path.GetFullPath(path, Directory.GetCurrentDirectory());
-                    bool ignoreCase = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-                    if (!string.Equals(fullRelative, fullAbsolute, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) continue;
-                    string fileName = Path.GetFileName(path);
-                    if (!fileName.EndsWith(".xlsx") || fileName.StartsWith("~$") || fileName.Contains("#"))
-                    {
-                        continue;
-                    }
+                    if (!string.Equals(Path.GetFullPath(path, Directory.GetCurrentDirectory()), fullAbsolute, pathCompare)) continue;
+                    targetJob = BuildJob(path);
+                    break;
+                }
 
-                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-                    string fileNameWithoutCS = fileNameWithoutExtension;
-                    string cs = "cs";
-                    if (fileNameWithoutExtension.Contains("@"))
-                    {
-                        string[] ss = fileNameWithoutExtension.Split("@");
-                        fileNameWithoutCS = ss[0];
-                        cs = ss[1];
-                    }
+                if (targetJob == null)
+                {
+                    Console.WriteLine($"ExcelExporterTarget 失败：{Path.GetFullPath(excelDir)} 下找不到可导出的目标表 {target}");
+                    return false;
+                }
 
-                    if (cs == "")
-                    {
-                        cs = "cs";
-                    }
+                // 2. 表头必须按整个 protoName 分组收集，而不是只读目标这一张表。
+                //    分表（ItemConfig_武器 / ItemConfig_头盔 …）共用同一个 ItemConfig 协议，
+                //    只读其中一张会漏掉其它分表独有的字段（例如 param0），结果是生成的 .ts 缺字段、
+                //    合并出的 bin 把这些字段整列丢掉。这里复用全量导表的遍历顺序，
+                //    字段 desc / @ProtoMember 序号才与全量导表结果一致，避免无意义的 .ts 抖动。
+                List<ExportJob> groupJobs = new List<ExportJob>();
+                bool hasC = false;
+#if !NOT_SERVER
+                bool hasS = false;
+#endif
+                foreach (string path in ExportHelper.FindFile(excelDir))
+                {
+                    ExportJob job = BuildJob(path);
+                    if (job == null || !string.Equals(job.ProtoName, targetJob.ProtoName, StringComparison.Ordinal)) continue;
 
-                    ExcelPackage p = GetPackage(Path.GetFullPath(path));
-
-                    string protoName = fileNameWithoutCS;
-                    if (fileNameWithoutCS.Contains('_'))
-                    {
-                        protoName = fileNameWithoutCS.Substring(0, fileNameWithoutCS.LastIndexOf('_'));
-                    }
-
-                    Table table = GetTable(protoName);
-
-                    if (cs.Contains("c"))
+                    Table table = GetTable(job.ProtoName);
+                    if (job.HasC)
                     {
                         table.C = true;
+                        hasC = true;
                     }
 #if !NOT_SERVER
-                    if (cs.Contains("s"))
+                    if (job.HasS)
                     {
                         table.S = true;
+                        hasS = true;
                     }
 #endif
-                    ExportExcelClass(p, protoName, table);
+                    ExportExcelClass(GetPackage(Path.GetFullPath(job.Path)), job.ProtoName, table);
+                    groupJobs.Add(job);
                 }
 
                 foreach (var kv in tables)
@@ -361,23 +434,41 @@ namespace TaoWu
                 //    ExportExcel(path);
                 //}
 
-                // 多线程导出
-                List<Task> tasks = new List<Task>();
-                foreach (string path in ExportHelper.FindFile(excelDir))
+                // 3. 先写中间 json：同组的分表一起写。合并只能基于磁盘上的中间 json，
+                //    只刷新目标分表时，其它分表的 json 可能是上次全量导表留下的旧数据，
+                //    甚至从头就没生成过（Excel/Json 是会被清空的），那样合并出来的 bin 会静默缺行。
+                //    分表 package 在上一步收集表头时已经打开，这里不会额外付打开成本。
+                foreach (ExportJob job in groupJobs)
                 {
-                    string fullRelative = Path.GetFullPath(path, Directory.GetCurrentDirectory());
-                    bool ignoreCase = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-                    if (!string.Equals(fullRelative, fullAbsolute, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) continue;
-                    Task task = Task.Run(() => ExportExcel(path));
-                    tasks.Add(task);
+                    ExportExcelJsonOnly(job);
                 }
-                Task.WaitAll(tasks.ToArray());
 
-                Console.WriteLine("ExcelExporterTarget 成功");
+                // 4. 合并只在组内做一次，与 Export 的两阶段保持一致。
+                if (hasC)
+                {
+                    MergeProto(ConfigType.c, targetJob.ProtoName);
+                }
+#if !NOT_SERVER
+                // 服务端输出按 relativeDir 分目录，不做扁平合并（与 Export 相同）
+                if (hasS)
+                {
+                    foreach (ExportJob job in groupJobs)
+                    {
+                        if (job.HasS)
+                        {
+                            MoveJson2Project(ConfigType.s, job.ProtoName, job.RelativeDir);
+                        }
+                    }
+                }
+#endif
+
+                Console.WriteLine($"ExcelExporterTarget 成功：{targetJob.ProtoName}（{groupJobs.Count} 个分表）");
+                return true;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
+                return false;
             }
             finally
             {
@@ -391,14 +482,31 @@ namespace TaoWu
             }
         }
 
-        private static void ExportExcel(string path)
+        /// <summary>
+        /// 单个分表的导出任务。同 protoName 的多个分表共享一个 xxxCategory.bin，
+        /// 因此合并必须按 protoName 归组、且每组只做一次。
+        /// </summary>
+        private sealed class ExportJob
         {
-            string dir = Path.GetDirectoryName(path);
-            string relativePath = Path.GetRelativePath(excelDir, dir);
+            /// <summary>源 xlsx 路径</summary>
+            public string Path;
+            /// <summary>相对 excelDir 的子目录，决定中间 json 落在哪一层</summary>
+            public string RelativeDir;
+            /// <summary>中间 json 文件名（分表保留 _标签，用于按 protoName 前缀合并）</summary>
+            public string JsonName;
+            /// <summary>协议名 / 合并键</summary>
+            public string ProtoName;
+            public bool HasC;
+            public bool HasS;
+        }
+
+        /// <summary>解析文件名得到导出任务；不参与导出的文件返回 null</summary>
+        private static ExportJob BuildJob(string path)
+        {
             string fileName = Path.GetFileName(path);
             if (!fileName.EndsWith(".xlsx") || fileName.StartsWith("~$") || fileName.Contains("#"))
             {
-                return;
+                return null;
             }
 
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
@@ -422,24 +530,90 @@ namespace TaoWu
                 protoName = fileNameWithoutCS.Substring(0, fileNameWithoutCS.LastIndexOf('_'));
             }
 
+            return new ExportJob
+            {
+                Path = path,
+                RelativeDir = Path.GetRelativePath(excelDir, Path.GetDirectoryName(path)),
+                JsonName = fileNameWithoutCS,
+                ProtoName = protoName,
+                HasC = cs.Contains("c"),
+                HasS = cs.Contains("s"),
+            };
+        }
+
+        private static void EnsureJsonDir(ConfigType configType, string relativeDir)
+        {
+            string dir = string.Format(jsonDir, configType.ToString(), relativeDir);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+        }
+
+        /// <summary>
+        /// 阶段一：只把单个分表写成中间 json，不写 bin / 不写服务端合并产物，可与其它分表并行。
+        /// </summary>
+        private static void ExportExcelJsonOnly(ExportJob job)
+        {
+            Table table = GetTable(job.ProtoName);
+            ExcelPackage p = GetPackage(Path.GetFullPath(job.Path));
+
+            if (job.HasC)
+            {
+                ExportExcelJson(p, job.JsonName, table, ConfigType.c, job.RelativeDir);
+            }
+
+            if (job.HasS)
+            {
+                ExportExcelJson(p, job.JsonName, table, ConfigType.s, job.RelativeDir);
+            }
+        }
+
+        /// <summary>
+        /// 阶段二：把一个 protoName 的全部中间 json 合并成一份客户端产物。必须在阶段一全部落盘后调用。
+        /// 客户端输出目录是扁平结构（GetProtoDir 忽略 relativeDir），故这里传空串。
+        /// </summary>
+        private static void MergeProto(ConfigType configType, string protoName)
+        {
             Table table = GetTable(protoName);
+            ExportExcelProto(configType, protoName, string.Empty, table);
+        }
 
-            ExcelPackage p = GetPackage(Path.GetFullPath(path));
-
-            if (cs.Contains("c"))
+        /// <summary>
+        /// 删除目录里本次不会再生成的旧产物，**.meta 一律不动**。
+        /// 不能整目录删除的原因：*.meta 记着 Cocos 的资源 uuid，连目录一起删会让编辑器重新导入时
+        /// 分配新 uuid，已保存的 prefab / scene / 代码引用会全部断开。
+        /// </summary>
+        private static void CleanStaleOutputs(string dir, string searchPattern, HashSet<string> expectedNames)
+        {
+            if (!Directory.Exists(dir))
             {
-                ExportExcelJson(p, fileNameWithoutCS, table, ConfigType.c, relativePath);
-                ExportExcelProto(ConfigType.c, protoName, relativePath, table);
+                return;
             }
 
-            if (cs.Contains("s"))
+            foreach (string file in Directory.GetFiles(dir, searchPattern, SearchOption.TopDirectoryOnly))
             {
-                ExportExcelJson(p, fileNameWithoutCS, table, ConfigType.s, relativePath);
-#if !NOT_SERVER
-                MoveJson2Project(ConfigType.s, protoName, relativePath);
-#endif
-            }
+                if (file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
+                string name = Path.GetFileName(file);
+                if (expectedNames.Contains(name))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    File.Delete(file);
+                    Console.WriteLine("清理过期产物 " + name);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"清理过期产物失败 {name}: {ex.Message}");
+                }
+            }
         }
 
         private static string GetProtoDir(ConfigType configType, string relativeDir)
