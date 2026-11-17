@@ -127,7 +127,7 @@ export class I18NManager implements IManager {
      * 切换语言,外部接口
      * @param langType 
      */
-    public async wwitchLanguage(langType: number|LangType)
+    public async switchLanguage(langType: number|LangType)
     {
         //修改当前语言
         CacheManager.instance.setInt(CacheKeys.CurLangType, langType);

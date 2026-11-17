@@ -62,7 +62,7 @@ const obfuscateMainJs = (options, result) => {
         rotateStringArray: true,
         shuffleStringArray: true,
         transformObjectKeys: false,
-        identifierNamesGenerator: 'hexadecimal',
+        identifierNamesGenerator: 'mangled',
         renameGlobals: false,
         unicodeEscapeSequence: false
     };

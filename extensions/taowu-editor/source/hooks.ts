@@ -29,7 +29,7 @@ const obfuscateMainJs = (options: IBuildTaskOption, result: IBuildResult) => {
         rotateStringArray: true,
         shuffleStringArray: true,
         transformObjectKeys: false,
-        identifierNamesGenerator: 'hexadecimal',
+        identifierNamesGenerator: 'mangled',
         renameGlobals: false,
         unicodeEscapeSequence: false
     };
