@@ -21,6 +21,10 @@ exports.template = `
         <ui-checkbox slot="content" id="generateManifest"></ui-checkbox>
     </ui-prop>
     <ui-prop>
+        <ui-label slot="label" value="清理图集冗余原生图 (省包体)"></ui-label>
+        <ui-checkbox slot="content" id="purgeNativePng"></ui-checkbox>
+    </ui-prop>
+    <ui-prop>
         <ui-label slot="label" value="版本号"></ui-label>
         <ui-input slot="content" id="version"></ui-input>
     </ui-prop>
@@ -34,6 +38,7 @@ exports.$ = {
     root: '.build-plugin',
     enableObfuscate: '#enableObfuscate',
     generateManifest: '#generateManifest',
+    purgeNativePng: '#purgeNativePng',
     version: '#version',
     channel: '#channel',
     channelProp: '#channelProp',
@@ -65,6 +70,8 @@ function pkgOptions() {
         const defaults = {
             enableObfuscate: true,
             generateManifest: true,
+            purgeNativePng: true,
+            purgeNativePngBackup: false,
             version: String(Date.now()),
             channel: 'default',
         };
@@ -97,17 +104,21 @@ function init() {
         return;
     panel.$.enableObfuscate.value = !!opts.enableObfuscate;
     panel.$.generateManifest.value = !!opts.generateManifest;
+    // 旧配置里没有该字段时按默认开启显示, 与 hooks 侧 `!== false` 的判定保持一致
+    panel.$.purgeNativePng.value = opts.purgeNativePng !== false;
     panel.$.version.value = opts.version || '';
     panel.$.channel.value = opts.channel || '';
     updateChannelDisabled();
     panel.$.enableObfuscate.addEventListener('change', onEnableObfuscateChange);
     panel.$.generateManifest.addEventListener('change', onGenerateManifestChange);
+    panel.$.purgeNativePng.addEventListener('change', onPurgeNativePngChange);
     panel.$.version.addEventListener('change', onVersionChange);
     panel.$.channel.addEventListener('change', onChannelChange);
 }
 function unbind() {
     panel.$.enableObfuscate.removeEventListener('change', onEnableObfuscateChange);
     panel.$.generateManifest.removeEventListener('change', onGenerateManifestChange);
+    panel.$.purgeNativePng.removeEventListener('change', onPurgeNativePngChange);
     panel.$.version.removeEventListener('change', onVersionChange);
     panel.$.channel.removeEventListener('change', onChannelChange);
 }
@@ -131,6 +142,10 @@ function onEnableObfuscateChange(event) {
 function onGenerateManifestChange(event) {
     pkgOptions().generateManifest = event.target.value;
     panel.dispatch('update', `packages.${PACKAGE_NAME}.generateManifest`, event.target.value);
+}
+function onPurgeNativePngChange(event) {
+    pkgOptions().purgeNativePng = event.target.value;
+    panel.dispatch('update', `packages.${PACKAGE_NAME}.purgeNativePng`, event.target.value);
 }
 function onVersionChange(event) {
     pkgOptions().version = event.target.value;

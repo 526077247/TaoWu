@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from 'path';
 import * as crypto from 'crypto';
 import * as JavaScriptObfuscator from 'javascript-obfuscator';
+import { purgeNativePng } from './native-purge';
 
 // 自定义混淆函数
 const obfuscateMainJs = (options: IBuildTaskOption, result: IBuildResult) => {
@@ -468,11 +469,52 @@ const generateVersionManifest = (options: IBuildTaskOption, result: IBuildResult
     console.log(`[HotUpdate] ✅ Copied build output (excluding remote) to: ${buildOutputDir}`);
 };
 
+/**
+ * 图集冗余原生图清理: 摘除 config.versions.native 中"像素已并入图集"的 PNG 登记并删文件。
+ * 原生平台产物结构不同且未验证, 默认跳过; 判定逻辑见 native-purge.ts。
+ */
+const NATIVE_PLATFORMS = new Set(['android', 'ios', 'win', 'win32', 'mac', 'linux', 'ohos', 'harmonyos']);
+
+function readBuildPlatform(settingsPath: string): string {
+    if (!settingsPath || !fs.existsSync(settingsPath)) return '';
+    try {
+        return JSON.parse(fs.readFileSync(settingsPath, 'utf8'))?.engine?.platform || '';
+    } catch {
+        return '';
+    }
+}
+
+const purgeNativePngOnBuild = (options: IBuildTaskOption, result: IBuildResult) => {
+    const pkgConfig = options.packages["taowu-editor"] || {};
+    if (pkgConfig.purgeNativePng === false) {
+        console.log('[NativePng] 未启用，跳过');
+        return;
+    }
+    const rawPlatform = readBuildPlatform(result.paths.settings);
+    if (NATIVE_PLATFORMS.has(rawPlatform)) {
+        console.log(`[NativePng] 当前平台 ${rawPlatform} 不参与清理，跳过`);
+        return;
+    }
+    // 项目根: 判据要回源读 assets 下的 .pac.meta 与图片 meta
+    const projectDir = path.resolve(result.paths.dir, '..', '..');
+    // 备份为可选: 构建产物可再生, 默认只留清单
+    const backupDir = pkgConfig.purgeNativePngBackup
+        ? path.resolve(projectDir, 'temp', 'backup', 'native_png', path.basename(result.paths.dir))
+        : '';
+    purgeNativePng({ buildDir: result.paths.dir, projectDir, backupDir });
+};
+
 export const onAfterBuild: BuildHook.onAfterBuild = async function (options: IBuildTaskOption, result: IBuildResult) {
     try {
         obfuscateMainJs(options, result);
     } catch (e: any) {
         console.error(`[taowu-editor] obfuscateMainJs error: ${e?.message}\n${e?.stack}`);
+    }
+    // 必须在 generateVersionManifest 之前: 清单 hash / Release 目录复制都要基于清理后的产物
+    try {
+        purgeNativePngOnBuild(options, result);
+    } catch (e: any) {
+        console.error(`[taowu-editor] purgeNativePng error: ${e?.message}\n${e?.stack}`);
     }
     try {
         generateVersionManifest(options, result);
