@@ -5,6 +5,30 @@ import * as crypto from 'crypto';
 import * as JavaScriptObfuscator from 'javascript-obfuscator';
 import { purgeNativePng } from './native-purge';
 
+// Cocos Creator 3.x 在 Web / 小游戏端依赖的关键标识符。
+// mangled 会把标识符压成一两个字母, 这些名字一旦被改名, 或者被子作用域里新生成的短名遮蔽,
+// 引擎侧按名字取到的就是另一份东西, 表现为 "xxx[yyy(...)] is not a function" 之类的运行时错误。
+// 参考社区插件做法: 混淆前把这些名字整体注入 reservedNames。
+const COCOS_RESERVED_NAMES: string[] = [
+    // 引擎 / 运行时
+    'cc', 'System', 'SystemJS', 'director', 'game', 'sys', 'macro', 'view', 'screen',
+    'window', 'document', 'global', 'globalThis', 'console', 'exports', 'module', 'require',
+    'define', '__esModule',
+    // 节点 / 组件 / 资源
+    'Node', 'Component', 'Scene', 'Sprite', 'Label', 'Asset', 'resources', 'instantiate', 'find',
+    // 装饰器: 编译产物里通过 _decorator.ccclass('类名') 注册, 改名后 getComponent 找不到
+    '_decorator', 'ccclass', 'property', 'menu', 'executeInEditMode', 'requireComponent',
+    'disallowMultiple', 'executionOrder', 'addComponentMenu',
+    // 常见内建对象: 防止被生成的短名遮蔽后取到错误的构造器
+    'Promise', 'Math', 'Object', 'Array', 'JSON', 'Error', 'Date',
+];
+
+// 保留名必须锚定成 ^name$：未锚定的 'cc' 会连带匹配 account / success / accent，
+// 把大批正常标识符挡在混淆之外。名单里的名字按字面量转义，不做正则展开。
+const toReservedPattern = (name: string): string => {
+    return '^' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$';
+};
+
 // 自定义混淆函数
 const obfuscateMainJs = (options: IBuildTaskOption, result: IBuildResult) => {
     let destDir = path.join(result.paths.dir, "subpackages", "main");
@@ -17,20 +41,39 @@ const obfuscateMainJs = (options: IBuildTaskOption, result: IBuildResult) => {
         console.log('[CodeObfuscate] 代码混淆未启用，跳过');
         return;
     }
-    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${result.paths.dir}`);
+    // 标识符命名风格：面板可选，默认 hexadecimal。
+    // mangled 会把标识符改成一两个字母（a/b/c…），而 Cocos 构建产物本身已经是短名，
+    // 两套短名在同一作用域里撞车后，引用会解析到错误的对象，表现为
+    // "Uncaught TypeError: xx[yy(...)] is not a function"（实测 web-desktop 首帧 windowResize
+    // 处 az['getMacroBool'] is not a function）；hexadecimal 的 _0x 前缀不会与产物撞名。
+    // 选 mangled 时靠下面的 reservedNames 兜住引擎关键名。
+    const namesGenerator = pkgConfig.obfuscateNamesGenerator === 'mangled' ? 'mangled' : 'hexadecimal';
+
+    const reservedNames = COCOS_RESERVED_NAMES.map(toReservedPattern);
+
+    console.log(`[混淆插件] 构建完成，开始混淆，输出目录: ${result.paths.dir}，标识符命名: ${namesGenerator}，保留标识符: ${reservedNames.length} 个`);
+
+    // stringArray 会往每个函数作用域里插一个取词 wrapper（var x=b; …），mangled 下这些 wrapper
+    // 也只拿到一两个字母的名字，和同作用域里被压短的业务标识符撞名后 wrapper 被遮蔽，
+    // 解码出来的属性名就成了 undefined，报错形如 az[bH(...)] is not a function。
+    // 另外 Creator 3.x 的 Rollup + SystemJS 产物与 stringArray 本身也有已知冲突。
+    // 所以 mangled 下关掉它：标识符仍是短名，只是字符串以明文留在代码里（体积反而略小）。
+    const useStringArray = namesGenerator !== 'mangled';
+    console.log(`[混淆插件] 字符串数组混淆: ${useStringArray ? '开启' : '关闭（mangled 模式）'}`);
 
     // 混淆配置
     const obfuscateOptions: JavaScriptObfuscator.ObfuscatorOptions = {
         compact: true,
         controlFlowFlattening: false,
         deadCodeInjection: false,
-        stringArray: true,
+        stringArray: useStringArray,
         stringArrayThreshold: 0.2,
         stringArrayEncoding: [],
-        rotateStringArray: true,
-        shuffleStringArray: true,
+        rotateStringArray: useStringArray,
+        shuffleStringArray: useStringArray,
         transformObjectKeys: false,
-        identifierNamesGenerator: 'mangled',
+        identifierNamesGenerator: namesGenerator as any,
+        reservedNames,
         renameGlobals: false,
         unicodeEscapeSequence: false
     };
